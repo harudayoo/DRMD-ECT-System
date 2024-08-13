@@ -1,5 +1,4 @@
 <?php
-
 use App\Http\Controllers\Auth\{
     AuthenticatedSessionController,
     AdminAuthenticatedSessionController,
@@ -79,4 +78,5 @@ Route::middleware('auth')->group(function () {
         ->name('logout');
     Route::post('admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])
         ->name('admin.logout');
+
 });

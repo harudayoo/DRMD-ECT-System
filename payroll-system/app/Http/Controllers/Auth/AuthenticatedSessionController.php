@@ -45,7 +45,7 @@ class AuthenticatedSessionController extends Controller
 
         $user->save();
 
-        return redirect()->intended(route('user.dashboard'));
+        return redirect()->route('otp.show');
     }
     /**
      * Destroy an authenticated session.

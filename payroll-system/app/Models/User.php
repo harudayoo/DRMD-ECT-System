@@ -23,6 +23,9 @@ class User extends Authenticatable
         'adminID',
         'loginNum',
         'last_login_reset',
+        'otp',
+        'otp_expires_at',
+        'otp_verified_at',
     ];
 
     /**

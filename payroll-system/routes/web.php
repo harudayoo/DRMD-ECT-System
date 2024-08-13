@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\UserController;
 use Inertia\Inertia;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\OtpController;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
@@ -15,7 +16,7 @@ Route::middleware('guest')->group(function () {
         return Inertia::render('User/Login', [
             'canLogin' => Route::has('user.dashboard'),
         ]);
-    })->name('login'); // Changed from 'user.login' to 'login' for consistency
+    })->name('login');
 
     Route::get('/admin', function () {
         return Inertia::render('Admin/AdminLogin', [
@@ -26,7 +27,7 @@ Route::middleware('guest')->group(function () {
 });
 
 // User routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/main', function () {
         return Inertia::render('User/MainDashboard');
     })->name('user.dashboard');
@@ -229,7 +230,6 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
-
 });
 
 // Admin routes
@@ -243,35 +243,27 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
         return Inertia::render('Admin/Request');
     })->name('admin.request');
 
-    // delete later
-    Route::get('/logs', function () {
-        return Inertia::render('Admin/Logs');
-    })->name('admin.logs');
-
-
     // User management routes
     Route::post('/verify-password', [AdminController::class, 'verifyPassword']);
     Route::get('/users', [AdminController::class, 'getUsers'])->name('admin.users');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
     Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
-    Route::put('/admin/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-
+    Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
 });
 
 // Registration route
 Route::post('/register', [RegisteredUserController::class, 'store'])
     ->middleware('auth:admin')
     ->name('register');
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/otp', [OtpController::class, 'show'])->name('otp.show');
+    Route::post('/send-otp', [OtpController::class, 'send'])->name('otp.send');
+    Route::post('/verify-otp', [OtpController::class, 'verify'])->name('otp.verify');
+    Route::post('/resend-otp', [OtpController::class, 'resend'])->name('otp.resend');
+});
+
+
 // Include authentication routes
 require __DIR__ . '/auth.php';
-
-// Sample Masterlist
-Route::get('/barangay/aurora', function () {
-    return Inertia::render('DeOroMasterlist/OroM1mstrlst/M1B1');
-})->name('m1b1');
-
-// OTP
-Route::get('/otp', function () {
-    return Inertia::render('User/OTP');
-})->name('otp');
-
