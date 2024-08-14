@@ -37,6 +37,9 @@ Route::middleware('guest')->group(function () {
     Route::controller(AdminAuthenticatedSessionController::class)->prefix('admin')->group(function () {
         Route::get('login', 'create')->name('admin.login');
         Route::post('login', 'store');
+        Route::post('/logout', [AdminAuthenticatedSessionController::class, 'destroy'])
+            ->middleware('auth')
+            ->name('logout');
     });
 
     // Password Reset

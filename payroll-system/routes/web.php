@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
@@ -51,13 +52,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return Inertia::render('User/Occidental');
         })->name('occidental.dashboard');
 
+        Route::get('/davao-del-norte', function () {
+            return Inertia::render('User/DelNorte');
+        })->name('norte.dashboard');
+
         Route::get('/davao-del-sur', function () {
             return Inertia::render('User/DelSur');
         })->name('sur.dashboard');
 
-        Route::get('/davao-del-norte', function () {
-            return Inertia::render('User/DelNorte');
-        })->name('norte.dashboard');
 
     });
 
@@ -230,6 +232,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
+
+    Route::get('/provinces', [ProvinceController::class, 'index'])->name('provinces.index');
+    Route::get('/municipalities/{provinceID}', [MunicipalityController::class, 'index'])->name('municipalities.index');
 });
 
 // Admin routes
@@ -245,7 +250,7 @@ Route::middleware(['auth:admin'])->prefix('admin')->group(function () {
 
     // User management routes
     Route::post('/verify-password', [AdminController::class, 'verifyPassword']);
-    Route::get('/users', [AdminController::class, 'getUsers'])->name('admin.users');
+    Route::get('/users', [AdminController::class, 'ge tUsers'])->name('admin.users');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
     Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');

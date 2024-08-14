@@ -46,6 +46,7 @@ class AdminAuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request)
     {
+        \Log::info('Admin logout attempt', ['user' => Auth::guard('admin')->user()]);
         Auth::guard('admin')->logout();
 
         $request->session()->invalidate();

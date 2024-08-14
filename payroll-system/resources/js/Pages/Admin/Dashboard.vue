@@ -252,8 +252,6 @@ import { ref, onMounted } from "vue";
 import Chart from "chart.js/auto";
 import { useForm } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
-import axios from "axios";
-import { useRouter } from "vue-router";
 
 export default {
   name: "Dashboard",
@@ -291,19 +289,10 @@ export default {
     };
 
     const logout = async () => {
-      const router = useRouter();
-
-      try {
-        // Send logout request to invalidate the session
-        await axios.post("/api/logout"); // Adjust the endpoint as necessary
-
-        // Redirect to home page or another page after successful logout
-        router.push("/");
-      } catch (error) {
-        console.error("Logout failed:", error);
-        // Optionally, handle the error (e.g., show a notification)
-      }
+      console.log("Logout Successful. Redirecting to login.");
+      window.location.href = "/login";
     };
+
     const form = useForm({
       name: "",
       email: "",
