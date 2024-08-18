@@ -95,6 +95,7 @@ const closeConfirmation = () => {
           <div class="relative">
             <div
               v-if="loginError"
+              s
               class="w-[100%] text-red-500 absolute text-sm top-1/2 -translate-y-1/2 py-1 pl-2 rounded-xl pointer-events-none -mt-9"
             >
               {{ loginError }}

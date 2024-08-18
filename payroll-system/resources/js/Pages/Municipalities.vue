@@ -12,7 +12,7 @@
             <tbody>
                 <tr
                     v-for="municipality in municipalities"
-                    :key="municipality.id"
+                    :key="municipality.municipalityID"
                 >
                     <td>{{ municipality.municipalityName }}</td>
                     <td>{{ municipality.totalBeneficiaries }}</td>
@@ -31,12 +31,9 @@
 
 <script>
 export default {
-    props: ["municipalities", "provinceID"],
-    setup(props) {
-        return {
-            municipalities: props.municipalities,
-            provinceID: props.provinceID,
-        };
+    props: {
+        municipalities: Array,
+        provinceID: Number,
     },
 };
 </script>

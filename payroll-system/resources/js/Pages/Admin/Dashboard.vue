@@ -1,4 +1,5 @@
 <template>
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
   <div class="h-screen flex flex-col overflow-hidden bg-white">
     <!-- Top bar -->
     <nav class="bg-red-700 shadow-2xl flex items-center justify-between px-4 py-2">
@@ -27,7 +28,7 @@
           class="text-white focus:outline-none hover:text-blue-700 transition-colors duration-200"
         >
           <svg
-            class="w-6 h-6"
+            class="w-7 h-7 -mb-2"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -122,7 +123,32 @@
         <h2 class="text-2xl font-bold mb-4 text-center">Create User</h2>
         <form @submit.prevent="submit" class="flex-1 flex flex-col justify-between">
           <div class="space-y-3">
-            <div v-for="field in formFields" :key="field.id" class="mb-2">
+            <!-- Name fields in one line -->
+            <div class="flex space-x-2 mb-2">
+              <div v-for="field in nameFields" :key="field.id" :class="field.class">
+                <label class="block text-gray-700 text-sm font-bold mb-1" :for="field.id">
+                  {{ field.label }}
+                </label>
+                <input
+                  :class="[
+                    'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
+                    { 'border-red-500': field.error },
+                  ]"
+                  :id="field.id"
+                  :type="field.type"
+                  :placeholder="field.placeholder"
+                  v-model="form[field.id]"
+                  @input="validateNameField(field.id, $event)"
+                  :required="field.required"
+                />
+                <p v-if="field.error" class="text-red-500 text-xs italic">
+                  {{ field.error }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Other form fields -->
+            <div v-for="field in otherFields" :key="field.id" class="mb-2">
               <label class="block text-gray-700 text-sm font-bold mb-1" :for="field.id">
                 {{ field.label }}
               </label>
@@ -247,11 +273,13 @@
     </div>
   </div>
 </template>
+
 <script>
 import { ref, onMounted } from "vue";
 import Chart from "chart.js/auto";
 import { useForm } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
+import axios from "axios";
 
 export default {
   name: "Dashboard",
@@ -279,35 +307,66 @@ export default {
       isUserMenuOpen.value = !isUserMenuOpen.value;
     };
 
-    // Function to clear cookies
-    const clearCookies = () => {
-      const cookies = document.cookie.split(";");
-      cookies.forEach((cookie) => {
-        const [name] = cookie.split("=");
-        document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-      });
-    };
-
     const logout = async () => {
-      console.log("Logout Successful. Redirecting to login.");
-      window.location.href = "/login";
+      try {
+        await axios.post(route("admin.logout"));
+        window.location.href = route("login");
+      } catch (error) {
+        console.error("Logout failed:", error);
+        // Handle the error appropriately
+      }
     };
 
     const form = useForm({
-      name: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      extension: "",
       email: "",
       password: "",
       password_confirmation: "",
     });
 
-    const formFields = ref([
+    const nameFields = ref([
       {
-        id: "name",
-        label: "Full Name",
+        id: "firstName",
+        label: "First Name",
         type: "text",
-        placeholder: "Enter your full name",
+        placeholder: "First name",
         error: "",
+        class: "w-1/3",
+        required: true,
       },
+      {
+        id: "middleName",
+        label: "Middle Name",
+        type: "text",
+        placeholder: "Middle name",
+        error: "",
+        class: "w-1/4",
+        required: false,
+      },
+      {
+        id: "lastName",
+        label: "Last Name",
+        type: "text",
+        placeholder: "Last name",
+        error: "",
+        class: "w-1/3",
+        required: true,
+      },
+      {
+        id: "extension",
+        label: "Ext.",
+        type: "text",
+        placeholder: "Jr./Sr.",
+        error: "",
+        class: "w-1/6",
+        required: false,
+      },
+    ]);
+
+    const otherFields = ref([
       {
         id: "email",
         label: "Email Address",
@@ -335,30 +394,86 @@ export default {
       },
     ]);
 
+    const validateNameField = (fieldId, event) => {
+      const value = event.target.value;
+      form[fieldId] = value.replace(/\d/g, "");
+    };
+
     const togglePasswordVisibility = (fieldId) => {
-      const field = formFields.value.find((f) => f.id === fieldId);
+      const field = otherFields.value.find((f) => f.id === fieldId);
       if (field) {
         field.showPassword = !field.showPassword;
       }
     };
 
+    const validatePassword = (password) => {
+      const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+      return regex.test(password);
+    };
+
     const submit = () => {
-      form.post(route("register"), {
+      let hasError = false;
+
+      // Validate password
+      if (!validatePassword(form.password)) {
+        otherFields.value.find((f) => f.id === "password").error =
+          "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.";
+        hasError = true;
+      }
+
+      // Check if passwords match
+      if (form.password !== form.password_confirmation) {
+        otherFields.value.find((f) => f.id === "password_confirmation").error =
+          "Passwords do not match.";
+        hasError = true;
+      }
+
+      // If there are validation errors, stop the submission
+      if (hasError) {
+        return;
+      }
+
+      const submissionForm = useForm({
+        firstName: form.firstName,
+        middleName: form.middleName,
+        lastName: form.lastName,
+        nameExt: form.extension,
+        email: form.email,
+        password: form.password,
+        password_confirmation: form.password_confirmation,
+      });
+
+      submissionForm.post(route("register"), {
         preserveScroll: true,
-        onSuccess: () => {
-          form.reset("password", "password_confirmation");
+        onSuccess: (response) => {
+          form.reset();
           showCreateUserForm.value = false;
           showSuccessMessage.value = true;
+
+          props.userData.push({
+            name: `${form.firstName} ${form.lastName}`,
+            loginNum: 0,
+          });
+
+          updateChart();
         },
         onError: (errors) => {
-          Object.keys(errors).forEach((key) => {
-            const field = formFields.value.find((f) => f.id === key);
-            if (field) {
-              field.error = errors[key];
+          [...nameFields.value, ...otherFields.value].forEach((field) => {
+            if (errors[field.id]) {
+              field.error = errors[field.id];
+            } else {
+              field.error = "";
             }
           });
         },
       });
+    };
+    const updateChart = () => {
+      if (myChart.value) {
+        myChart.value.data.labels = props.userData.map((user) => user.name);
+        myChart.value.data.datasets[0].data = props.userData.map((user) => user.loginNum);
+        myChart.value.update();
+      }
     };
 
     const closeSuccessMessage = () => {
@@ -407,7 +522,7 @@ export default {
       };
 
       if (props.userData.length > 0) {
-        new Chart(ctx, config);
+        myChart.value = new Chart(ctx, config);
       } else {
         ctx.font = "20px Arial";
         ctx.fillText("No user data available", 10, 50);
@@ -424,10 +539,13 @@ export default {
       toggleUserMenu,
       logout,
       form,
-      formFields,
+      nameFields,
+      otherFields,
+      validateNameField,
       togglePasswordVisibility,
       submit,
       closeSuccessMessage,
+      updateChart,
     };
   },
   methods: {

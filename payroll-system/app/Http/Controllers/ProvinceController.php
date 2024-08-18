@@ -1,5 +1,6 @@
 <?php
-use App\Http\Controllers\Controller;
+
+namespace App\Http\Controllers;
 
 use App\Models\Province;
 use Inertia\Inertia;
@@ -10,7 +11,7 @@ class ProvinceController extends Controller
     {
         $provinces = Province::all();
 
-        return Inertia::render('ProvinceIndex', [
+        return Inertia::render('User/MainDashboard', [
             'provinces' => $provinces,
         ]);
     }

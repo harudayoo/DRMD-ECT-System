@@ -20,10 +20,16 @@ class UserController extends Controller
 
         // Fetch users with the same adminID as the logged-in admin
         $users = User::where('adminID', $admin->id)
-            ->select('name', 'loginNum')
+            ->select('firstName', 'middleName', 'lastName', 'nameExt', 'loginNum')
             ->orderBy('loginNum', 'desc')
             ->take(10)
-            ->get();
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'name' => trim("{$user->firstName} {$user->middleName} {$user->lastName} {$user->nameExt}"),
+                    'loginNum' => $user->loginNum
+                ];
+            });
 
         // Debug: Log the number of users fetched
         \Log::info('Fetched ' . $users->count() . ' users for admin ID: ' . $admin->id);

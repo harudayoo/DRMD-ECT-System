@@ -23,13 +23,8 @@ const submit = () => {
     form.post(route("admin.login"), {
         preserveState: true,
         preserveScroll: true,
-        onSuccess: (page) => {
-            if (page.props.auth && page.props.auth.user) {
-                window.location.href = route("admin.dashboard");
-            } else {
-                loginError.value =
-                    "Login successful, but user session not established. Please try again.";
-            }
+        onSuccess: () => {
+            window.location.href = route("admin.dashboard");
         },
         onError: (errors) => {
             console.error("Login failed", errors);

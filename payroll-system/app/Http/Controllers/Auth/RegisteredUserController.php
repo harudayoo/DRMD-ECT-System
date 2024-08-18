@@ -24,7 +24,10 @@ class RegisteredUserController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'name' => 'required|string|max:255',
+                'firstName' => 'required|string|max:255',
+                'lastName' => 'required|string|max:255',
+                'middleName' => 'nullable|string|max:255',
+                'nameExt' => 'nullable|string|max:50',
                 'email' => 'required|string|email|max:255|unique:users',
                 'password' => ['required', 'confirmed', Rules\Password::defaults()],
             ]);
@@ -37,10 +40,13 @@ class RegisteredUserController extends Controller
             }
 
             $user = User::create([
-                'name' => $validatedData['name'],
+                'firstName' => $validatedData['firstName'],
+                'lastName' => $validatedData['lastName'],
+                'middleName' => $validatedData['middleName'],
+                'nameExt' => $validatedData['nameExt'],
                 'email' => $validatedData['email'],
                 'password' => Hash::make($validatedData['password']),
-                'adminID' => $adminID,  // Note the capital 'ID' here
+                'adminID' => $adminID,
             ]);
 
             Log::info('User created successfully', ['user_id' => $user->id, 'email' => $user->email, 'admin_id' => $adminID]);

@@ -29,8 +29,14 @@ class AdminAuthenticatedSessionController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
-        if (Auth::guard('admin')->attempt($request->only('email', 'password'))) {
+        if (Auth::guard('admin')->attempt($credentials)) {
             $request->session()->regenerate();
+
+            $admin = Auth::guard('admin')->user();
+
+            // Manually set the user ID in the session
+            $admin = Auth::guard('admin')->user();
+            $request->session()->put('admin_id', $admin->id);
 
             return redirect()->intended(route('admin.dashboard'));
         }
@@ -46,14 +52,33 @@ class AdminAuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request)
     {
-        \Log::info('Admin logout attempt', ['user' => Auth::guard('admin')->user()]);
+        \Log::info('Admin logout attempt', [
+            'user' => Auth::guard('admin')->user(),
+            'is_authenticated' => Auth::guard('admin')->check()
+        ]);
+
+        if (!Auth::guard('admin')->check()) {
+            \Log::warning('Logout attempted without authentication');
+            return response()->json(['message' => 'Not authenticated'], 401);
+        }
+
+        // Get the admin ID before logging out
+        $adminId = Auth::guard('admin')->id();
+
         Auth::guard('admin')->logout();
 
-        $request->session()->invalidate();
+        // Clear the admin_id from the session manually
+        $request->session()->forget('admin_id');
 
+        $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.login');
+        \Log::info('Admin logged out successfully', ['user_id' => $adminId]);
+
+        return response()->json(['message' => 'Logged out successfully']);
     }
+
+
+
 
 }

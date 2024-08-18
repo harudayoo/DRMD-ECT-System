@@ -17,7 +17,10 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'firstName',
+        'lastName',
+        'middleName',
+        'nameExt',
         'email',
         'password',
         'adminID',
@@ -27,7 +30,6 @@ class User extends Authenticatable
         'otp_expires_at',
         'otp_verified_at',
     ];
-
     /**
      * The attributes that should be hidden for serialization.
      *
