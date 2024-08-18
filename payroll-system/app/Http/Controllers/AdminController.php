@@ -15,7 +15,9 @@ class AdminController extends Controller
         $verified = Hash::check($request->password, $admin->password);
 
         if ($verified) {
-            $users = User::where('adminID', $admin->id)->select('id', 'name', 'email')->get();
+            $users = User::where('adminID', $admin->id)
+                ->select('id', 'firstName', 'lastName', 'middleName', 'nameExt', 'email')
+                ->get();
             return Inertia::render('Admin/Update', [
                 'verified' => true,
                 'users' => $users
@@ -44,7 +46,6 @@ class AdminController extends Controller
             return redirect()->route('admin.users')->with('error', 'Unauthorized action');
         }
         return Inertia::render('Admin/EditUser', ['user' => $user]);
-
     }
 
     public function updateUser(Request $request, $id)
@@ -54,7 +55,10 @@ class AdminController extends Controller
             return redirect()->route('admin.users')->with('error', 'Unauthorized action');
         }
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'firstName' => 'required|string|max:255',
+            'lastName' => 'required|string|max:255',
+            'middleName' => 'nullable|string|max:255',
+            'nameExt' => 'nullable|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
         ]);
 

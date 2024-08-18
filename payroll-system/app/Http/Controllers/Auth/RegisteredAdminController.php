@@ -42,6 +42,7 @@ class RegisteredAdminController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role_number' => 2,
         ]);
 
         // Fire the Registered event

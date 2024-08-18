@@ -47,6 +47,7 @@ class RegisteredUserController extends Controller
                 'email' => $validatedData['email'],
                 'password' => Hash::make($validatedData['password']),
                 'adminID' => $adminID,
+                'role_number' => 1, // Add role_number field with value 1
             ]);
 
             Log::info('User created successfully', ['user_id' => $user->id, 'email' => $user->email, 'admin_id' => $adminID]);

@@ -29,6 +29,7 @@ class User extends Authenticatable
         'otp',
         'otp_expires_at',
         'otp_verified_at',
+        'role_number',
     ];
     /**
      * The attributes that should be hidden for serialization.
@@ -52,4 +53,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    /**public function updateLoginInfo()
+    {
+        $now = Carbon::now();
+        if ($this->last_login_reset === null || $now->diffInDays($this->last_login_reset) >= 30) {
+            $this->loginNum = 1;
+            $this->last_login_reset = $now;
+        } else {
+            $this->loginNum++;
+        }
+        $this->save();
+    }
+        */
 }

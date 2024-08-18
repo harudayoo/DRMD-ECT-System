@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -20,7 +21,7 @@ class OtpController extends Controller
 
     public function send(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser();
 
         if (!Session::has('otp_sent') || Session::get('otp_expires_at') < now()) {
             $this->generateAndSendOtp($user);
@@ -52,7 +53,7 @@ class OtpController extends Controller
             ]);
         }
 
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser();
 
         if ($this->verifyOtpLogic($user, $otp)) {
             $user->otp_verified_at = now();
@@ -61,16 +62,17 @@ class OtpController extends Controller
             Session::forget('otp_sent');
             Session::forget('otp_expires_at');
 
-            return redirect()->route('user.dashboard')->with('message', 'OTP verified successfully');
+            return $this->redirectToDashboard($user);
         } else {
             return back()->withErrors([
                 'otp' => 'Invalid OTP. Please try again.'
             ]);
         }
     }
+
     public function resend()
     {
-        $user = Auth::user();
+        $user = $this->getAuthenticatedUser();
 
         if ($this->hasRecentOtp($user)) {
             return response()->json([
@@ -97,7 +99,7 @@ class OtpController extends Controller
         }
     }
 
-    private function generateAndSendOtp(User $user)
+    private function generateAndSendOtp($user)
     {
         $otp = sprintf('%06d', mt_rand(0, 999999));
         $user->otp = $otp;
@@ -107,13 +109,35 @@ class OtpController extends Controller
         Mail::to($user->email)->send(new OtpMail($otp));
     }
 
-    private function verifyOtpLogic(User $user, $otp)
+    private function verifyOtpLogic($user, $otp)
     {
         return $user->otp === $otp && $user->otp_expires_at > now();
     }
 
-    private function hasRecentOtp(User $user)
+    private function hasRecentOtp($user)
     {
         return Session::has('otp_expires_at') && Session::get('otp_expires_at') > now();
+    }
+
+    private function getAuthenticatedUser()
+    {
+        if (Auth::guard('web')->check()) {
+            return Auth::guard('web')->user();
+        } elseif (Auth::guard('admin')->check()) {
+            return Auth::guard('admin')->user();
+        }
+
+        throw new \Exception('No authenticated user found');
+    }
+
+    private function redirectToDashboard($user)
+    {
+        if ($user instanceof User && $user->role_number == 1) {
+            return redirect()->route('user.dashboard')->with('message', 'OTP verified successfully');
+        } elseif ($user instanceof Admin || ($user instanceof User && $user->role_number == 2)) {
+            return redirect()->route('admin.dashboard')->with('message', 'OTP verified successfully');
+        }
+
+        throw new \Exception('Invalid user type');
     }
 }

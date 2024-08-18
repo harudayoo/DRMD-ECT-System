@@ -28,24 +28,31 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request)
     {
-        $request->authenticate();
+        $credentials = $request->only('email', 'password');
+
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $this->updateLoginInfo($user);
+        } elseif (Auth::guard('admin')->attempt($credentials)) {
+            $user = Auth::guard('admin')->user();
+            Auth::login($user); // Log in the admin as a regular user
+            // We don't update login info for admins
+        } else {
+            return back()->withErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ]);
+        }
 
         $request->session()->regenerate();
 
-        $user = Auth::user();
-        $now = Carbon::now();
-
-        // Check if last login reset was more than a month ago
-        if ($user->last_login_reset === null || $now->diffInDays($user->last_login_reset) >= 30) {
-            $user->loginNum = 1;
-            $user->last_login_reset = $now;
-        } else {
-            $user->loginNum++;
-        }
-
-        $user->save();
-
         return redirect()->route('otp.show');
+    }
+
+    private function updateLoginInfo($user)
+    {
+        if (method_exists($user, 'updateLoginInfo')) {
+            $user->updateLoginInfo();
+        }
     }
     /**
      * Destroy an authenticated session.

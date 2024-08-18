@@ -15,26 +15,22 @@ use App\Http\Controllers\OtpController;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
-    Route::get('/', function () {
-        return Inertia::render('User/Login', [
-            'canLogin' => Route::has('user.dashboard'),
-        ]);
-    })->name('login');
+    Route::get('/', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+});
 
-    Route::get('/admin', function () {
-        return Inertia::render('Admin/AdminLogin', [
-            'canLogin' => Route::has('admin.dashboard'),
-            'canRegister' => Route::has('admin.register'),
-        ]);
-    })->name('admin.login');
+// OTP routes (should be accessible after login but before full authentication)
+Route::middleware(['auth:web,admin'])->group(function () {
+    Route::get('/otp', [OtpController::class, 'show'])->name('otp.show');
+    Route::post('/send-otp', [OtpController::class, 'send'])->name('otp.send');
+    Route::post('/verify-otp', [OtpController::class, 'verify'])->name('otp.verify');
+    Route::post('/resend-otp', [OtpController::class, 'resend'])->name('otp.resend');
 });
 
 // User routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth:web', 'verified'])->group(function () {
     Route::get('/main', [ProvinceController::class, 'index'])->name('user.dashboard');
-    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-        ->name('logout');
-
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     // Profile routes
     Route::prefix('profile')->group(function () {
@@ -48,24 +44,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 // Admin routes
-Route::middleware(['web', 'auth:admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth:admin', 'verified'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
-    Route::get('/dashboard', [UserController::class, 'dashboard'])->name('admin.dashboard');
-    Route::post('/logout', [AdminAuthenticatedSessionController::class, 'destroy'])
-        ->name('admin.logout');
-    Route::get('/check', function () {
-        return response()->json(['authenticated' => Auth::guard('admin')->check()]);
-    })->name('admin.check');
-    Route::get('/update', function () {
-        return Inertia::render('Admin/Update');
-    })->name('admin.update');
+    Route::get('/dashboard', [AdminDashboardController::class, 'dashboardChart'])->name('admin.dashboard');
+    Route::post('/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
+
+
+    Route::get('/update', [AdminController::class, 'showUpdatePage'])->name('admin.update');
     Route::get('/request', function () {
         return Inertia::render('Admin/Request');
     })->name('admin.request');
 
     // User management routes
-    Route::post('/verify-password', [AdminController::class, 'verifyPassword']);
-    Route::get('/users', [AdminController::class, 'ge tUsers'])->name('admin.users');
+    Route::post('/verify-password', [AdminController::class, 'verifyPassword'])->name('admin.verify-password');
+    Route::get('/users', [AdminController::class, 'getUsers'])->name('admin.users');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
     Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
@@ -75,15 +67,6 @@ Route::middleware(['web', 'auth:admin'])->prefix('admin')->group(function () {
 Route::post('/register', [RegisteredUserController::class, 'store'])
     ->middleware('auth:admin')
     ->name('register');
-
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('/otp', [OtpController::class, 'show'])->name('otp.show');
-    Route::post('/send-otp', [OtpController::class, 'send'])->name('otp.send');
-    Route::post('/verify-otp', [OtpController::class, 'verify'])->name('otp.verify');
-    Route::post('/resend-otp', [OtpController::class, 'resend'])->name('otp.resend');
-});
-
 
 // Include authentication routes
 require __DIR__ . '/auth.php';

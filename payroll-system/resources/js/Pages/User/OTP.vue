@@ -128,12 +128,12 @@ const verifyOtp = () => {
         return;
     }
 
-    const otpString = form.otp.join(""); // Convert the OTP array to a string
+    const otpString = form.otp.join("");
 
     form.post(route("otp.verify"), {
         preserveState: true,
         preserveScroll: true,
-        data: { otp: otpString }, // Send OTP as a string
+        data: { otp: otpString },
         onSuccess: (response) => {
             if (response?.props?.flash?.message) {
                 setNotificationMessage(response.props.flash.message);
@@ -143,7 +143,8 @@ const verifyOtp = () => {
                 );
             }
             setTimeout(() => {
-                router.visit(route("user.dashboard"));
+                // The backend will handle the redirection to the appropriate dashboard
+                window.location.href = response.props.redirectTo;
             }, 1500);
         },
         onError: (errors) => {
