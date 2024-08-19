@@ -11,10 +11,13 @@ class AdminDashboardController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Dashboard');
+
+        \Log::info('Admin dashboard accessed');
     }
 
     public function dashboardChart()
     {
+        \Log::info('Admin accessing dashboard', ['user' => auth()->user()]);
         // Get the currently logged in admin
         $admin = Auth::guard('admin')->user();
 

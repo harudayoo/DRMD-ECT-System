@@ -51,7 +51,14 @@ class AuthenticatedSessionController extends Controller
     private function updateLoginInfo($user)
     {
         if (method_exists($user, 'updateLoginInfo')) {
-            $user->updateLoginInfo();
+            $now = Carbon::now();
+            if ($this->last_login_reset === null || $now->diffInDays($this->last_login_reset) >= 30) {
+                $this->loginNum = 1;
+                $this->last_login_reset = $now;
+            } else {
+                $this->loginNum++;
+            }
+            $this->save();
         }
     }
     /**
@@ -67,4 +74,5 @@ class AuthenticatedSessionController extends Controller
 
         return response()->json(['message' => 'Logged out successfully']);
     }
+
 }
