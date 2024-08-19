@@ -7,8 +7,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\AdminAuthenticatedSessionController;
-use App\Http\Controllers\UserController;
 use Inertia\Inertia;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\OtpController;
@@ -47,7 +45,7 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
 Route::middleware(['auth:admin', 'verified'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard', [AdminDashboardController::class, 'dashboardChart'])->name('admin.dashboard');
-    Route::post('/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
 
 
     Route::get('/update', [AdminController::class, 'showUpdatePage'])->name('admin.update');
@@ -61,6 +59,7 @@ Route::middleware(['auth:admin', 'verified'])->prefix('admin')->group(function (
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
     Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+    Route::get('/admin/update', [AdminController::class, 'showUpdatePage'])->name('admin.update');
 });
 
 // Registration route

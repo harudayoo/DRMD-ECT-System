@@ -132,13 +132,18 @@ class OtpController extends Controller
 
     private function redirectToDashboard($user)
     {
-        if ($user instanceof User && $user->role_number == 1) {
-            return redirect()->route('user.dashboard')->with('message', 'OTP verified successfully');
-        } elseif ($user instanceof Admin || ($user instanceof User && $user->role_number == 2)) {
-            return redirect()->route('admin.dashboard')->with('message', 'OTP verified successfully');
+        if ($user instanceof User) {
+            if ($user->role_number == 1) {
+                return redirect()->route('user.dashboard')->with('message', 'OTP verified successfully');
+            }
+            if ($user->role_number == 2) {
+                return redirect()->route('admin.dashboard')->with('message', 'OTP verified successfully');
+            }
         }
 
-        throw new \Exception('Invalid user type');
+        // If we reach here, it means we couldn't determine the correct dashboard
+        Log::error('Unable to determine dashboard for user: ' . $user->id);
+        return redirect()->route('login')->with('error', 'Unable to access dashboard. Please contact support.');
     }
 }
 

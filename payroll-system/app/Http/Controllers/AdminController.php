@@ -9,6 +9,11 @@ use Inertia\Inertia;
 
 class AdminController extends Controller
 {
+
+    public function showUpdatePage()
+    {
+        return Inertia::render('Admin/Update');
+    }
     public function verifyPassword(Request $request)
     {
         $admin = auth()->user();
