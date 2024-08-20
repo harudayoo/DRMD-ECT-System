@@ -134,10 +134,10 @@ class OtpController extends Controller
     {
         if ($user instanceof User) {
             if ($user->role_number == 1) {
-                return redirect()->route('user.dashboard')->with('message', 'OTP verified successfully');
+                return redirect()->intended(route('user.dashboard'))->with('message', 'OTP verified successfully');
             }
             if ($user->role_number == 2) {
-                return redirect()->route('admin.dashboard')->with('message', 'OTP verified successfully');
+                return redirect()->intended(route('admin.dashboard'))->with('message', 'OTP verified successfully');
             }
         }
 
