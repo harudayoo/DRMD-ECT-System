@@ -15,11 +15,11 @@
             class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-opacity-30 bg-white backdrop-blur-2xl p-6 rounded-3xl shadow-lg w-3/12 h-2/4"
         >
             <img
-                src="/icons/logo.png"
+                src="/icons/logo.jpg"
                 alt="form-bg"
                 class="mx-auto w-full -mt-2"
             />
-            <p class="text-center mt-2 text-base">
+            <p class="text-center mt-2 text-base font-medium">
                 Please enter the 6-digit authentication code we sent to your
                 email address.
             </p>
@@ -51,13 +51,13 @@
                         @keydown.backspace="focusPreviousInput(index)"
                     />
                 </div>
-                <div class="flex gap-4 mt-3">
+                <div class="flex gap-4 mt-5">
                     <button
                         type="submit"
                         class="w-1/2 bg-blue-400 text-black font-black content-center py-1 rounded-full hover:bg-blue-900 hover:text-white transition duration-300 ease-in-out focus:outline-none text-lg mx-auto block"
                         :disabled="form.processing || !isValidOtp"
                         :class="{
-                            'opacity-50 cursor-not-allowed':
+                            'cursor-not-allowed':
                                 form.processing || !isValidOtp,
                         }"
                     >
@@ -70,12 +70,13 @@
                     >
                         Cancel
                     </button>
-                    <div class="flex gap-4 mt-3"></div>
-                    <!-- Resend OTP Button -->
+                </div>
+                <!-- Resend OTP Button -->
+                <div class="mt-3 text-center">
                     <button
                         :disabled="isResending || form.processing || hasResent"
                         @click.prevent="resendOtp"
-                        class="text-white text-base font-bold mt-2 block text-center underline hover:text-blue-700"
+                        class="text-white text-base font-bold underline hover:text-blue-700"
                         :class="{
                             'opacity-50 cursor-not-allowed':
                                 isResending || form.processing || hasResent,
@@ -86,6 +87,83 @@
                 </div>
             </form>
         </div>
+
+        <!-- Modal for OTP sent successfully notification -->
+        <transition name="fade">
+            <div
+                v-if="showSuccessModal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            >
+                <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                    <div class="text-green-500 mb-4">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-16 w-16 mx-auto"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <circle cx="12" cy="12" r="10" stroke-width="2" />
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12l2 2 4-4"
+                            />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold mb-4">An OTP Has Been Sent</h2>
+                    <p class="mb-4 font-medium">
+                        Your one-time password has been <br />
+                        successfully sent.
+                    </p>
+                    <button
+                        @click="closeSuccessModal"
+                        class="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                        Thank You
+                    </button>
+                </div>
+            </div>
+        </transition>
+
+        <!-- Modal for 'OTP already sent' notification -->
+        <transition name="fade">
+            <div
+                v-if="showWarningModal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            >
+                <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                    <div class="text-yellow-500 mb-4">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-16 w-16 mx-auto"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold mb-4">OTP Already Sent</h2>
+                    <p class="mb-4 font-medium">
+                        An OTP was already sent recently.<br />
+                        Pleas wait before requesting a new one.
+                    </p>
+                    <button
+                        @click="closeWarningModal"
+                        class="mt-4 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </transition>
     </div>
 </template>
 
@@ -105,6 +183,8 @@ const errorMessage = ref("");
 const notificationMessage = ref("");
 const hasResent = ref(false);
 const resendCountdown = ref(30);
+const showSuccessModal = ref(false);
+const showWarningModal = ref(false);
 
 const otpDigits = computed(() => form.otp);
 
@@ -187,11 +267,15 @@ const sendOtp = async () => {
 
     try {
         const response = await axios.post(route("otp.send"));
-        notificationMessage.value = response.data.message;
+        showSuccessModal.value = true;
     } catch (error) {
-        errorMessage.value =
-            error.response?.data?.error ||
-            "Failed to send OTP. Please try again.";
+        if (error.response?.status === 429) {
+            showWarningModal.value = true;
+        } else {
+            errorMessage.value =
+                error.response?.data?.error ||
+                "Failed to send OTP. Please try again.";
+        }
     } finally {
         isSending.value = false;
     }
@@ -210,16 +294,20 @@ const resendOtp = () => {
         .post(route("otp.resend"))
         .then((response) => {
             if (response.data.success) {
-                notificationMessage.value = response.data.message;
+                showSuccessModal.value = true;
                 startResendCountdown();
             } else {
-                errorMessage.value = response.data.message;
+                showWarningModal.value = true;
             }
         })
         .catch((error) => {
-            errorMessage.value =
-                error.response?.data?.message ||
-                "Failed to resend OTP. Please try again.";
+            if (error.response?.status === 429) {
+                showWarningModal.value = true;
+            } else {
+                errorMessage.value =
+                    error.response?.data?.message ||
+                    "Failed to resend OTP. Please try again.";
+            }
         })
         .finally(() => {
             isResending.value = false;
@@ -275,19 +363,16 @@ const focusPreviousInput = (index) => {
     }
 };
 
+const closeSuccessModal = () => {
+    showSuccessModal.value = false;
+};
+
+const closeWarningModal = () => {
+    showWarningModal.value = false;
+};
+
 onMounted(() => {
     hasResent.value = false;
     sendOtp(); // Send OTP when the component is mounted
 });
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-    transition: opacity 0.5s;
-}
-.fade-enter,
-.fade-leave-to {
-    opacity: 0;
-}
-</style>

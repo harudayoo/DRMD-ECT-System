@@ -3,34 +3,15 @@
     <div class="h-screen flex flex-col overflow-hidden bg-white">
         <!-- Top bar -->
         <nav
-            class="bg-red-700 shadow-2xl flex items-center justify-between px-4 py-2"
+            class="bg-red-700 shadow-2xl flex items-center justify-end px-4 py-1"
         >
-            <button
-                @click="toggleMenu"
-                class="text-white focus:outline-none hover:text-blue-700 transition-colors duration-200"
-            >
-                <svg
-                    class="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2.5"
-                        d="M4 6h16M4 12h16M4 18h16"
-                    ></path>
-                </svg>
-            </button>
             <div class="relative">
                 <button
                     @click="toggleUserMenu"
-                    class="text-white focus:outline-none hover:text-blue-700 transition-colors duration-200"
+                    class="text-white focus:outline-none mt-1 hover:text-blue-700 transition-colors duration-200"
                 >
                     <svg
-                        class="w-7 h-7 -mb-2"
+                        class="w-6 h-6"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -40,7 +21,7 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             stroke-width="2"
-                            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
                         ></path>
                     </svg>
                 </button>
@@ -396,7 +377,7 @@ export default {
             },
             {
                 id: "extension",
-                label: "Name Extension",
+                label: "Ext. Name",
                 type: "text",
                 placeholder: "Jr./Sr.",
                 error: "",

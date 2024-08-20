@@ -1,8 +1,3 @@
-<script setup lang="ts">
-import ApplicationLogo from "@/Components/ApplicationLogo.vue";
-import { Link } from "@inertiajs/vue3";
-</script>
-
 <template>
     <div
         class="relative flex-grow flex items-center justify-center overflow-hidden min-h-screen"
@@ -10,7 +5,7 @@ import { Link } from "@inertiajs/vue3";
         <img
             id="background"
             class="absolute inset-0 w-full h-screen bg-cover"
-            src="icons/login.png"
+            :src="'/icons/login.png'"
         />
         <div
             class="absolute inset-0 bg-gradient-to-tr from-yellow-600 to-blue-700 mix-blend-overlay"
@@ -20,5 +15,10 @@ import { Link } from "@inertiajs/vue3";
         >
             <slot />
         </div>
+        <footer
+            class="w-full text-center text-sm text-white/70 py-2 absolute bottom-0 bg-gradient-to-r from-indigo-900 ..."
+        >
+            Disaster Response and Management Division - 2024
+        </footer>
     </div>
 </template>

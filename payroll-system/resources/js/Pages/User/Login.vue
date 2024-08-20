@@ -80,24 +80,24 @@ const closeConfirmation = () => {
 </script>
 <template>
     <div class="relative w-screen h-screen overflow-hidden">
-        <!-- Gradient background -->
-        <div
-            class="absolute inset-0 bg-gradient-to-tr from-yellow-600 to-blue-700 mix-blend-overlay"
-        ></div>
         <!-- Background image -->
         <img
             src="/icons/login.png"
             alt="login-image"
-            class="w-full h-full object-cover"
+            class="absolute inset-0 w-full h-screen bg-cover"
         />
+        <!-- Gradient background -->
+        <div
+            class="absolute inset-0 bg-gradient-to-tr from-yellow-600 to-blue-700 mix-blend-overlay"
+        ></div>
         <!-- Login box -->
         <div
             class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-opacity-30 bg-white backdrop-blur-2xl p-6 rounded-3xl shadow-lg w-[25%] flex flex-col items-center justify-center"
         >
             <img
-                src="/icons/logo.png"
+                src="/icons/logo.jpg"
                 alt="form-bg"
-                class="mx-auto w-full -mt-2"
+                class="mx-auto w-full -mt-1"
             />
             <form @submit.prevent="submit" class="w-full max-w-md">
                 <div class="mb-4 mt-6 text-white">
@@ -214,7 +214,7 @@ const closeConfirmation = () => {
                     @click.prevent="openNotificationForm"
                     class="text-white px-2 text-sm font-thin mt-2 underline hover:text-blue-700"
                 >
-                    Register User
+                    User Request
                 </a>
                 <a
                     :href="route('password.request')"
@@ -226,49 +226,66 @@ const closeConfirmation = () => {
                 :href="route('admin.register')"
                 class="text-white text-sm font-thin mt-1 block text-center underline hover:text-blue-700"
             >
-                Admin Register
+                Register Admin
             </a>
         </div>
 
-        <!-- Registration Pop-up Notification -->
+        <!-- Request Pop-up Notification -->
         <div
             v-if="showNotificationForm"
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
         >
-            <div
-                class="bg-white backdrop-blur-sm bg-opacity-80 p-6 rounded-lg shadow-lg w-96"
-            >
-                <h2 class="text-xl font-bold mb-4 text-center text-gray-800">
+            <div class="bg-stone-200 p-8 rounded-2xl shadow-2xl w-96 max-w-md">
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">
                     User Registration Request
                 </h2>
                 <form @submit.prevent="sendRequest">
-                    <div class="mb-4">
+                    <div class="mb-6 relative">
                         <label
                             for="email"
-                            class="block text-gray-700 ml-.5 text-base font-bold"
+                            class="block text-gray-700 text-base font-semibold mb-1"
                         >
                             Email Address
                         </label>
-                        <input
-                            type="email"
-                            id="email"
-                            v-model="email"
-                            required
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                            placeholder="Enter your email"
-                        />
+                        <div class="relative">
+                            <input
+                                type="email"
+                                id="email"
+                                v-model="email"
+                                required
+                                class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                                placeholder="Enter your email"
+                            />
+                            <span
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-6 w-6"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"
+                                    />
+                                    <path
+                                        d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"
+                                    />
+                                </svg>
+                            </span>
+                        </div>
                     </div>
-                    <div class="flex justify-end">
+                    <div class="flex justify-end space-x-4">
                         <button
                             @click="cancelRequest"
                             type="button"
-                            class="bg-gray-300 mr-4 text-gray-700 px-4 py-2 rounded-xl hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            class="px-6 py-2 rounded-lg text-white bg-gray-400 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition duration-200"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            class="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="px-6 py-2 rounded-lg text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
                         >
                             Send
                         </button>
