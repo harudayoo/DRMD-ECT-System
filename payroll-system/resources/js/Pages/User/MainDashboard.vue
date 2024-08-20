@@ -2,7 +2,7 @@
     <div class="h-screen flex flex-col overflow-hidden">
         <!-- Top bar -->
         <nav
-            class="bg-sky-900 shadow-2xl flex items-center justify-between px-4 py-1"
+            class="bg-sky-900 shadow-2xl flex items-center justify-between px-4 py-.5"
         >
             <!-- Menu Toggle Button -->
             <button
@@ -272,179 +272,271 @@
             <!-- Chart and Statistics -->
             <div class="flex-1 flex flex-col overflow-hidden">
                 <!-- Main Bar Chart -->
-                <div class="flex-1 flex justify-center items-center -mt-24">
-                    <div style="width: 80%; height: 65%">
+                <div class="flex-1 flex justify-center items-center -mt-16">
+                    <div style="width: 80%; height: 70%">
                         <canvas id="myChart"></canvas>
                     </div>
                 </div>
 
                 <!-- Statistics and Table -->
-                <div class="flex h-2/6 mx-4 mb-4 -mt-4">
+                <div class="flex mx-4 mb-4 h-2/6">
                     <!-- Statistics -->
-                    <div class="text-black text-xl -mt-4 ml-20">
-                        <div class="font-semibold">
-                            Total: <span class="font-black">165</span>
+                    <div
+                        class="text-black shadow-2xl -mt-14 text-lg rounded-xl w-1/4 p-2"
+                    >
+                        <h2
+                            class="bg-rose-600 text-white py-1 rounded-xl font-medium text-center mb-2"
+                        >
+                            Status Analytics
+                        </h2>
+                        <div
+                            class="flex justify-between items-center font-medium py-1 px-2 border-t border-white"
+                        >
+                            <span>Claimed:</span>
+                            <span class="font-medium">{{
+                                totalProvinces
+                            }}</span>
                         </div>
-                        <div class="font-semibold">
-                            Pending: <span class="font-black">120</span>
+                        <div
+                            class="flex justify-between items-center font-medium py-1 px-2 border-t border-white"
+                        >
+                            <span>Unclaimed:</span>
+                            <span class="font-medium">{{
+                                totalBeneficiaries
+                            }}</span>
                         </div>
-                        <div class="font-semibold">
-                            Approved: <span class="font-black">40</span>
+                        <div
+                            class="flex justify-between items-center font-medium py-1 px-2 border-t border-b border-white"
+                        >
+                            <span>Disqualified:</span>
+                            <span class="font-medium">{{
+                                totalAmountReleased
+                            }}</span>
                         </div>
-                        <div class="font-semibold">
-                            Disapproved: <span class="font-black">5</span>
+                        <div
+                            class="flex justify-between items-center font-medium py-1 px-2 border-t border-b border-white"
+                        >
+                            <span>Duplicates:</span>
+                            <span class="font-medium">{{
+                                totalAmountReleased
+                            }}</span>
                         </div>
                     </div>
 
                     <!-- Table -->
-                    <div class="overflow-x-auto rounded-xl -mt-14 ml-14 w-3/4">
-                        <table class="min-w-full bg-gray-100">
+                    <div
+                        class="flex-1 border shadow-2xl rounded-xl p-2 -mt-14 ml-2 flex flex-col"
+                    >
+                        <table class="w-full divide-y divide-gray-200">
                             <thead>
                                 <tr>
                                     <th
-                                        class="py-2 px-4 bg-stone-300 text-left"
+                                        class="px-2 py-1 text-lg font-medium text-black uppercase tracking-wider bg-stone-100 w-1/3 text-left rounded-tl-xl"
                                     >
                                         Province Name
                                     </th>
                                     <th
-                                        class="py-2 px-4 bg-stone-300 text-left"
+                                        class="px-2 py-1 text-lg font-medium text-black uppercase tracking-wider bg-stone-100 w-1/3 text-center"
                                     >
                                         Total Beneficiaries
                                     </th>
                                     <th
-                                        class="py-2 px-4 bg-stone-300 text-left"
+                                        class="px-2 py-1 text-lg font-medium text-black uppercase tracking-wider bg-stone-100 w-1/3 text-right rounded-tr-xl"
                                     >
                                         Total Amount Released
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr
-                                    v-for="province in provinces"
-                                    :key="province.provinceID"
-                                    @click="
-                                        goToMunicipalities(province.provinceID)
-                                    "
-                                    class="border-t border-b border-gray-300 cursor-pointer hover:bg-gray-200"
-                                >
-                                    <td class="py-2 px-4">
-                                        {{ province.provinceName }}
-                                    </td>
-                                    <td class="py-2 px-4">
-                                        {{ province.totalBeneficiaries }}
-                                    </td>
-                                    <td class="py-2 px-4">
-                                        ₱{{
-                                            parseFloat(
-                                                province.totalAmountReleased
-                                            ).toFixed(2)
-                                        }}
-                                    </td>
-                                </tr>
-                            </tbody>
                         </table>
+                        <div
+                            class="overflow-y-auto flex-grow"
+                            style="max-height: 180px"
+                        >
+                            <table class="w-full divide-y divide-gray-200">
+                                <tbody
+                                    class="bg-white divide-y text-lg font-medium divide-gray-200"
+                                >
+                                    <tr
+                                        v-for="province in provinces"
+                                        :key="province.provinceID"
+                                        @click="
+                                            goToMunicipalities(
+                                                province.provinceID
+                                            )
+                                        "
+                                        class="cursor-pointer hover:bg-gray-200"
+                                    >
+                                        <td
+                                            class="px-2 py-1 whitespace-nowrap w-1/3"
+                                        >
+                                            <div
+                                                class="flex justify-between items-center"
+                                            >
+                                                <span
+                                                    class="truncate mr-2"
+                                                    style="
+                                                        max-width: calc(
+                                                            100% - 24px
+                                                        );
+                                                    "
+                                                >
+                                                    {{ province.provinceName }}
+                                                </span>
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-5 w-5 text-black hover:text-gray-300 flex-shrink-0"
+                                                    viewBox="0 0 20 20"
+                                                    fill="currentColor"
+                                                >
+                                                    <path
+                                                        fill-rule="evenodd"
+                                                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                                        clip-rule="evenodd"
+                                                    />
+                                                </svg>
+                                            </div>
+                                        </td>
+                                        <td
+                                            class="px-2 py-1 whitespace-nowrap w-1/3 text-center"
+                                        >
+                                            {{ province.totalBeneficiaries }}
+                                        </td>
+                                        <td
+                                            class="px-2 py-1 whitespace-nowrap w-1/3 text-right"
+                                        >
+                                            ₱{{
+                                                parseFloat(
+                                                    province.totalAmountReleased
+                                                ).toFixed(2)
+                                            }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div
+                            class="w-1/4 flex justify-between items-center px-2 py-1"
+                        >
+                            <span class="text-xl font-black">Total</span>
+                            <span class="text-xl font-bold">{{
+                                totalAmount
+                            }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </template>
-<script>
-import { Link } from "@inertiajs/vue3";
-import { ref, onMounted } from "vue";
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from "vue";
 import Chart from "chart.js/auto";
 import axios from "axios";
 
-export default {
-    components: {
-        Link,
-    },
-    props: {
-        provinces: Array,
-    },
-    setup(props) {
-        const tableData = ref([
-            // Add more data here as needed
-        ]);
+// Props
+const props = defineProps({
+    provinces: Array,
+});
 
-        const goToMunicipalities = (provinceID) => {
-            window.location.href = `/municipalities/${provinceID}`;
-        };
+// Menu logic
+const isMenuOpen = ref(false);
+const isUserMenuOpen = ref(false);
+const openSubMenu = ref<string | null>(null);
 
-        const isMenuOpen = ref(false);
-        const isUserMenuOpen = ref(false);
-        const openSubMenu = ref(null);
-
-        const toggleMenu = () => {
-            isMenuOpen.value = !isMenuOpen.value;
-        };
-
-        const toggleUserMenu = () => {
-            isUserMenuOpen.value = !isUserMenuOpen.value;
-        };
-
-        const toggleSubMenu = (menuName) => {
-            openSubMenu.value =
-                openSubMenu.value === menuName ? null : menuName;
-        };
-
-        const logout = async () => {
-            try {
-                // Send a POST request to the logout route
-                await axios.post(route("logout"));
-
-                // If successful, redirect to the login page
-                window.location.href = route("login");
-            } catch (error) {
-                console.error("Logout failed:", error);
-                // Handle the error (e.g., show an error message to the user)
-            }
-        };
-
-        onMounted(() => {
-            const ctx = document.getElementById("myChart");
-            if (ctx) {
-                new Chart(ctx, {
-                    type: "bar",
-                    data: {
-                        labels: [
-                            "January",
-                            "February",
-                            "March",
-                            "April",
-                            "May",
-                            "June",
-                        ],
-                        datasets: [
-                            {
-                                label: "Monthly Data",
-                                data: [10, 20, 30, 40, 50, 60],
-                                backgroundColor: "#f87979",
-                            },
-                        ],
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                    },
-                });
-            }
-        });
-
-        return {
-            tableData,
-            isMenuOpen,
-            isUserMenuOpen,
-            openSubMenu,
-            toggleMenu,
-            toggleUserMenu,
-            toggleSubMenu,
-            logout,
-            provinces: props.provinces,
-            goToMunicipalities,
-        };
-    },
+const toggleMenu = () => {
+    isMenuOpen.value = !isMenuOpen.value;
 };
+
+const toggleUserMenu = () => {
+    isUserMenuOpen.value = !isUserMenuOpen.value;
+};
+
+const toggleSubMenu = (menu: string) => {
+    if (openSubMenu.value === menu) {
+        openSubMenu.value = null;
+    } else {
+        openSubMenu.value = menu;
+    }
+};
+
+const logout = async () => {
+    try {
+        await axios.post(route("logout"));
+        window.location.href = route("login");
+    } catch (error) {
+        console.error("Logout failed:", error);
+    }
+};
+
+const goToMunicipalities = (provinceID: number) => {
+    window.location.href = `/municipalities/${provinceID}`;
+};
+// Computed properties
+const totalProvinces = computed(() => props.provinces.length);
+const totalBeneficiaries = computed(() =>
+    props.provinces.reduce(
+        (sum, province) => sum + province.totalBeneficiaries,
+        0
+    )
+);
+const totalAmountReleased = computed(() =>
+    props.provinces
+        .reduce(
+            (sum, province) => sum + parseFloat(province.totalAmountReleased),
+            0
+        )
+        .toFixed(2)
+);
+
+const totalAmount = computed(() => {
+    return props.provinces
+        .reduce(
+            (sum, province) => sum + parseFloat(province.totalAmountReleased),
+            0
+        )
+        .toLocaleString("en-PH", { style: "currency", currency: "PHP" });
+});
+
+// Chart
+onMounted(() => {
+    const ctx = document.getElementById("myChart") as HTMLCanvasElement;
+    if (ctx) {
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: props.provinces.map(
+                    (province) => province.provinceName
+                ),
+                datasets: [
+                    {
+                        label: "Number of Beneficiaries",
+                        backgroundColor: "rgb(59, 68, 122)",
+                        data: props.provinces.map(
+                            (province) => province.totalBeneficiaries
+                        ),
+                    },
+                    {
+                        label: "Amount Released",
+                        backgroundColor: "rgb(166, 170, 238)",
+                        data: props.provinces.map((province) =>
+                            parseFloat(province.totalAmountReleased)
+                        ),
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                    },
+                },
+            },
+        });
+    }
+});
 </script>
 
 <style scoped>
@@ -452,5 +544,22 @@ export default {
 
 .font-inter {
     font-family: "Inter", sans-serif;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #000000;
+    border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #000000;
 }
 </style>
