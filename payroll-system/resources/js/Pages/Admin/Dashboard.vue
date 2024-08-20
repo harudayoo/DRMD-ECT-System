@@ -293,7 +293,6 @@
         </div>
     </div>
 </template>
-
 <script>
 import { ref, onMounted } from "vue";
 import Chart from "chart.js/auto";
@@ -312,7 +311,8 @@ export default {
             default: () => [],
         },
     },
-    setup(props) {
+    emits: ["userCreated"],
+    setup(props, { emit }) {
         const isMenuOpen = ref(false);
         const isUserMenuOpen = ref(false);
         const showCreateUserForm = ref(false);
@@ -472,7 +472,7 @@ export default {
                     showCreateUserForm.value = false;
                     showSuccessMessage.value = true;
 
-                    props.userData.push({
+                    emit("userCreated", {
                         name: `${form.firstName} ${form.lastName}`,
                         loginNum: 0,
                     });
@@ -491,8 +491,9 @@ export default {
                     );
                 },
             });
-            window.location.reload();
+            // Removed window.location.reload();
         };
+
         const updateChart = () => {
             if (myChart.value) {
                 myChart.value.data.labels = props.userData.map(
@@ -513,45 +514,45 @@ export default {
             const ctx = myChart.value.getContext("2d");
             console.log("Dashboard mounted");
 
-            const data = {
-                labels: props.userData.map((user) => user.name),
-                datasets: [
-                    {
-                        label: "Number of Logins",
-                        backgroundColor: "rgb(255, 102, 178)",
-                        borderColor: "rgb(255, 102, 178)",
-                        data: props.userData.map((user) => user.loginNum),
-                        fill: false,
-                        tension: 0.1,
-                    },
-                ],
-            };
-
-            const config = {
-                type: "line",
-                data: data,
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: "Number of Logins",
-                            },
-                        },
-                        x: {
-                            title: {
-                                display: true,
-                                text: "Users",
-                            },
-                        },
-                    },
-                },
-            };
-
             if (props.userData.length > 0) {
+                const data = {
+                    labels: props.userData.map((user) => user.name),
+                    datasets: [
+                        {
+                            label: "Number of Logins",
+                            backgroundColor: "rgb(255, 102, 178)",
+                            borderColor: "rgb(255, 102, 178)",
+                            data: props.userData.map((user) => user.loginNum),
+                            fill: false,
+                            tension: 0.1,
+                        },
+                    ],
+                };
+
+                const config = {
+                    type: "line",
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: "Number of Logins",
+                                },
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "Users",
+                                },
+                            },
+                        },
+                    },
+                };
+
                 myChart.value = new Chart(ctx, config);
             } else {
                 ctx.font = "20px Arial";

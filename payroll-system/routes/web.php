@@ -17,7 +17,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 });
 
-// OTP routes (should be accessible after login but before full authentication)
 Route::middleware(['auth:web,admin'])->group(function () {
     Route::get('/otp', [OtpController::class, 'show'])->name('otp.show');
     Route::post('/send-otp', [OtpController::class, 'send'])->name('otp.send');
@@ -26,7 +25,7 @@ Route::middleware(['auth:web,admin'])->group(function () {
 });
 
 // User routes
-Route::middleware(['auth:web', 'verified'])->group(function () {
+Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/main', [ProvinceController::class, 'index'])->name('user.dashboard');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
@@ -43,8 +42,8 @@ Route::middleware(['auth:web', 'verified'])->group(function () {
 
 // Admin routes
 Route::middleware(['auth:admin', 'verified'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
-    Route::get('/dashboard', [AdminDashboardController::class, 'dashboardChart'])->name('admin.dashboard');
+    Route::get('/dashboard', [AdminDashboardController::class, 'index',])->name('admin.dashboard');
+    Route::get('/dashboard', [AdminDashboardController::class, 'dashboardChart',])->name('admin.chart');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
 
 

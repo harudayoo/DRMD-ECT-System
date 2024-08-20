@@ -1,7 +1,6 @@
 <?php
 use App\Http\Controllers\Auth\{
     AuthenticatedSessionController,
-    AdminAuthenticatedSessionController,
     ConfirmablePasswordController,
     EmailVerificationNotificationController,
     EmailVerificationPromptController,
@@ -33,12 +32,6 @@ Route::middleware('guest')->group(function () {
         Route::post('login', 'store');
     });
 
-    // Admin Login
-    Route::controller(AdminAuthenticatedSessionController::class)->prefix('admin')->group(function () {
-        Route::get('login', 'create')->name('admin.login');
-        Route::post('login', 'store');
-        Route::post('/admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
-    });
 
     // Password Reset
     Route::controller(PasswordResetLinkController::class)->group(function () {
@@ -77,6 +70,5 @@ Route::middleware('auth')->group(function () {
     // Logout
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
-    Route::post('/admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
 
 });

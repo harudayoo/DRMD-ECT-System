@@ -33,10 +33,10 @@ class AuthenticatedSessionController extends Controller
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
             $this->updateLoginInfo($user);
+            $guard = 'web';
         } elseif (Auth::guard('admin')->attempt($credentials)) {
-            $user = Auth::guard('admin')->user();
-            Auth::login($user); // Log in the admin as a regular user
-            // We don't update login info for admins
+            $guard = 'admin';
+            Auth::guard('admin')->login(Auth::guard('admin')->user());
         } else {
             return back()->withErrors([
                 'email' => 'The provided credentials do not match our records.',
@@ -44,6 +44,9 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+
+        // Store the guard in the session
+        session(['auth_guard' => $guard]);
 
         return redirect()->route('otp.show');
     }

@@ -222,10 +222,6 @@ const verifyOtp = () => {
                     "OTP verification succeeded, but no message was provided."
                 );
             }
-            setTimeout(() => {
-                // The backend will handle the redirection to the appropriate dashboard
-                window.location.href = response.props.redirectTo;
-            }, 1500);
         },
         onError: (errors) => {
             setErrorMessage(errors.otp || "Invalid OTP. Please try again.");
