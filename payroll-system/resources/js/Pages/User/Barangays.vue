@@ -286,6 +286,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import Chart from "chart.js/auto";
+import axios from "axios";
 
 // Props
 const props = defineProps({
@@ -315,9 +316,13 @@ const toggleSubMenu = (menu: string) => {
     }
 };
 
-const logout = () => {
-    console.log("Logout clicked");
-    window.location.href = "/";
+const logout = async () => {
+    try {
+        await axios.post(route("logout"));
+        window.location.href = route("login");
+    } catch (error) {
+        console.error("Logout failed:", error);
+    }
 };
 
 const goBack = () => {

@@ -283,6 +283,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import Chart, { ChartConfiguration, ChartItem } from "chart.js/auto";
+import axios from "axios";
 
 // Menu logic
 const isMenuOpen = ref(false);
@@ -302,10 +303,13 @@ const toggleSubMenu = (menu: string) => {
     openSubMenu.value = openSubMenu.value === menu ? null : menu;
 };
 
-const logout = () => {
-    console.log("Logout clicked");
-    // Add your logout logic here
-    window.location.href = "/"; // This will redirect to the root URL
+const logout = async () => {
+    try {
+        await axios.post(route("logout"));
+        window.location.href = route("login");
+    } catch (error) {
+        console.error("Logout failed:", error);
+    }
 };
 
 const goBack = () => {
