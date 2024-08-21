@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\MunicipalityController;
+use App\Http\Controllers\BarangayController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
@@ -38,12 +39,13 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
 
     Route::get('/provinces', [ProvinceController::class, 'index'])->name('provinces.index');
     Route::get('/municipalities/{provinceID}', [MunicipalityController::class, 'index'])->name('municipalities.index');
+    Route::get('/barangays/{municipalityID}', [BarangayController::class, 'index'])->name('barangays.index');
 });
 
 // Admin routes
 Route::middleware(['auth:admin', 'verified'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index',])->name('admin.dashboard');
-    Route::get('/dashboard', [AdminDashboardController::class, 'dashboardChart',])->name('admin.chart');
+    Route::get('/dashboard', [AdminDashboardController::class, 'dashboardChart',])->name('admin.dashboard');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
 
 

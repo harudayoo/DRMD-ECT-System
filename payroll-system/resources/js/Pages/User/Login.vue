@@ -73,11 +73,9 @@ const cancelRequest = () => {
 
 const closeConfirmation = () => {
     showConfirmation.value = false;
-    // Add your logic here to route back to the login page
-    // For example, if you're using vue-router:
-    // router.push({ name: 'login' });
 };
 </script>
+
 <template>
     <div class="relative w-screen h-screen overflow-hidden">
         <!-- Background image -->

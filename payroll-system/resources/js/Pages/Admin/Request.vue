@@ -118,14 +118,14 @@
                 class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
             >
                 <div
-                    class="bg-white p-8 rounded-lg shadow-xl w-1/3 max-h-[90vh] relative flex flex-col"
+                    class="bg-white p-8 rounded-lg shadow-xl w-2/5 max-h-[90vh] relative flex flex-col overflow-y-auto"
                 >
                     <button
                         @click="showCreateUserForm = false"
                         class="absolute top-3 right-4 text-gray-600 hover:text-gray-800"
                     >
                         <svg
-                            class="w-6 h-6"
+                            class="w-7 h-7"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -144,74 +144,149 @@
                     </h2>
                     <form
                         @submit.prevent="submit"
-                        class="flex flex-col space-y-4 overflow-y-auto pr-2"
+                        class="flex-1 flex flex-col justify-between"
                     >
-                        <div
-                            v-for="field in formFields"
-                            :key="field.id"
-                            class="flex flex-col"
-                        >
-                            <label
-                                :for="field.id"
-                                class="text-sm font-semibold mb-1"
-                                >{{ field.label }}</label
-                            >
-                            <div class="relative">
-                                <input
-                                    :id="field.id"
-                                    :type="
-                                        field.isPassword
-                                            ? field.showPassword
-                                                ? 'text'
-                                                : 'password'
-                                            : field.type
-                                    "
-                                    :placeholder="field.placeholder"
-                                    v-model="form[field.id]"
-                                    :class="[
-                                        'w-full px-3 py-2 border rounded-md',
-                                        { 'border-red-500': field.error },
-                                        { 'pr-10': field.isPassword },
-                                    ]"
-                                    required
-                                />
-                                <button
-                                    v-if="field.isPassword"
-                                    type="button"
-                                    @click="togglePasswordVisibility(field.id)"
-                                    class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        <div class="space-y-3">
+                            <!-- Name fields in one line -->
+                            <div class="flex space-x-2 mb-2">
+                                <div
+                                    v-for="field in nameFields"
+                                    :key="field.id"
+                                    :class="field.class"
                                 >
-                                    <svg
-                                        class="h-5 w-5 text-gray-500"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                        xmlns="http://www.w3.org/2000/svg"
+                                    <label
+                                        class="block text-gray-700 text-sm font-bold mb-1"
+                                        :for="field.id"
                                     >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            :d="
-                                                field.showPassword
-                                                    ? 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
-                                                    : 'M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21'
-                                            "
-                                        ></path>
-                                    </svg>
-                                </button>
+                                        {{ field.label }}
+                                    </label>
+                                    <input
+                                        :class="[
+                                            'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
+                                            { 'border-red-500': field.error },
+                                        ]"
+                                        :id="field.id"
+                                        :type="field.type"
+                                        :placeholder="field.placeholder"
+                                        v-model="form[field.id]"
+                                        @input="
+                                            validateNameField(field.id, $event)
+                                        "
+                                        :required="field.required"
+                                    />
+                                    <p
+                                        v-if="field.error"
+                                        class="text-red-500 text-xs italic"
+                                    >
+                                        {{ field.error }}
+                                    </p>
+                                </div>
                             </div>
-                            <p
-                                v-if="field.error"
-                                class="text-red-500 text-xs mt-1"
+
+                            <!-- Other form fields -->
+                            <div
+                                v-for="field in otherFields"
+                                :key="field.id"
+                                class="mb-2"
                             >
-                                {{ field.error }}
-                            </p>
+                                <label
+                                    class="block text-gray-700 text-sm font-bold mb-1"
+                                    :for="field.id"
+                                >
+                                    {{ field.label }}
+                                </label>
+                                <div class="relative">
+                                    <input
+                                        v-if="!field.isPassword"
+                                        :class="[
+                                            'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
+                                            { 'border-red-500': field.error },
+                                        ]"
+                                        :id="field.id"
+                                        :type="field.type"
+                                        :placeholder="field.placeholder"
+                                        v-model="form[field.id]"
+                                        required
+                                    />
+                                    <div v-else class="relative">
+                                        <input
+                                            :class="[
+                                                'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
+                                                {
+                                                    'border-red-500':
+                                                        field.error,
+                                                },
+                                            ]"
+                                            :id="field.id"
+                                            :type="
+                                                field.showPassword
+                                                    ? 'text'
+                                                    : 'password'
+                                            "
+                                            :placeholder="field.placeholder"
+                                            v-model="form[field.id]"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            @click="
+                                                togglePasswordVisibility(
+                                                    field.id
+                                                )
+                                            "
+                                            class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                        >
+                                            <svg
+                                                v-if="field.showPassword"
+                                                class="h-5 w-5 text-gray-500"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                                ></path>
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                ></path>
+                                            </svg>
+                                            <svg
+                                                v-else
+                                                class="h-5 w-5 text-gray-500"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                                                ></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <p
+                                    v-if="field.error"
+                                    class="text-red-500 text-xs italic"
+                                >
+                                    {{ field.error }}
+                                </p>
+                            </div>
                         </div>
-                        <div class="flex justify-center mt-6">
+                        <div class="flex items-center justify-center mt-6">
                             <button
-                                type="submit"
                                 class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                                type="submit"
                                 :disabled="form.processing"
                             >
                                 Create Account
@@ -220,6 +295,44 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Success Message Pop-up -->
+            <div
+                v-if="showSuccessMessage"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+            >
+                <div class="bg-white p-8 rounded-lg shadow-xl w-1/5">
+                    <div class="text-center">
+                        <svg
+                            class="mx-auto mb-4 w-14 h-14 text-green-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            ></path>
+                        </svg>
+                        <h2 class="text-2xl font-bold mb-4 text-gray-900">
+                            Success!
+                        </h2>
+                        <p class="text-gray-600 mb-8">
+                            New user has been created successfully.
+                        </p>
+                        <button
+                            @click="closeSuccessMessage"
+                            class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Confirmation Modal -->
             <div
                 v-if="showConfirmation"
@@ -248,209 +361,285 @@
     </div>
 </template>
 
-<script setup lang="ts">
+<script>
 import { ref, onMounted } from "vue";
-import { useForm } from "@inertiajs/vue3";
+import axios from "axios";
 
-interface UserRequest {
-    id: number;
-    email: string;
-}
+export default {
+    setup() {
+        const userRequests = ref([]);
+        const showCreateUserForm = ref(false);
+        const showSuccessMessage = ref(false);
+        const showConfirmation = ref(false);
+        const selectedRequestId = ref(null);
+        const selectedEmail = ref("");
+        const isUserMenuOpen = ref(false);
+        const userCreated = ref(null);
 
-interface FormFields {
-    id: string;
-    label: string;
-    type: string;
-    placeholder: string;
-    error: string;
-    isPassword?: boolean;
-    showPassword?: boolean;
-}
+        const form = ref({
+            firstName: "",
+            middleName: "",
+            lastName: "",
+            extension: "",
+            email: "",
+            password: "",
+            password_confirmation: "",
+        });
 
-const userRequests = ref<UserRequest[]>([]);
-const showCreateUserForm = ref(false);
-const showConfirmation = ref(false);
-const selectedRequestId = ref<number | null>(null);
-const selectedEmail = ref("");
+        const nameFields = ref([
+            {
+                id: "firstName",
+                label: "First Name",
+                type: "text",
+                placeholder: "First name",
+                error: "",
+                class: "w-1/3",
+                required: true,
+            },
+            {
+                id: "middleName",
+                label: "Middle Name",
+                type: "text",
+                placeholder: "Middle name",
+                error: "",
+                class: "w-1/4",
+                required: false,
+            },
+            {
+                id: "lastName",
+                label: "Last Name",
+                type: "text",
+                placeholder: "Last name",
+                error: "",
+                class: "w-1/3",
+                required: true,
+            },
+            {
+                id: "extension",
+                label: "Ext. Name",
+                type: "text",
+                placeholder: "Jr./Sr.",
+                error: "",
+                class: "w-1/6",
+                required: false,
+            },
+        ]);
 
-const form = useForm({
-    firstName: "",
-    middleName: "",
-    lastName: "",
-    nameExt: "",
-    email: "",
-    password: "",
-    password_confirmation: "",
-});
+        const otherFields = ref([
+            {
+                id: "email",
+                label: "Email Address",
+                type: "email",
+                placeholder: "Enter your email address",
+                error: "",
+            },
+            {
+                id: "password",
+                label: "Password",
+                type: "password",
+                placeholder: "Enter your password",
+                error: "",
+                isPassword: true,
+                showPassword: false,
+            },
+            {
+                id: "password_confirmation",
+                label: "Confirm Password",
+                type: "password",
+                placeholder: "Confirm your password",
+                error: "",
+                isPassword: true,
+                showPassword: false,
+            },
+        ]);
 
-// Update this function to set the email when opening the form
-const openCreateUserForm = (email: string, requestId: number) => {
-    showCreateUserForm.value = true;
-    selectedEmail.value = email;
-    selectedRequestId.value = requestId;
-    form.email = email; // Prefill the email field
-};
+        const fetchUserRequests = () => {
+            try {
+                const requests = JSON.parse(
+                    localStorage.getItem("userRequests") || "[]"
+                );
+                userRequests.value = requests;
+            } catch (error) {
+                console.error("Error fetching user requests:", error);
+                alert("Failed to fetch user requests");
+            }
+        };
 
-const formFields = ref<FormFields[]>([
-    {
-        id: "firstName",
-        label: "First Name",
-        type: "text",
-        placeholder: "Enter your first name",
-        error: "",
-    },
-    {
-        id: "middleName",
-        label: "Middle Name",
-        type: "text",
-        placeholder: "Enter your middle name",
-        error: "",
-    },
-    {
-        id: "lastName",
-        label: "Last Name",
-        type: "text",
-        placeholder: "Enter your last name",
-        error: "",
-    },
-    {
-        id: "nameExt",
-        label: "Name Extension",
-        type: "text",
-        placeholder: "Enter name extension (e.g., Jr., Sr., III)",
-        error: "",
-    },
-    {
-        id: "email",
-        label: "Email Address",
-        type: "email",
-        placeholder: "Enter your email address",
-        error: "",
-    },
-    {
-        id: "password",
-        label: "Password",
-        type: "password",
-        placeholder: "Enter your password",
-        error: "",
-        isPassword: true,
-        showPassword: false,
-    },
-    {
-        id: "password_confirmation",
-        label: "Confirm Password",
-        type: "password",
-        placeholder: "Confirm your password",
-        error: "",
-        isPassword: true,
-        showPassword: false,
-    },
-]);
+        const toggleUserMenu = () => {
+            isUserMenuOpen.value = !isUserMenuOpen.value;
+        };
 
-const fetchUserRequests = () => {
-    try {
-        const requests = JSON.parse(
-            localStorage.getItem("userRequests") || "[]"
-        );
-        userRequests.value = requests;
-    } catch (error) {
-        console.error("Error fetching user requests:", error);
-        alert("Failed to fetch user requests");
-    }
-};
+        const logout = async () => {
+            try {
+                await axios.post("/admin/logout");
+                window.location.href = "/login";
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        };
 
-const togglePasswordVisibility = (fieldId: string) => {
-    const field = formFields.value.find((f) => f.id === fieldId);
-    if (field && field.isPassword) {
-        field.showPassword = !field.showPassword;
-    }
-};
+        const openCreateUserForm = (email, requestId) => {
+            showCreateUserForm.value = true;
+            selectedEmail.value = email;
+            selectedRequestId.value = requestId;
+            form.value.email = email;
+        };
 
-const submit = () => {
-    form.post("/register", {
-        preserveScroll: true,
-        onSuccess: () => {
-            form.reset("password", "password_confirmation");
-            showCreateUserForm.value = false;
-            alert("User created successfully");
-            removeRequestFromList();
-        },
-        onError: (errors) => {
-            Object.keys(errors).forEach((key) => {
-                const field = formFields.value.find((f) => f.id === key);
-                if (field) {
-                    field.error = errors[key];
+        const validateNameField = (fieldId, event) => {
+            const value = event.target.value;
+            form.value[fieldId] = value.replace(/\d/g, "");
+        };
+
+        const togglePasswordVisibility = (fieldId) => {
+            const field = otherFields.value.find((f) => f.id === fieldId);
+            if (field) {
+                field.showPassword = !field.showPassword;
+            }
+        };
+
+        const validatePassword = (password) => {
+            const regex =
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+            return regex.test(password);
+        };
+
+        const submit = async () => {
+            let hasError = false;
+
+            if (!validatePassword(form.value.password)) {
+                otherFields.value.find((f) => f.id === "password").error =
+                    "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.";
+                hasError = true;
+            }
+
+            if (form.value.password !== form.value.password_confirmation) {
+                otherFields.value.find(
+                    (f) => f.id === "password_confirmation"
+                ).error = "Passwords do not match.";
+                hasError = true;
+            }
+
+            if (hasError) {
+                return;
+            }
+
+            try {
+                const { data } = await axios.post("/register", form.value);
+                form.value = {
+                    firstName: "",
+                    middleName: "",
+                    lastName: "",
+                    extension: "",
+                    email: "",
+                    password: "",
+                    password_confirmation: "",
+                };
+                showCreateUserForm.value = false;
+                showSuccessMessage.value = true;
+                userCreated.value = {
+                    name: `${form.value.firstName} ${form.value.lastName}`,
+                    loginNum: 0,
+                };
+                removeRequestFromList();
+            } catch (error) {
+                console.error("Registration failed:", error);
+                if (
+                    error.response &&
+                    error.response.data &&
+                    error.response.data.errors
+                ) {
+                    const errors = error.response.data.errors;
+                    [...nameFields.value, ...otherFields.value].forEach(
+                        (field) => {
+                            if (errors[field.id]) {
+                                field.error = errors[field.id][0];
+                            } else {
+                                field.error = "";
+                            }
+                        }
+                    );
                 }
-            });
-        },
-    });
-};
+            }
+        };
 
-const removeRequestFromList = () => {
-    if (selectedRequestId.value !== null) {
-        try {
-            const updatedRequests = userRequests.value.filter(
-                (req) => req.id !== selectedRequestId.value
-            );
-            userRequests.value = updatedRequests;
-            localStorage.setItem(
-                "userRequests",
-                JSON.stringify(updatedRequests)
-            );
-        } catch (error) {
-            console.error("Error removing request from list:", error);
-            alert("Failed to remove request");
-        }
-    }
-};
+        const removeRequestFromList = () => {
+            if (selectedRequestId.value !== null) {
+                try {
+                    const updatedRequests = userRequests.value.filter(
+                        (req) => req.id !== selectedRequestId.value
+                    );
+                    userRequests.value = updatedRequests;
+                    localStorage.setItem(
+                        "userRequests",
+                        JSON.stringify(updatedRequests)
+                    );
+                } catch (error) {
+                    console.error("Error removing request from list:", error);
+                    alert("Failed to remove request");
+                }
+            }
+        };
 
-const confirmDeny = (requestId: number) => {
-    selectedRequestId.value = requestId;
-    showConfirmation.value = true;
-};
+        const confirmDeny = (requestId) => {
+            selectedRequestId.value = requestId;
+            showConfirmation.value = true;
+        };
 
-const denyRequest = () => {
-    if (selectedRequestId.value !== null) {
-        try {
-            const updatedRequests = userRequests.value.filter(
-                (req) => req.id !== selectedRequestId.value
-            );
-            localStorage.setItem(
-                "userRequests",
-                JSON.stringify(updatedRequests)
-            );
-            userRequests.value = updatedRequests;
-            showConfirmation.value = false;
-        } catch (error) {
-            console.error("Error denying request:", error);
-            alert("Failed to deny request");
-        }
-    }
-};
+        const denyRequest = () => {
+            if (selectedRequestId.value !== null) {
+                try {
+                    const updatedRequests = userRequests.value.filter(
+                        (req) => req.id !== selectedRequestId.value
+                    );
+                    localStorage.setItem(
+                        "userRequests",
+                        JSON.stringify(updatedRequests)
+                    );
+                    userRequests.value = updatedRequests;
+                    showConfirmation.value = false;
+                } catch (error) {
+                    console.error("Error denying request:", error);
+                    alert("Failed to deny request");
+                }
+            }
+        };
 
-onMounted(() => {
-    fetchUserRequests();
-});
+        const closeSuccessMessage = () => {
+            showSuccessMessage.value = false;
+        };
 
-const isMenuOpen = ref(false);
-const isUserMenuOpen = ref(false);
+        const goBack = () => {
+            window.location.href = "/admin/dashboard";
+        };
 
-const toggleMenu = () => {
-    isMenuOpen.value = !isMenuOpen.value;
-};
+        onMounted(() => {
+            fetchUserRequests();
+        });
 
-const toggleUserMenu = () => {
-    isUserMenuOpen.value = !isUserMenuOpen.value;
-};
-
-const logout = () => {
-    console.log("Logout clicked");
-    window.location.href = "/";
-};
-
-const goBack = () => {
-    console.log("Go back clicked");
-    window.location.href = "/admin/dashboard";
+        return {
+            userRequests,
+            showCreateUserForm,
+            showSuccessMessage,
+            showConfirmation,
+            selectedRequestId,
+            selectedEmail,
+            isUserMenuOpen,
+            form,
+            nameFields,
+            otherFields,
+            toggleUserMenu,
+            logout,
+            openCreateUserForm,
+            validateNameField,
+            togglePasswordVisibility,
+            submit,
+            confirmDeny,
+            denyRequest,
+            closeSuccessMessage,
+            goBack,
+            userCreated,
+        };
+    },
 };
 </script>
 

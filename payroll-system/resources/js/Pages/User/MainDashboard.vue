@@ -414,13 +414,15 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div
-                            class="w-1/4 flex justify-between items-center px-2 py-1"
-                        >
-                            <span class="text-xl font-black">Total</span>
-                            <span class="text-xl font-bold">{{
-                                totalAmount
-                            }}</span>
+                        <div class="w-full flex justify-end pt-1 border-t">
+                            <div
+                                class="w-1/4 flex justify-between items-center px-2 py-1"
+                            >
+                                <span class="text-xl font-black">Total</span>
+                                <span class="text-xl font-bold">{{
+                                    totalAmount
+                                }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>

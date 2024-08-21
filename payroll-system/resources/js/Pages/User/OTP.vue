@@ -153,13 +153,51 @@
                     <h2 class="text-xl font-bold mb-4">OTP Already Sent</h2>
                     <p class="mb-4 font-medium">
                         An OTP was already sent recently.<br />
-                        Pleas wait before requesting a new one.
+                        Please wait before requesting a new one.
                     </p>
                     <button
                         @click="closeWarningModal"
                         class="mt-4 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
                     >
                         Close
+                    </button>
+                </div>
+            </div>
+        </transition>
+
+        <!-- Modal for invalid OTP -->
+        <transition name="fade">
+            <div
+                v-if="showInvalidOtpModal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            >
+                <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+                    <div class="text-red-500 mb-4">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-16 w-16 mx-auto"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                    </div>
+                    <h2 class="text-xl font-bold mb-4">Invalid OTP</h2>
+                    <p class="mb-4 font-medium">
+                        The OTP you entered is not valid.<br />
+                        Please try again.
+                    </p>
+                    <button
+                        @click="closeInvalidOtpModal"
+                        class="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                    >
+                        Okay
                     </button>
                 </div>
             </div>
@@ -172,9 +210,8 @@ import { ref, onMounted, nextTick, computed } from "vue";
 import { useForm, router } from "@inertiajs/vue3";
 import axios from "axios";
 
-// Initialize form with otp as an array
 const form = useForm({
-    otp: Array(6).fill(""), // Initialize otp as an array with empty strings
+    otp: Array(6).fill(""),
 });
 
 const isSending = ref(false);
@@ -185,6 +222,7 @@ const hasResent = ref(false);
 const resendCountdown = ref(30);
 const showSuccessModal = ref(false);
 const showWarningModal = ref(false);
+const showInvalidOtpModal = ref(false);
 
 const otpDigits = computed(() => form.otp);
 
@@ -199,7 +237,6 @@ const resendButtonText = computed(() => {
     return "Resend";
 });
 
-// Convert OTP array to string for submission
 const otpAsString = computed(() => form.otp.join(""));
 
 const verifyOtp = () => {
@@ -224,12 +261,11 @@ const verifyOtp = () => {
             }
         },
         onError: (errors) => {
-            setErrorMessage(errors.otp || "Invalid OTP. Please try again.");
+            showInvalidOtpModal.value = true;
         },
     });
 };
 
-// Helper functions to set messages and clear them after a delay
 const setErrorMessage = (message) => {
     errorMessage.value = message;
     clearNotificationMessage();
@@ -254,7 +290,6 @@ const clearNotificationMessage = () => {
     notificationMessage.value = "";
 };
 
-// Send OTP
 const sendOtp = async () => {
     if (isSending.value || form.processing) return;
 
@@ -277,7 +312,6 @@ const sendOtp = async () => {
     }
 };
 
-// Resend OTP
 const resendOtp = () => {
     if (isResending.value || form.processing || hasResent.value) return;
 
@@ -324,20 +358,17 @@ const startResendCountdown = () => {
 const handleInputChange = (index, event) => {
     const value = event.target.value;
     if (/^[0-9]?$/.test(value)) {
-        // Only allow digits
-        form.otp = form.otp.map((digit, i) => (i === index ? value : digit)); // Update OTP array
+        form.otp = form.otp.map((digit, i) => (i === index ? value : digit));
         focusNextInput(index);
     }
 };
 
-// Cancel action
 const cancel = () => {
     router.visit(route("login"));
 };
 
 const focusNextInput = (index) => {
     if (form.otp[index] && index < 5) {
-        // Move focus if current index has value and is not the last input
         nextTick(() => {
             const inputs = document.querySelectorAll("input");
             if (inputs[index + 1]) {
@@ -349,7 +380,6 @@ const focusNextInput = (index) => {
 
 const focusPreviousInput = (index) => {
     if (form.otp[index] === "" && index > 0) {
-        // Move focus if current index is empty and not the first input
         nextTick(() => {
             const inputs = document.querySelectorAll("input");
             if (inputs[index - 1]) {
@@ -367,8 +397,12 @@ const closeWarningModal = () => {
     showWarningModal.value = false;
 };
 
+const closeInvalidOtpModal = () => {
+    showInvalidOtpModal.value = false;
+};
+
 onMounted(() => {
     hasResent.value = false;
-    sendOtp(); // Send OTP when the component is mounted
+    sendOtp();
 });
 </script>

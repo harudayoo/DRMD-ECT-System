@@ -299,7 +299,7 @@
                         </svg>
                     </button>
                     <div>
-                        <h1 class="text-2xl font-black text-black">
+                        <h1 class="text-2xl mt-6 font-black text-black">
                             Davao del Norte
                         </h1>
                         <h2 class="text-lg -mt-1 font-medium">
