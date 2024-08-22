@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ProvinceController;
 use App\Http\Controllers\MunicipalityController;
 use App\Http\Controllers\BarangayController;
+use App\Http\Controllers\BeneficiaryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,13 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/provinces', [ProvinceController::class, 'index'])->name('provinces.index');
     Route::get('/municipalities/{provinceID}', [MunicipalityController::class, 'index'])->name('municipalities.index');
     Route::get('/barangays/{municipalityID}', [BarangayController::class, 'index'])->name('barangays.index');
+    Route::get('/barangay/{barangayID}', [BarangayController::class, 'masterlist'])->name('barangay.masterlist');
+
+    //Beneficiary Routes
+    Route::get('/add-beneficiary', [BeneficiaryController::class, 'create'])->name('beneficiaries.create');
+    Route::post('/beneficiaries', [BeneficiaryController::class, 'store'])->name('beneficiaries.store');
+    Route::get('/api/municipalities', [BeneficiaryController::class, 'getMunicipalities'])->name('api.municipalities.index');
+    Route::get('/api/barangays', [BeneficiaryController::class, 'getBarangays'])->name('api.barangays.index');
 });
 
 // Admin routes

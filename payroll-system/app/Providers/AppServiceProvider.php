@@ -2,10 +2,14 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use App\Events\BeneficiaryUpdated;
+use App\Listeners\UpdateTotalBeneficiaries;
 
 
 class AppServiceProvider extends ServiceProvider
+
 {
     /**
      * Register any application services.
@@ -18,9 +22,12 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot()
     {
-        //
+        Event::listen(
+            BeneficiaryUpdated::class,
+            [UpdateTotalBeneficiaries::class, 'handle']
+        );
     }
     protected function configureRateLimiting()
     {
@@ -31,5 +38,6 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('admin', function (Request $request) {
             return Limit::perMinute(60)->by($request->user('admin')?->id ?: $request->ip());
         });
+
     }
 }

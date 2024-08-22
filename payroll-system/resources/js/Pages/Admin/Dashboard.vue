@@ -492,7 +492,7 @@ export default {
                     );
                 },
             });
-            // Removed window.location.reload();
+            window.location.reload();
         };
 
         const updateChart = () => {
@@ -531,7 +531,7 @@ export default {
                 };
 
                 const config = {
-                    type: "line",
+                    type: "bar",
                     data: data,
                     options: {
                         responsive: true,
