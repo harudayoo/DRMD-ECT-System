@@ -332,15 +332,34 @@
                             Status Analytics
                         </h2>
                         <div
-                            v-for="(stat, index) in statistics"
-                            :key="index"
                             class="flex justify-between items-center font-medium py-1 px-2 border-t border-white"
-                            :class="{
-                                'border-b': index === statistics.length - 1,
-                            }"
                         >
-                            <span>{{ stat.label }}</span>
-                            <span class="font-medium">{{ stat.value }}</span>
+                            <span>Claimed:</span>
+                            <span class="font-medium">{{ totalClaimed }}</span>
+                        </div>
+                        <div
+                            class="flex justify-between items-center font-medium py-1 px-2 border-t border-white"
+                        >
+                            <span>Unclaimed:</span>
+                            <span class="font-medium">{{
+                                totalUnclaimed
+                            }}</span>
+                        </div>
+                        <div
+                            class="flex justify-between items-center font-medium py-1 px-2 border-t border-b border-white"
+                        >
+                            <span>Disqualified:</span>
+                            <span class="font-medium">{{
+                                totalDisqualified
+                            }}</span>
+                        </div>
+                        <div
+                            class="flex justify-between items-center font-medium py-1 px-2 border-t border-b border-white"
+                        >
+                            <span>Duplicates:</span>
+                            <span class="font-medium">{{
+                                totalDoubleEntry
+                            }}</span>
                         </div>
                     </div>
 
@@ -516,13 +535,35 @@ const props = defineProps({
         default: "",
     },
 });
-// Data
-const statistics = ref([
-    { label: "Claimed", value: "1,523" },
-    { label: "Unclaimed", value: "789" },
-    { label: "Disqualified", value: "1,219" },
-    { label: "Duplicates", value: "121" },
-]);
+
+// Computed properties for Status Analytics
+const totalClaimed = computed(() =>
+    props.municipalities.reduce(
+        (sum, municipality) => sum + municipality.claimed,
+        0
+    )
+);
+
+const totalUnclaimed = computed(() =>
+    props.municipalities.reduce(
+        (sum, municipality) => sum + municipality.unclaimed,
+        0
+    )
+);
+
+const totalDisqualified = computed(() =>
+    props.municipalities.reduce(
+        (sum, municipality) => sum + municipality.disqualified,
+        0
+    )
+);
+
+const totalDoubleEntry = computed(() =>
+    props.municipalities.reduce(
+        (sum, municipality) => sum + municipality.double_entry,
+        0
+    )
+);
 
 const tableHeaders = ref(["Municipality", "Number of Beneficiary", "Amount"]);
 

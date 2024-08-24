@@ -10,7 +10,19 @@ class MunicipalityController extends Controller
 {
     public function index($provinceID)
     {
-        $municipalities = Municipality::where('provinceID', $provinceID)->get();
+        $municipalities = Municipality::where('provinceID', $provinceID)
+            ->select(
+                'municipalityName',
+                'municipalityID',
+                'provinceID',
+                'totalBeneficiaries',
+                'totalAmountReleased',
+                'claimed',
+                'unclaimed',
+                'disqualified',
+                'double_entry'
+            )
+            ->get();
         $province = Province::find($provinceID);
 
         return Inertia::render('Municipalities', [

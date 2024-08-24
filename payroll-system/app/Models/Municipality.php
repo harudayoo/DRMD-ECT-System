@@ -10,8 +10,15 @@ class Municipality extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'province_id',
+        'municipalityName',
+        'municipalityID',
+        'provinceID',
+        'totalBeneficiaries',
+        'totalAmountReleased',
+        'claimed',
+        'unclaimed',
+        'disqualified',
+        'double_entry'
         // Add other relevant fields
     ];
 

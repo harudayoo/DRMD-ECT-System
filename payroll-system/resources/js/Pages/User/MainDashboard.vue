@@ -271,6 +271,7 @@
                 <!-- Statistics and Table -->
                 <div class="flex mx-4 mb-4 h-2/6">
                     <!-- Statistics -->
+                    <!-- Statistics -->
                     <div
                         class="text-black shadow-2xl -mt-14 text-lg rounded-xl w-1/4 p-2"
                     >
@@ -283,36 +284,27 @@
                             class="flex justify-between items-center font-medium py-1 px-2 border-t border-white"
                         >
                             <span>Claimed:</span>
-                            <span class="font-medium">{{
-                                totalProvinces
-                            }}</span>
+                            <span class="font-medium">{{ claimed }}</span>
                         </div>
                         <div
                             class="flex justify-between items-center font-medium py-1 px-2 border-t border-white"
                         >
                             <span>Unclaimed:</span>
-                            <span class="font-medium">{{
-                                totalBeneficiaries
-                            }}</span>
+                            <span class="font-medium">{{ unclaimed }}</span>
                         </div>
                         <div
                             class="flex justify-between items-center font-medium py-1 px-2 border-t border-b border-white"
                         >
                             <span>Disqualified:</span>
-                            <span class="font-medium">{{
-                                totalAmountReleased
-                            }}</span>
+                            <span class="font-medium">{{ disqualified }}</span>
                         </div>
                         <div
                             class="flex justify-between items-center font-medium py-1 px-2 border-t border-b border-white"
                         >
                             <span>Duplicates:</span>
-                            <span class="font-medium">{{
-                                totalAmountReleased
-                            }}</span>
+                            <span class="font-medium">{{ doubleEntry }}</span>
                         </div>
                     </div>
-
                     <!-- Table -->
                     <div
                         class="flex-1 border shadow-2xl rounded-xl p-2 -mt-14 ml-2 flex flex-col"
@@ -489,6 +481,19 @@ const totalAmount = computed(() => {
         )
         .toLocaleString("en-PH", { style: "currency", currency: "PHP" });
 });
+
+const claimed = computed(() =>
+    props.provinces.reduce((sum, province) => sum + province.claimed, 0)
+);
+const unclaimed = computed(() =>
+    props.provinces.reduce((sum, province) => sum + province.unclaimed, 0)
+);
+const disqualified = computed(() =>
+    props.provinces.reduce((sum, province) => sum + province.disqualified, 0)
+);
+const doubleEntry = computed(() =>
+    props.provinces.reduce((sum, province) => sum + province.double_entry, 0)
+);
 
 // Chart
 onMounted(() => {

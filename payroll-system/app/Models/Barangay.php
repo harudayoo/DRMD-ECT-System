@@ -15,6 +15,10 @@ class Barangay extends Model
         'municipalityID',
         'totalBeneficiaries',
         'totalAmountReleased',
+        'claimed',
+        'unclaimed',
+        'disqualified',
+        'double_entry',
         'created_at',
         'updated_at',
     ];

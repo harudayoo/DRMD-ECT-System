@@ -13,6 +13,10 @@ class Province extends Model
         'provinceID',
         'provinceName',
         'totalBeneficiaries',
-        'totalAmountReleased'
+        'totalAmountReleased',
+        'claimed',
+        'unclaimed',
+        'disqualified',
+        'double_entry'
     ];
 }
