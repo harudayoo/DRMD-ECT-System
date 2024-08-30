@@ -127,6 +127,7 @@
                                     {{ field.label }}
                                 </label>
                                 <input
+                                    v-if="field.id !== 'extension'"
                                     :class="[
                                         'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
                                         { 'border-red-500': field.error },
@@ -138,6 +139,21 @@
                                     @input="validateNameField(field.id, $event)"
                                     :required="field.required"
                                 />
+                                <select
+                                    v-else
+                                    :class="[
+                                        'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
+                                        { 'border-red-500': field.error },
+                                    ]"
+                                    :id="field.id"
+                                    v-model="form[field.id]"
+                                >
+                                    <option value="">Ext.</option>
+                                    <option value="Jr.">Jr.</option>
+                                    <option value="Sr.">Sr.</option>
+                                    <option value="II">II</option>
+                                    <option value="III">III</option>
+                                </select>
                                 <p
                                     v-if="field.error"
                                     class="text-red-500 text-xs italic"
@@ -172,6 +188,21 @@
                                     v-model="form[field.id]"
                                     required
                                 />
+                                <svg
+                                    v-if="field.type === 'email'"
+                                    class="h-5 w-5 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                    ></path>
+                                </svg>
                                 <div v-else class="relative">
                                     <input
                                         :class="[
@@ -379,8 +410,8 @@ export default {
             {
                 id: "extension",
                 label: "Ext. Name",
-                type: "text",
-                placeholder: "Jr./Sr.",
+                type: "select",
+                placeholder: "Ext.",
                 error: "",
                 class: "w-1/6",
                 required: false,

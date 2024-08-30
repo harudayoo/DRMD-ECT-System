@@ -65,6 +65,11 @@
                                     <th
                                         class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
                                     >
+                                        Full Name
+                                    </th>
+                                    <th
+                                        class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+                                    >
                                         Email
                                     </th>
                                     <th
@@ -82,6 +87,11 @@
                                     <td
                                         class="py-2 px-4 border-b border-gray-200"
                                     >
+                                        {{ getFullName(request) }}
+                                    </td>
+                                    <td
+                                        class="py-2 px-4 border-b border-gray-200"
+                                    >
                                         {{ request.email }}
                                     </td>
                                     <td
@@ -89,12 +99,9 @@
                                     >
                                         <button
                                             @click="
-                                                openCreateUserForm(
-                                                    request.email,
-                                                    request.id
-                                                )
+                                                openConfirmationModal(request)
                                             "
-                                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded mr-2"
+                                            class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded mr-2"
                                         >
                                             Create
                                         </button>
@@ -112,187 +119,36 @@
                 </div>
             </div>
 
-            <!-- Create User Form Pop-up -->
+            <!-- Confirmation Modal -->
             <div
-                v-if="showCreateUserForm"
+                v-if="showConfirmationModal"
                 class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
             >
-                <div
-                    class="bg-white p-8 rounded-lg shadow-xl w-2/5 max-h-[90vh] relative flex flex-col overflow-y-auto"
-                >
-                    <button
-                        @click="showCreateUserForm = false"
-                        class="absolute top-3 right-4 text-gray-600 hover:text-gray-800"
+                <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+                    <h2
+                        class="text-2xl font-bold mb-4 flex items-center justify-center"
                     >
-                        <svg
-                            class="w-7 h-7"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            ></path>
-                        </svg>
-                    </button>
-                    <h2 class="text-2xl font-bold mb-4 text-center">
-                        Create User
+                        Confirmation
                     </h2>
-                    <form
-                        @submit.prevent="submit"
-                        class="flex-1 flex flex-col justify-between"
-                    >
-                        <div class="space-y-3">
-                            <!-- Name fields in one line -->
-                            <div class="flex space-x-2 mb-2">
-                                <div
-                                    v-for="field in nameFields"
-                                    :key="field.id"
-                                    :class="field.class"
-                                >
-                                    <label
-                                        class="block text-gray-700 text-sm font-bold mb-1"
-                                        :for="field.id"
-                                    >
-                                        {{ field.label }}
-                                    </label>
-                                    <input
-                                        :class="[
-                                            'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
-                                            { 'border-red-500': field.error },
-                                        ]"
-                                        :id="field.id"
-                                        :type="field.type"
-                                        :placeholder="field.placeholder"
-                                        v-model="form[field.id]"
-                                        @input="
-                                            validateNameField(field.id, $event)
-                                        "
-                                        :required="field.required"
-                                    />
-                                    <p
-                                        v-if="field.error"
-                                        class="text-red-500 text-xs italic"
-                                    >
-                                        {{ field.error }}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <!-- Other form fields -->
-                            <div
-                                v-for="field in otherFields"
-                                :key="field.id"
-                                class="mb-2"
-                            >
-                                <label
-                                    class="block text-gray-700 text-sm font-bold mb-1"
-                                    :for="field.id"
-                                >
-                                    {{ field.label }}
-                                </label>
-                                <div class="relative">
-                                    <input
-                                        v-if="!field.isPassword"
-                                        :class="[
-                                            'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
-                                            { 'border-red-500': field.error },
-                                        ]"
-                                        :id="field.id"
-                                        :type="field.type"
-                                        :placeholder="field.placeholder"
-                                        v-model="form[field.id]"
-                                        required
-                                    />
-                                    <div v-else class="relative">
-                                        <input
-                                            :class="[
-                                                'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
-                                                {
-                                                    'border-red-500':
-                                                        field.error,
-                                                },
-                                            ]"
-                                            :id="field.id"
-                                            :type="
-                                                field.showPassword
-                                                    ? 'text'
-                                                    : 'password'
-                                            "
-                                            :placeholder="field.placeholder"
-                                            v-model="form[field.id]"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            @click="
-                                                togglePasswordVisibility(
-                                                    field.id
-                                                )
-                                            "
-                                            class="absolute inset-y-0 right-0 pr-3 flex items-center"
-                                        >
-                                            <svg
-                                                v-if="field.showPassword"
-                                                class="h-5 w-5 text-gray-500"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                                ></path>
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                                ></path>
-                                            </svg>
-                                            <svg
-                                                v-else
-                                                class="h-5 w-5 text-gray-500"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                                xmlns="http://www.w3.org/2000/svg"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                                                ></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <p
-                                    v-if="field.error"
-                                    class="text-red-500 text-xs italic"
-                                >
-                                    {{ field.error }}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-center mt-6">
-                            <button
-                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                                type="submit"
-                                :disabled="form.processing"
-                            >
-                                Create Account
-                            </button>
-                        </div>
-                    </form>
+                    <p>
+                        Are you sure you want to create a new <br />
+                        user for
+                        {{ selectedRequest.email }}?
+                    </p>
+                    <div class="mt-6 flex justify-center space-x-4">
+                        <button
+                            @click="showConfirmationModal = false"
+                            class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            @click="createUser"
+                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                        >
+                            Create
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -333,17 +189,21 @@
                 </div>
             </div>
 
-            <!-- Confirmation Modal -->
+            <!-- Deny Confirmation Modal -->
             <div
-                v-if="showConfirmation"
+                v-if="showDenyConfirmation"
                 class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
             >
                 <div class="bg-white p-8 rounded-lg shadow-xl">
-                    <h2 class="text-2xl font-bold mb-4">Confirmation</h2>
+                    <h2
+                        class="text-2xl font-bold mb-4 flex items-center justify-center"
+                    >
+                        Confirmation
+                    </h2>
                     <p>Are you sure you want to deny this request?</p>
-                    <div class="mt-6 flex justify-end space-x-4">
+                    <div class="mt-6 flex justify-center space-x-4">
                         <button
-                            @click="showConfirmation = false"
+                            @click="showDenyConfirmation = false"
                             class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
                         >
                             Cancel
@@ -368,90 +228,12 @@ import axios from "axios";
 export default {
     setup() {
         const userRequests = ref([]);
-        const showCreateUserForm = ref(false);
+        const showConfirmationModal = ref(false);
         const showSuccessMessage = ref(false);
-        const showConfirmation = ref(false);
+        const showDenyConfirmation = ref(false);
         const selectedRequestId = ref(null);
-        const selectedEmail = ref("");
+        const selectedRequest = ref({});
         const isUserMenuOpen = ref(false);
-        const userCreated = ref(null);
-
-        const form = ref({
-            firstName: "",
-            middleName: "",
-            lastName: "",
-            extension: "",
-            email: "",
-            password: "",
-            password_confirmation: "",
-        });
-
-        const nameFields = ref([
-            {
-                id: "firstName",
-                label: "First Name",
-                type: "text",
-                placeholder: "First name",
-                error: "",
-                class: "w-1/3",
-                required: true,
-            },
-            {
-                id: "middleName",
-                label: "Middle Name",
-                type: "text",
-                placeholder: "Middle name",
-                error: "",
-                class: "w-1/4",
-                required: false,
-            },
-            {
-                id: "lastName",
-                label: "Last Name",
-                type: "text",
-                placeholder: "Last name",
-                error: "",
-                class: "w-1/3",
-                required: true,
-            },
-            {
-                id: "extension",
-                label: "Ext. Name",
-                type: "text",
-                placeholder: "Jr./Sr.",
-                error: "",
-                class: "w-1/6",
-                required: false,
-            },
-        ]);
-
-        const otherFields = ref([
-            {
-                id: "email",
-                label: "Email Address",
-                type: "email",
-                placeholder: "Enter your email address",
-                error: "",
-            },
-            {
-                id: "password",
-                label: "Password",
-                type: "password",
-                placeholder: "Enter your password",
-                error: "",
-                isPassword: true,
-                showPassword: false,
-            },
-            {
-                id: "password_confirmation",
-                label: "Confirm Password",
-                type: "password",
-                placeholder: "Confirm your password",
-                error: "",
-                isPassword: true,
-                showPassword: false,
-            },
-        ]);
 
         const fetchUserRequests = () => {
             try {
@@ -478,129 +260,81 @@ export default {
             }
         };
 
-        const openCreateUserForm = (email, requestId) => {
-            showCreateUserForm.value = true;
-            selectedEmail.value = email;
-            selectedRequestId.value = requestId;
-            form.value.email = email;
+        const getFullName = (request) => {
+            return `${request.firstName} ${request.middleName} ${
+                request.lastName
+            } ${request.nameExt || ""}`.trim();
         };
 
-        const validateNameField = (fieldId, event) => {
-            const value = event.target.value;
-            form.value[fieldId] = value.replace(/\d/g, "");
+        const openConfirmationModal = (request) => {
+            selectedRequest.value = request;
+            showConfirmationModal.value = true;
         };
 
-        const togglePasswordVisibility = (fieldId) => {
-            const field = otherFields.value.find((f) => f.id === fieldId);
-            if (field) {
-                field.showPassword = !field.showPassword;
-            }
-        };
-
-        const validatePassword = (password) => {
-            const regex =
-                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
-            return regex.test(password);
-        };
-
-        const submit = async () => {
-            let hasError = false;
-
-            if (!validatePassword(form.value.password)) {
-                otherFields.value.find((f) => f.id === "password").error =
-                    "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.";
-                hasError = true;
-            }
-
-            if (form.value.password !== form.value.password_confirmation) {
-                otherFields.value.find(
-                    (f) => f.id === "password_confirmation"
-                ).error = "Passwords do not match.";
-                hasError = true;
-            }
-
-            if (hasError) {
-                return;
-            }
-
+        const createUser = async () => {
             try {
-                const { data } = await axios.post("/register", form.value);
-                form.value = {
-                    firstName: "",
-                    middleName: "",
-                    lastName: "",
-                    extension: "",
-                    email: "",
-                    password: "",
-                    password_confirmation: "",
-                };
-                showCreateUserForm.value = false;
-                showSuccessMessage.value = true;
-                userCreated.value = {
-                    name: `${form.value.firstName} ${form.value.lastName}`,
-                    loginNum: 0,
-                };
-                removeRequestFromList();
+                const response = await axios.post("/register-request", {
+                    firstName: selectedRequest.value.firstName,
+                    lastName: selectedRequest.value.lastName,
+                    middleName: selectedRequest.value.middleName || "",
+                    nameExt: selectedRequest.value.nameExt || "",
+                    email: selectedRequest.value.email,
+                    password: selectedRequest.value.password,
+                    password_confirmation: selectedRequest.value.password,
+                });
+
+                if (response.data.success) {
+                    // Remove the request from the list
+                    removeRequestFromList(selectedRequest.value.id);
+
+                    showConfirmationModal.value = false;
+                    showSuccessMessage.value = true;
+
+                    // Redirect back to dashboard after a short delay
+                    setTimeout(() => {
+                        goBack();
+                    }, 2000);
+                } else {
+                    throw new Error(
+                        response.data.message || "User creation failed"
+                    );
+                }
             } catch (error) {
-                console.error("Registration failed:", error);
+                console.error("Error creating user:", error);
+                let errorMessage = "Failed to create user";
                 if (
                     error.response &&
                     error.response.data &&
-                    error.response.data.errors
+                    error.response.data.message
                 ) {
-                    const errors = error.response.data.errors;
-                    [...nameFields.value, ...otherFields.value].forEach(
-                        (field) => {
-                            if (errors[field.id]) {
-                                field.error = errors[field.id][0];
-                            } else {
-                                field.error = "";
-                            }
-                        }
-                    );
+                    errorMessage = error.response.data.message;
+                } else if (error.message) {
+                    errorMessage = error.message;
                 }
+                alert(errorMessage);
             }
         };
 
-        const removeRequestFromList = () => {
-            if (selectedRequestId.value !== null) {
-                try {
-                    const updatedRequests = userRequests.value.filter(
-                        (req) => req.id !== selectedRequestId.value
-                    );
-                    userRequests.value = updatedRequests;
-                    localStorage.setItem(
-                        "userRequests",
-                        JSON.stringify(updatedRequests)
-                    );
-                } catch (error) {
-                    console.error("Error removing request from list:", error);
-                    alert("Failed to remove request");
-                }
-            }
+        const removeRequestFromList = (requestId) => {
+            const updatedRequests = userRequests.value.filter(
+                (req) => req.id !== requestId
+            );
+            userRequests.value = updatedRequests;
+            localStorage.setItem(
+                "userRequests",
+                JSON.stringify(updatedRequests)
+            );
         };
 
         const confirmDeny = (requestId) => {
             selectedRequestId.value = requestId;
-            showConfirmation.value = true;
+            showDenyConfirmation.value = true;
         };
 
         const denyRequest = () => {
             if (selectedRequestId.value !== null) {
-                try {
-                    const updatedRequests = userRequests.value.filter(
-                        (req) => req.id !== selectedRequestId.value
-                    );
-                    localStorage.setItem(
-                        "userRequests",
-                        JSON.stringify(updatedRequests)
-                    );
-                    userRequests.value = updatedRequests;
-                    showConfirmation.value = false;
-                } catch (error) {
-                    console.error("Error denying request:", error);
-                    alert("Failed to deny request");
-                }
+                removeRequestFromList(selectedRequestId.value);
+                showDenyConfirmation.value = false;
             }
         };
 
@@ -618,26 +352,21 @@ export default {
 
         return {
             userRequests,
-            showCreateUserForm,
+            showConfirmationModal,
             showSuccessMessage,
-            showConfirmation,
+            showDenyConfirmation,
             selectedRequestId,
-            selectedEmail,
+            selectedRequest,
             isUserMenuOpen,
-            form,
-            nameFields,
-            otherFields,
             toggleUserMenu,
             logout,
-            openCreateUserForm,
-            validateNameField,
-            togglePasswordVisibility,
-            submit,
+            getFullName,
+            openConfirmationModal,
+            createUser,
             confirmDeny,
             denyRequest,
             closeSuccessMessage,
             goBack,
-            userCreated,
         };
     },
 };

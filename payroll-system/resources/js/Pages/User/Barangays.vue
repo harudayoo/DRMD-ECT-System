@@ -7,7 +7,7 @@
             <!-- Menu Toggle Button -->
             <button
                 @click="toggleMenu"
-                class="text-white focus:outline-none hover:text-red-700 transition-colors duration-200"
+                class="text-white focus:outline-none hover:text-red-700 transition-colors duration-200 menu-toggle"
             >
                 <svg
                     class="w-6 h-6"
@@ -54,15 +54,16 @@
                         href="#"
                         @click="logout"
                         class="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-300"
-                        >Log out</a
                     >
+                        Log out
+                    </a>
                 </div>
             </div>
         </nav>
 
-        <!-- Sidebar (content omitted for brevity) -->
+        <!-- Sidebar -->
         <div
-            class="fixed top-0 left-0 h-full w-80 bg-gray-800 bg-opacity-90 text-white transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto"
+            class="fixed top-0 left-0 h-full w-80 bg-gray-800 bg-opacity-90 text-white transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto sidebar"
             :class="{
                 'translate-x-0': isMenuOpen,
                 '-translate-x-full': !isMenuOpen,
@@ -390,6 +391,12 @@
                                     <tr
                                         v-for="barangay in barangays"
                                         :key="barangay.barangayID"
+                                        @click="
+                                            navigateToBarangay(
+                                                barangay.barangayID
+                                            )
+                                        "
+                                        class="cursor-pointer hover:bg-gray-200"
                                     >
                                         <td
                                             class="px-2 py-1 whitespace-nowrap w-1/5"
@@ -407,23 +414,18 @@
                                                 >
                                                     {{ barangay.barangayName }}
                                                 </span>
-                                                <a
-                                                    :href="`/barangay/${barangay.barangayID}`"
-                                                    class="text-black hover:text-gray-300 flex-shrink-0"
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-5 w-5 text-black flex-shrink-0 ml-16"
+                                                    viewBox="0 0 20 20"
+                                                    fill="currentColor"
                                                 >
-                                                    <svg
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                        class="h-5 w-5"
-                                                        viewBox="0 0 20 20"
-                                                        fill="currentColor"
-                                                    >
-                                                        <path
-                                                            fill-rule="evenodd"
-                                                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                                                            clip-rule="evenodd"
-                                                        />
-                                                    </svg>
-                                                </a>
+                                                    <path
+                                                        fill-rule="evenodd"
+                                                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                                        clip-rule="evenodd"
+                                                    />
+                                                </svg>
                                             </div>
                                         </td>
                                         <td
@@ -462,7 +464,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, onUnmounted } from "vue";
 import Chart from "chart.js/auto";
 import axios from "axios";
 
@@ -493,6 +495,20 @@ const toggleSubMenu = (menu: string) => {
         openSubMenu.value = null;
     } else {
         openSubMenu.value = menu;
+    }
+};
+
+const handleOutsideClick = (event) => {
+    const sidebar = document.querySelector(".sidebar");
+    const menuToggle = document.querySelector(".menu-toggle");
+
+    if (sidebar && menuToggle && isMenuOpen.value) {
+        if (
+            !sidebar.contains(event.target) &&
+            !menuToggle.contains(event.target)
+        ) {
+            isMenuOpen.value = false;
+        }
     }
 };
 
@@ -559,11 +575,22 @@ const config = {
     },
 };
 
+// Function to navigate to barangay page
+const navigateToBarangay = (barangayID) => {
+    window.location.href = `/barangay/${barangayID}`;
+};
+
+// Lifecycle hooks
 onMounted(() => {
-    const canvasTag = document.getElementById("myChart") as HTMLCanvasElement;
+    const canvasTag = document.getElementById("myChart");
     if (canvasTag) {
         new Chart(canvasTag, config);
     }
+    document.addEventListener("click", handleOutsideClick);
+});
+
+onUnmounted(() => {
+    document.removeEventListener("click", handleOutsideClick);
 });
 </script>
 

@@ -48,7 +48,7 @@ const toggleConfirmPassword = () => {
         <Head title="Admin Register" />
 
         <h2 class="text-2xl font-bold mb-6 text-white text-center">
-            Register User
+            Register Admin
         </h2>
 
         <form @submit.prevent="submit">

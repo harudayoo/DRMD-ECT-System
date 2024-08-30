@@ -38,13 +38,10 @@
             </div>
         </nav>
 
-        <!-- Header -->
         <div class="flex-1 flex flex-col overflow-hidden p-4">
-            <!-- Header -->
             <header class="mb-2 ml-1">
                 <h1 class="text-3xl font-black text-black">Admin</h1>
             </header>
-            <!-- User List Page -->
             <div
                 class="flex-1 bg-grey-100 shadow-2xl rounded-lg overflow-hidden"
             >
@@ -58,22 +55,8 @@
                             Back to Dashboard
                         </button>
                     </div>
-                    <div v-if="!showUserList">
-                        <input
-                            v-model="adminPassword"
-                            type="password"
-                            placeholder="Enter your password"
-                            class="border p-2 rounded"
-                        />
-                        <button
-                            @click="verifyAdminPassword"
-                            class="bg-green-700 hover:bg-green-900 text-white font-bold py-2 px-4 rounded ml-2"
-                        >
-                            Show User List
-                        </button>
-                    </div>
 
-                    <div v-if="showUserList" class="overflow-x-auto">
+                    <div class="overflow-x-auto">
                         <table class="w-full bg-white">
                             <thead>
                                 <tr>
@@ -100,10 +83,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr
-                                    v-for="user in registeredUsers"
-                                    :key="user.id"
-                                >
+                                <tr v-for="user in users" :key="user.id">
                                     <td
                                         class="py-2 px-4 border-b border-gray-200"
                                     >
@@ -113,14 +93,13 @@
                                         class="py-2 px-4 border-b border-gray-200"
                                     >
                                         {{
-                                            user.firstName +
-                                            " " +
-                                            user.middleName +
-                                            " " +
-                                            user.lastName +
-                                            (user.nameExt
-                                                ? " " + user.nameExt
-                                                : "")
+                                            `${user.firstName} ${
+                                                user.middleName
+                                            } ${user.lastName}${
+                                                user.nameExt
+                                                    ? " " + user.nameExt
+                                                    : ""
+                                            }`
                                         }}
                                     </td>
                                     <td
@@ -274,7 +253,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { router, useForm } from "@inertiajs/vue3";
 
 interface User {
@@ -286,13 +265,13 @@ interface User {
     email: string;
 }
 
+const props = defineProps<{
+    users: User[];
+}>();
+
 // Menu logic
 const isMenuOpen = ref(false);
 const isUserMenuOpen = ref(false);
-
-const toggleMenu = () => {
-    isMenuOpen.value = !isMenuOpen.value;
-};
 
 const toggleUserMenu = () => {
     isUserMenuOpen.value = !isUserMenuOpen.value;
@@ -302,40 +281,6 @@ const logout = () => {
     router.post(route("logout"));
 };
 
-// User List Page
-const showUserList = ref(false);
-const adminPassword = ref("");
-const registeredUsers = ref<User[]>([]);
-
-const verifyAdminPassword = () => {
-    router.post(
-        route("admin.verify-password"), // Use the named route
-        { password: adminPassword.value },
-        {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: (page) => {
-                if (page.props.verified) {
-                    showUserList.value = true;
-                    registeredUsers.value = page.props.users as User[];
-                } else {
-                    alert("Incorrect password");
-                }
-            },
-        }
-    );
-};
-
-const goBack = () => {
-    router.visit("/admin/dashboard");
-};
-
-const loadUpdatePage = () => {
-    router.get(route("admin.update"));
-};
-
-// Edit User Modal
-const showEditUserModal = ref(false);
 const editUserForm = useForm<User>({
     id: 0,
     firstName: "",
@@ -345,12 +290,16 @@ const editUserForm = useForm<User>({
     email: "",
 });
 
+const showEditUserModal = ref(false);
+const showDeleteConfirmation = ref(false);
+const userToDelete = ref<User | null>(null);
+
 const openEditUserModal = (user: User) => {
     editUserForm.id = user.id;
     editUserForm.firstName = user.firstName;
     editUserForm.lastName = user.lastName;
     editUserForm.middleName = user.middleName;
-    editUserForm.nameExt = user.nameExt;
+    editUserForm.nameExt = user.nameExt || "";
     editUserForm.email = user.email;
     showEditUserModal.value = true;
 };
@@ -364,26 +313,12 @@ const updateUser = () => {
     editUserForm.put(route("admin.users.update", editUserForm.id), {
         preserveScroll: true,
         onSuccess: () => {
-            alert("User updated successfully");
             closeEditUserModal();
-            const index = registeredUsers.value.findIndex(
-                (u) => u.id === editUserForm.id
-            );
-            if (index !== -1) {
-                registeredUsers.value[index] = { ...editUserForm };
-            }
-            window.location.reload();
-        },
-        onError: (errors) => {
-            console.error(errors);
-            alert("An error occurred while updating the user");
+            // Refresh the page to get updated data
+            router.reload();
         },
     });
 };
-
-// Delete Confirmation Modal
-const showDeleteConfirmation = ref(false);
-const userToDelete = ref<User | null>(null);
 
 const openDeleteConfirmation = (user: User) => {
     userToDelete.value = user;
@@ -397,20 +332,19 @@ const closeDeleteConfirmation = () => {
 
 const confirmDelete = () => {
     if (userToDelete.value) {
-        router.delete(`/admin/users/${userToDelete.value.id}`, {
+        router.delete(route("admin.users.delete", userToDelete.value.id), {
             preserveScroll: true,
             onSuccess: () => {
-                registeredUsers.value = registeredUsers.value.filter(
-                    (user) => user.id !== userToDelete.value!.id
-                );
                 closeDeleteConfirmation();
-            },
-            onError: (errors) => {
-                console.error(errors);
-                alert("An error occurred while deleting the user");
+                // Refresh the page to get updated data
+                router.reload();
             },
         });
     }
+};
+
+const goBack = () => {
+    router.visit("/admin/dashboard");
 };
 </script>
 

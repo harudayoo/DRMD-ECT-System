@@ -66,17 +66,21 @@ Route::middleware(['auth:admin', 'verified'])->prefix('admin')->group(function (
         return Inertia::render('Admin/Request');
     })->name('admin.request');
 
-    // User management routes
-    Route::post('/verify-password', [AdminController::class, 'verifyPassword'])->name('admin.verify-password');
+    // User management route
     Route::get('/users', [AdminController::class, 'getUsers'])->name('admin.users');
-    Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
+    Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
     Route::get('/users/{id}/edit', [AdminController::class, 'editUser'])->name('admin.users.edit');
     Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-    Route::get('/admin/update', [AdminController::class, 'showUpdatePage'])->name('admin.update');
+    Route::get('/update', [AdminController::class, 'showUpdatePage'])->name('admin.update');
 });
 
 // Registration route
 Route::post('/register', [RegisteredUserController::class, 'store'])
+    ->middleware('auth:admin')
+    ->name('register');
+
+//Register Request Route
+Route::post('/register-request', [RegisteredUserController::class, 'storeRequest'])
     ->middleware('auth:admin')
     ->name('register');
 

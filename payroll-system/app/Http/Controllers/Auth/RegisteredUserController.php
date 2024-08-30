@@ -56,9 +56,61 @@ class RegisteredUserController extends Controller
 
             return redirect()->back()->with('success', 'User registered successfully');
 
+
         } catch (\Exception $e) {
+
             Log::error('User registration failed', ['error' => $e->getMessage()]);
             return redirect()->back()->withErrors(['error' => 'Registration failed: ' . $e->getMessage()]);
+        }
+    }
+
+    public function storeRequest(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'firstName' => 'required|string|max:255',
+                'lastName' => 'required|string|max:255',
+                'middleName' => 'nullable|string|max:255',
+                'nameExt' => 'nullable|string|max:50',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            ]);
+
+            // Get the logged-in admin's ID
+            $adminID = Auth::guard('admin')->id();
+
+            if (!$adminID) {
+                throw new \Exception('Admin not authenticated');
+            }
+
+            $user = User::create([
+                'firstName' => $validatedData['firstName'],
+                'lastName' => $validatedData['lastName'],
+                'middleName' => $validatedData['middleName'],
+                'nameExt' => $validatedData['nameExt'],
+                'email' => $validatedData['email'],
+                'password' => Hash::make($validatedData['password']),
+                'adminID' => $adminID,
+                'role_number' => 1, // Add role_number field with value 1
+            ]);
+
+            Log::info('User created successfully', ['user_id' => $user->id, 'email' => $user->email, 'admin_id' => $adminID]);
+
+            event(new Registered($user));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User registered successfully',
+                'user' => $user
+            ], 201);
+
+        } catch (\Exception $e) {
+
+            Log::error('User registration failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage()
+            ], 422);
         }
     }
 }

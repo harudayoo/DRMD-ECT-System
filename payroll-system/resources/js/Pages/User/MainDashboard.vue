@@ -7,7 +7,7 @@
             <!-- Menu Toggle Button -->
             <button
                 @click="toggleMenu"
-                class="text-white focus:outline-none hover:text-red-700 transition-colors duration-200"
+                class="text-white focus:outline-none hover:text-red-700 transition-colors duration-200 menu-toggle"
             >
                 <svg
                     class="w-6 h-6"
@@ -63,7 +63,7 @@
 
         <!-- Sidebar -->
         <div
-            class="fixed top-0 left-0 h-full w-80 bg-gray-800 bg-opacity-90 text-white transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto"
+            class="fixed top-0 left-0 h-full w-80 bg-gray-800 bg-opacity-90 text-white transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto sidebar"
             :class="{
                 'translate-x-0': isMenuOpen,
                 '-translate-x-full': !isMenuOpen,
@@ -135,7 +135,8 @@
                             class="mt-2 ml-4 rounded-md p-2"
                         >
                             <a
-                                href="/add-beneficiary"
+                                href="#"
+                                @click="openModal"
                                 class="block text-xl hover:text-gray-400"
                                 >Add</a
                             >
@@ -253,7 +254,7 @@
             <!-- Header -->
             <header>
                 <div class="ml-10 mx-auto py-2 px-4">
-                    <h1 class="text-2xl font-black text-black">
+                    <h1 class="text-2xl font-black text-black mt-1">
                         ECT Payroll System Dashboard
                     </h1>
                 </div>
@@ -270,7 +271,6 @@
 
                 <!-- Statistics and Table -->
                 <div class="flex mx-4 mb-4 h-2/6">
-                    <!-- Statistics -->
                     <!-- Statistics -->
                     <div
                         class="text-black shadow-2xl -mt-14 text-lg rounded-xl w-1/4 p-2"
@@ -352,7 +352,7 @@
                                             class="px-2 py-1 whitespace-nowrap w-1/3"
                                         >
                                             <div
-                                                class="flex justify-between items-center"
+                                                class="flex justify-between items-center mr-24"
                                             >
                                                 <span
                                                     class="truncate mr-2"
@@ -410,130 +410,504 @@
                 </div>
             </div>
         </div>
+
+        <!-- Add Beneficiary Modal -->
+        <div
+            v-if="isModalOpen"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
+        >
+            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
+                <h2 class="text-2xl font-bold mb-4 text-center">
+                    Add Beneficiary
+                </h2>
+                <form @submit.prevent="addBeneficiary">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="lastName" class="block mb-2"
+                                >Last Name</label
+                            >
+                            <input
+                                type="text"
+                                id="lastName"
+                                v-model="beneficiary.lastName"
+                                placeholder="Enter your Last Name"
+                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label for="firstName" class="block mb-2"
+                                >First Name</label
+                            >
+                            <input
+                                type="text"
+                                id="firstName"
+                                v-model="beneficiary.firstName"
+                                placeholder="Enter your First Name"
+                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label for="middleName" class="block mb-2"
+                                >Middle Name</label
+                            >
+                            <input
+                                type="text"
+                                id="middleName"
+                                v-model="beneficiary.middleName"
+                                placeholder="Enter your Middle Name"
+                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label for="extensionName" class="block mb-2"
+                                >Name Extension</label
+                            >
+                            <input
+                                type="text"
+                                id="extensionName"
+                                v-model="beneficiary.extensionName"
+                                placeholder="Enter your Extension Name"
+                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label for="dateOfBirth" class="block mb-2"
+                                >Date of Birth:</label
+                            >
+                            <input
+                                type="date"
+                                id="dateOfBirth"
+                                v-model="beneficiary.dateOfBirth"
+                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label for="province" class="block mb-2"
+                                >Province:</label
+                            >
+                            <select
+                                id="province"
+                                v-model="beneficiary.provinceID"
+                                @change="fetchMunicipalities"
+                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            >
+                                <option value="" disabled selected>
+                                    Select Province
+                                </option>
+                                <option
+                                    v-for="province in provinces"
+                                    :key="province.provinceID"
+                                    :value="province.provinceID"
+                                >
+                                    {{ province.provinceName }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="municipality" class="block mb-2"
+                                >Municipality:</label
+                            >
+                            <select
+                                id="municipality"
+                                v-model="beneficiary.municipalityID"
+                                @change="fetchBarangays"
+                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            >
+                                <option value="" disabled selected>
+                                    Select Municipality
+                                </option>
+                                <option
+                                    v-for="municipality in municipalities"
+                                    :key="municipality.municipalityID"
+                                    :value="municipality.municipalityID"
+                                >
+                                    {{ municipality.municipalityName }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="barangay" class="block mb-2"
+                                >Barangay:</label
+                            >
+                            <select
+                                id="barangay"
+                                v-model="beneficiary.barangayID"
+                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required
+                            >
+                                <option value="" disabled selected>
+                                    Select Barangay
+                                </option>
+                                <option
+                                    v-for="barangay in barangays"
+                                    :key="barangay.barangayID"
+                                    :value="barangay.barangayID"
+                                >
+                                    {{ barangay.barangayName }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button
+                            type="button"
+                            @click="closeModal"
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Notification Modal -->
+        <div
+            v-if="showNotification"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
+        >
+            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+                <div class="text-center">
+                    <svg
+                        v-if="isSuccess"
+                        class="mx-auto mb-4 w-14 h-14 text-green-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M5 13l4 4L19 7"
+                        ></path>
+                    </svg>
+                    <svg
+                        v-else
+                        class="mx-auto mb-4 w-14 h-14 text-red-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                        ></path>
+                    </svg>
+                    <h3
+                        class="mb-5 text-lg font-normal"
+                        :class="isSuccess ? 'text-green-500' : 'text-red-500'"
+                    >
+                        {{ notificationMessage }}
+                    </h3>
+                    <button
+                        @click="closeNotification"
+                        type="button"
+                        class="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2"
+                    >
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
-import Chart from "chart.js/auto";
+<script>
+import { ref, reactive, onMounted, computed, onUnmounted } from "vue";
+import { usePage } from "@inertiajs/vue3";
 import axios from "axios";
+import Chart from "chart.js/auto";
 
-// Props
-const props = defineProps({
-    provinces: Array,
-});
+export default {
+    name: "Dashboard",
+    props: {
+        provinces: Array,
+    },
+    setup(props) {
+        const page = usePage();
+        const municipalities = ref([]);
+        const barangays = ref([]);
+        const isModalOpen = ref(false);
+        const showNotification = ref(false);
+        const isSuccess = ref(false);
+        const notificationMessage = ref("");
+        const isSuccessModalOpen = ref(false);
+        const isMenuOpen = ref(false);
+        const isUserMenuOpen = ref(false);
+        const openSubMenu = ref(null);
 
-// Menu logic
-const isMenuOpen = ref(false);
-const isUserMenuOpen = ref(false);
-const openSubMenu = ref<string | null>(null);
-
-const toggleMenu = () => {
-    isMenuOpen.value = !isMenuOpen.value;
-};
-
-const toggleUserMenu = () => {
-    isUserMenuOpen.value = !isUserMenuOpen.value;
-};
-
-const toggleSubMenu = (menu: string) => {
-    if (openSubMenu.value === menu) {
-        openSubMenu.value = null;
-    } else {
-        openSubMenu.value = menu;
-    }
-};
-
-const logout = async () => {
-    try {
-        await axios.post(route("logout"));
-        window.location.href = route("login");
-    } catch (error) {
-        console.error("Logout failed:", error);
-    }
-};
-
-const goToMunicipalities = (provinceID: number) => {
-    window.location.href = `/municipalities/${provinceID}`;
-};
-// Computed properties
-const totalProvinces = computed(() => props.provinces.length);
-const totalBeneficiaries = computed(() =>
-    props.provinces.reduce(
-        (sum, province) => sum + province.totalBeneficiaries,
-        0
-    )
-);
-const totalAmountReleased = computed(() =>
-    props.provinces
-        .reduce(
-            (sum, province) => sum + parseFloat(province.totalAmountReleased),
-            0
-        )
-        .toFixed(2)
-);
-
-const totalAmount = computed(() => {
-    return props.provinces
-        .reduce(
-            (sum, province) => sum + parseFloat(province.totalAmountReleased),
-            0
-        )
-        .toLocaleString("en-PH", { style: "currency", currency: "PHP" });
-});
-
-const claimed = computed(() =>
-    props.provinces.reduce((sum, province) => sum + province.claimed, 0)
-);
-const unclaimed = computed(() =>
-    props.provinces.reduce((sum, province) => sum + province.unclaimed, 0)
-);
-const disqualified = computed(() =>
-    props.provinces.reduce((sum, province) => sum + province.disqualified, 0)
-);
-const doubleEntry = computed(() =>
-    props.provinces.reduce((sum, province) => sum + province.double_entry, 0)
-);
-
-// Chart
-onMounted(() => {
-    const ctx = document.getElementById("myChart") as HTMLCanvasElement;
-    if (ctx) {
-        new Chart(ctx, {
-            type: "bar",
-            data: {
-                labels: props.provinces.map(
-                    (province) => province.provinceName
-                ),
-                datasets: [
-                    {
-                        label: "Number of Beneficiaries",
-                        backgroundColor: "rgb(59, 68, 122)",
-                        data: props.provinces.map(
-                            (province) => province.totalBeneficiaries
-                        ),
-                    },
-                    {
-                        label: "Amount Released",
-                        backgroundColor: "rgb(166, 170, 238)",
-                        data: props.provinces.map((province) =>
-                            parseFloat(province.totalAmountReleased)
-                        ),
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                    },
-                },
-            },
+        const beneficiary = reactive({
+            lastName: "",
+            firstName: "",
+            middleName: "",
+            extensionName: "",
+            barangayID: "",
+            municipalityID: "",
+            provinceID: "",
+            dateOfBirth: "",
         });
-    }
-});
+
+        const toggleMenu = () => {
+            isMenuOpen.value = !isMenuOpen.value;
+        };
+
+        const toggleUserMenu = () => {
+            isUserMenuOpen.value = !isUserMenuOpen.value;
+        };
+
+        const toggleSubMenu = (menu) => {
+            if (openSubMenu.value === menu) {
+                openSubMenu.value = null;
+            } else {
+                openSubMenu.value = menu;
+            }
+        };
+
+        const showSuccessNotification = () => {
+            isSuccess.value = true;
+            notificationMessage.value = "Beneficiary successfully added!";
+            showNotification.value = true;
+        };
+
+        const showErrorNotification = () => {
+            isSuccess.value = false;
+            notificationMessage.value =
+                "Failed to add beneficiary. Please try again.";
+            showNotification.value = true;
+        };
+
+        const closeNotification = () => {
+            showNotification.value = false;
+        };
+
+        const handleOutsideClick = (event) => {
+            const sidebar = document.querySelector(".sidebar");
+            const menuToggle = document.querySelector(".menu-toggle");
+
+            if (sidebar && menuToggle && isMenuOpen.value) {
+                if (
+                    !sidebar.contains(event.target) &&
+                    !menuToggle.contains(event.target)
+                ) {
+                    isMenuOpen.value = false;
+                }
+            }
+        };
+
+        const logout = async () => {
+            try {
+                await axios.post(route("logout"));
+                window.location.href = route("login");
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        };
+
+        const goToMunicipalities = (provinceID) => {
+            window.location.href = `/municipalities/${provinceID}`;
+        };
+
+        const openModal = () => {
+            isModalOpen.value = true;
+        };
+
+        const closeModal = () => {
+            isModalOpen.value = false;
+        };
+
+        const openSuccessModal = () => {
+            isSuccessModalOpen.value = true;
+        };
+
+        const closeSuccessModal = () => {
+            isSuccessModalOpen.value = false;
+        };
+
+        const addBeneficiary = async () => {
+            try {
+                const response = await axios.post(
+                    route("beneficiaries.store"),
+                    beneficiary
+                );
+                console.log("Beneficiary added:", response.data);
+                closeModal(); // Close the add beneficiary modal
+                openSuccessModal(); // Open the success notification modal
+                // Optionally, refresh the data or update the list of beneficiaries
+            } catch (error) {
+                console.error("Error adding beneficiary:", error);
+                // Optionally, show an error message
+            }
+        };
+
+        const fetchMunicipalities = async () => {
+            if (beneficiary.provinceID) {
+                try {
+                    const response = await axios.get(
+                        route("api.municipalities.index", {
+                            provinceID: beneficiary.provinceID,
+                        })
+                    );
+                    municipalities.value = response.data.municipalities;
+                } catch (error) {
+                    console.error("Error fetching municipalities:", error);
+                }
+            } else {
+                municipalities.value = [];
+                beneficiary.municipalityID = "";
+                barangays.value = [];
+                beneficiary.barangayID = "";
+            }
+        };
+
+        const fetchBarangays = async () => {
+            if (beneficiary.municipalityID) {
+                try {
+                    const response = await axios.get(
+                        route("api.barangays.index", {
+                            municipalityID: beneficiary.municipalityID,
+                        })
+                    );
+                    barangays.value = response.data.barangays;
+                } catch (error) {
+                    console.error("Error fetching barangays:", error);
+                }
+            } else {
+                barangays.value = [];
+                beneficiary.barangayID = "";
+            }
+        };
+
+        // Computed properties
+        const claimed = computed(() =>
+            props.provinces.reduce((sum, province) => sum + province.claimed, 0)
+        );
+        const unclaimed = computed(() =>
+            props.provinces.reduce(
+                (sum, province) => sum + province.unclaimed,
+                0
+            )
+        );
+        const disqualified = computed(() =>
+            props.provinces.reduce(
+                (sum, province) => sum + province.disqualified,
+                0
+            )
+        );
+        const doubleEntry = computed(() =>
+            props.provinces.reduce(
+                (sum, province) => sum + province.double_entry,
+                0
+            )
+        );
+
+        const totalAmount = computed(() => {
+            return props.provinces
+                .reduce(
+                    (sum, province) =>
+                        sum + parseFloat(province.totalAmountReleased),
+                    0
+                )
+                .toLocaleString("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                });
+        });
+
+        onMounted(() => {
+            const ctx = document.getElementById("myChart");
+            if (ctx) {
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: props.provinces.map(
+                            (province) => province.provinceName
+                        ),
+                        datasets: [
+                            {
+                                label: "Number of Beneficiaries",
+                                backgroundColor: "rgb(59, 68, 122)",
+                                data: props.provinces.map(
+                                    (province) => province.totalBeneficiaries
+                                ),
+                            },
+                            {
+                                label: "Amount Released",
+                                backgroundColor: "rgb(166, 170, 238)",
+                                data: props.provinces.map((province) =>
+                                    parseFloat(province.totalAmountReleased)
+                                ),
+                            },
+                        ],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                            },
+                        },
+                    },
+                });
+            }
+            document.addEventListener("click", handleOutsideClick);
+        });
+
+        onUnmounted(() => {
+            document.removeEventListener("click", handleOutsideClick);
+        });
+
+        return {
+            municipalities,
+            barangays,
+            isModalOpen,
+            isMenuOpen,
+            isUserMenuOpen,
+            openSubMenu,
+            beneficiary,
+            toggleMenu,
+            toggleUserMenu,
+            toggleSubMenu,
+            logout,
+            goToMunicipalities,
+            openModal,
+            closeModal,
+            fetchMunicipalities,
+            fetchBarangays,
+            addBeneficiary,
+            claimed,
+            unclaimed,
+            disqualified,
+            doubleEntry,
+            totalAmount,
+            isModalOpen,
+            isSuccessModalOpen,
+            openModal,
+            closeModal,
+            beneficiary,
+            openSuccessModal,
+            closeSuccessModal,
+            addBeneficiary,
+        };
+    },
+};
 </script>
 
 <style scoped>
