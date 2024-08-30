@@ -36,16 +36,18 @@ class Beneficiary extends Model
     {
         return $this->belongsTo(Barangay::class, 'barangayID', 'barangayID');
     }
-    public static function generateUniqueBeneficiaryNumber($barangayId)
-{
-    do {
-        $number = mt_rand(1000, 9999); // Generate a random 4-digit number
-        $exists = self::where('barangayID', $barangayId)
-                     ->where('beneficiaryNumber', $number)
-                     ->exists();
-    } while ($exists);
 
-    return $number;
-}
+
+    public static function generateUniqueBeneficiaryNumber($barangayId)
+    {
+        do {
+            $number = mt_rand(1000, 9999); // Generate a random 4-digit number
+            $exists = self::where('barangayID', $barangayId)
+                ->where('beneficiaryNumber', $number)
+                ->exists();
+        } while ($exists);
+
+        return $number;
+    }
 
 }

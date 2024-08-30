@@ -9,7 +9,6 @@ use App\Listeners\UpdateTotalBeneficiaries;
 
 
 class AppServiceProvider extends ServiceProvider
-
 {
     /**
      * Register any application services.
@@ -28,6 +27,12 @@ class AppServiceProvider extends ServiceProvider
             BeneficiaryUpdated::class,
             [UpdateTotalBeneficiaries::class, 'handle']
         );
+        \DB::listen(function ($query) {
+            \Log::info($query->sql);
+            \Log::info($query->bindings);
+            \Log::info($query->time);
+        });
+
     }
     protected function configureRateLimiting()
     {
@@ -40,4 +45,5 @@ class AppServiceProvider extends ServiceProvider
         });
 
     }
+
 }

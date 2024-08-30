@@ -9,6 +9,9 @@ class Barangay extends Model
 {
     use HasFactory;
 
+    protected $table = 'barangays';
+    protected $primaryKey = 'barangayID';
+
     protected $fillable = [
         'barangayID',
         'barangayName',
@@ -27,4 +30,9 @@ class Barangay extends Model
     {
         return $this->belongsTo(Municipality::class, 'municipalityID', 'municipalityID');
     }
+    public function beneficiaries()
+    {
+        return $this->hasMany(Beneficiary::class, 'barangayID', 'barangayID');
+    }
+
 }
