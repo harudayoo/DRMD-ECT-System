@@ -463,10 +463,6 @@ const goToBarangays = (municipalityID) => {
   window.location.href = `/barangays/${municipalityID}`;
 };
 
-const openModal = () => {
-  isModalOpen.value = true;
-};
-
 const closeModal = () => {
   isModalOpen.value = false;
 };
