@@ -463,6 +463,35 @@ const goToBarangays = (municipalityID) => {
   window.location.href = `/barangays/${municipalityID}`;
 };
 
+const openModal = () => {
+  isModalOpen.value = true;
+};
+
+const closeModal = () => {
+  isModalOpen.value = false;
+};
+
+const openSuccessModal = () => {
+  isSuccessModalOpen.value = true;
+};
+
+const closeSuccessModal = () => {
+  isSuccessModalOpen.value = false;
+};
+
+const addBeneficiary = async () => {
+  try {
+    const response = await axios.post(route("beneficiaries.store"), beneficiary);
+    console.log("Beneficiary added:", response.data);
+    closeModal(); // Close the add beneficiary modal
+    openSuccessModal(); // Open the success notification modal
+    window.location.reload(); //Refresh the data or update the list of beneficiaries
+  } catch (error) {
+    console.error("Error adding beneficiary:", error);
+    //show an error message
+  }
+};
+
 // Computed properties
 const totalClaimed = computed(() =>
   props.municipalities.reduce((sum, municipality) => sum + municipality.claimed, 0)
