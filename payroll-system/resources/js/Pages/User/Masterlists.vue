@@ -145,7 +145,7 @@
 
 <script setup>
 import { ref } from "vue";
-import SidebarLayout from "C:/Users/cayan/Documents/DRMD-ECT/payroll-system/resources/js/Layouts/Sidebar.vue";
+import SidebarLayout from "../../Layouts/PrimitiveSB.vue";
 
 const props = defineProps({
     barangay: Object,

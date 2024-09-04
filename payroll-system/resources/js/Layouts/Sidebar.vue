@@ -1,263 +1,20 @@
 <template>
-    <div class="h-screen flex flex-col overflow-hidden">
-        <!-- Top bar -->
-        <nav
-            class="bg-sky-900 shadow-2xl flex items-center justify-between px-4 py-.5"
-        >
-            <!-- Menu Toggle Button -->
-            <button
-                @click="toggleMenu"
-                class="text-white focus:outline-none hover:text-red-700 transition-colors duration-200 menu-toggle"
+    <aside
+        v-if="isOpen"
+        class="bg-white w-64 flex-shrink-0 border-r overflow-y-auto rounded-tr-xl rounded-br-lg shadow-lg flex flex-col h-full"
+    >
+        <nav class="mt-5 flex-grow">
+            <h3
+                class="px-6 text-xs font-semibold text-gray-600 uppercase tracking-wide"
+            >
+                Home
+            </h3>
+            <a
+                href="#"
+                class="flex items-center px-6 py-2 text-gray-700 hover:bg-gray-100"
             >
                 <svg
-                    class="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2.5"
-                        d="M4 6h16M4 12h16M4 18h16"
-                    ></path>
-                </svg>
-            </button>
-
-            <!-- User Menu Toggle Button -->
-            <div class="relative">
-                <button
-                    @click="toggleUserMenu"
-                    class="text-white mt-1.5 focus:outline-none hover:text-red-700 transition-colors duration-200"
-                >
-                    <svg
-                        class="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-                        ></path>
-                    </svg>
-                </button>
-                <div
-                    v-if="isUserMenuOpen"
-                    class="absolute right-0 w-48 bg-white rounded-md shadow-lg py-1 z-10"
-                >
-                    <a
-                        href="#"
-                        @click="logout"
-                        class="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-300"
-                    >
-                        Log out
-                    </a>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Sidebar -->
-        <div
-            class="fixed top-0 left-0 h-full w-80 bg-gray-800 bg-opacity-90 text-white transform transition-transform duration-300 ease-in-out z-50 overflow-y-auto sidebar"
-            :class="{
-                'translate-x-0': isMenuOpen,
-                '-translate-x-full': !isMenuOpen,
-            }"
-        >
-            <div class="p-4 relative">
-                <!-- Logo and Title -->
-                <span class="text-2xl font-semibold ml-14">
-                    DSWD - DRMD
-                    <img
-                        src="/icons/main-logo.png"
-                        alt="form-bg"
-                        class="w-12 -mt-10"
-                    />
-                </span>
-                <!-- Close Menu Button -->
-                <button
-                    @click="toggleMenu"
-                    class="absolute top-2.5 right-4 text-white focus:outline-none hover:text-red-700 transition-colors duration-200"
-                >
-                    <svg
-                        class="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2.5"
-                            d="M6 18L18 6M6 6l12 12"
-                        ></path>
-                    </svg>
-                </button>
-
-                <!-- Navigation Links -->
-                <ul class="mt-4 ml-4 font-thin">
-                    <!-- Beneficiaries Submenu -->
-                    <li class="mb-4 text-xl">
-                        <div
-                            @click="toggleSubMenu('beneficiaries')"
-                            class="flex justify-between items-center cursor-pointer"
-                        >
-                            <a href="#" class="hover:text-gray-500"
-                                >Beneficiaries</a
-                            >
-                            <svg
-                                :class="{
-                                    'rotate-90':
-                                        openSubMenu === 'beneficiaries',
-                                }"
-                                class="w-5 h-5 text-white transition-transform duration-200"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="3"
-                                    d="M9 5l7 7-7 7"
-                                ></path>
-                            </svg>
-                        </div>
-                        <div
-                            v-show="openSubMenu === 'beneficiaries'"
-                            class="mt-2 ml-4 rounded-md p-2"
-                        >
-                            <a
-                                href="#"
-                                @click="openModal"
-                                class="block text-xl hover:text-gray-400"
-                                >Add</a
-                            >
-                            <a
-                                href="#"
-                                class="block text-xl hover:text-gray-400"
-                                >Edit</a
-                            >
-                        </div>
-                    </li>
-
-                    <!-- Masterlist Submenu -->
-                    <li class="mb-4 text-xl">
-                        <div
-                            @click="toggleSubMenu('masterlist')"
-                            class="flex justify-between items-center cursor-pointer"
-                        >
-                            <a href="#" class="hover:text-gray-500"
-                                >Masterlist</a
-                            >
-                            <svg
-                                :class="{
-                                    'rotate-90': openSubMenu === 'masterlist',
-                                }"
-                                class="w-5 h-5 text-white transition-transform duration-200"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="3"
-                                    d="M9 5l7 7-7 7"
-                                ></path>
-                            </svg>
-                        </div>
-                        <div
-                            v-show="openSubMenu === 'masterlist'"
-                            class="mt-2 ml-4 rounded-md p-1"
-                        >
-                            <a
-                                href="#"
-                                class="block text-xl hover:text-gray-400"
-                                >Import</a
-                            >
-                            <a
-                                href="#"
-                                class="block text-xl hover:text-gray-400"
-                                >Export</a
-                            >
-                        </div>
-                    </li>
-
-                    <!-- Documents Submenu -->
-                    <li class="mb-4 text-xl">
-                        <div
-                            @click="toggleSubMenu('documents')"
-                            class="flex justify-between items-center cursor-pointer"
-                        >
-                            <a href="#" class="hover:text-gray-500"
-                                >Documents</a
-                            >
-                            <svg
-                                :class="{
-                                    'rotate-90': openSubMenu === 'documents',
-                                }"
-                                class="w-5 h-5 text-white transition-transform duration-200"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="3"
-                                    d="M9 5l7 7-7 7"
-                                ></path>
-                            </svg>
-                        </div>
-                        <div
-                            v-show="openSubMenu === 'documents'"
-                            class="mt-2 ml-4 rounded-md p-1"
-                        >
-                            <a
-                                href="#"
-                                class="block text-xl hover:text-gray-400"
-                                >Payroll Form</a
-                            >
-                            <a
-                                href="#"
-                                class="block text-xl hover:text-gray-400"
-                                >Cash Report</a
-                            >
-                            <a
-                                href="#"
-                                class="block text-xl hover:text-gray-400"
-                                >RCD</a
-                            >
-                            <a
-                                href="#"
-                                class="block text-xl hover:text-gray-400"
-                                >CDR</a
-                            >
-                        </div>
-                    </li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="flex-1 overflow-x-hidden overflow-y-auto">
-            <!-- Toggle Menu Button -->
-            <button
-                @click="toggleMenu"
-                class="fixed top-4 left-4 z-40 text-gray-600 focus:outline-none hover:text-gray-900"
-            >
-                <svg
-                    class="w-6 h-6"
+                    class="w-5 h-5 mr-3"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -267,161 +24,235 @@
                         stroke-linecap="round"
                         stroke-linejoin="round"
                         stroke-width="2"
-                        d="M4 6h16M4 12h16M4 18h16"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                     ></path>
                 </svg>
-            </button>
+                Dashboard
+            </a>
+            <div class="mt-4">
+                <h3
+                    class="px-6 text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                >
+                    Main Menu
+                </h3>
 
-            <!-- Slot for page content -->
-            <slot></slot>
-        </div>
-
-        <!-- Add Beneficiary Modal -->
-        <div
-            v-if="isModalOpen"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
-        >
-            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
-                <h2 class="text-2xl font-bold mb-4 text-center">
-                    Add Beneficiary
-                </h2>
-                <form @submit.prevent="addBeneficiary">
-                    <!-- Form fields here -->
-                </form>
-            </div>
-        </div>
-
-        <!-- Success Notification Modal -->
-        <div
-            v-if="isSuccessModalOpen"
-            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
-        >
-            <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-                <div class="text-center">
-                    <svg
-                        class="mx-auto mb-4 w-14 h-14 text-green-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M5 13l4 4L19 7"
-                        ></path>
-                    </svg>
-                    <h3 class="mb-5 text-lg font-normal text-gray-500">
-                        Beneficiary successfully added!
-                    </h3>
+                <!-- Beneficiaries Submenu -->
+                <div class="mt-2">
                     <button
-                        @click="closeSuccessModal"
-                        type="button"
-                        class="text-white bg-green-600 hover:bg-green-800 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm inline-flex items-center px-5 py-2.5 text-center mr-2"
+                        @click="toggleSubMenu('beneficiaries')"
+                        class="flex items-center justify-between w-full px-6 py-2 text-gray-700 hover:bg-gray-100 focus:outline-none"
                     >
-                        OK
+                        <span class="flex items-center">
+                            <svg
+                                class="w-5 h-5 mr-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                                ></path>
+                            </svg>
+                            Beneficiaries
+                        </span>
+                        <svg
+                            :class="{
+                                'transform rotate-180':
+                                    openSubMenu === 'beneficiaries',
+                            }"
+                            class="w-4 h-4 transition-transform duration-200"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 9l-7 7-7-7"
+                            ></path>
+                        </svg>
                     </button>
+                    <div
+                        v-show="openSubMenu === 'beneficiaries'"
+                        class="mt-2 py-2 bg-gray-50"
+                    >
+                        <a
+                            @click="$emit('open-modal')"
+                            href="#"
+                            class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
+                            >Add</a
+                        >
+                        <a
+                            href="#"
+                            class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
+                            >Edit</a
+                        >
+                    </div>
+                </div>
+
+                <!-- Masterlist Submenu -->
+                <div class="mt-2">
+                    <button
+                        @click="toggleSubMenu('masterlist')"
+                        class="flex items-center justify-between w-full px-6 py-2 text-gray-700 hover:bg-gray-100 focus:outline-none"
+                    >
+                        <span class="flex items-center">
+                            <svg
+                                class="w-5 h-5 mr-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                                ></path>
+                            </svg>
+                            Masterlist
+                        </span>
+                        <svg
+                            :class="{
+                                'transform rotate-180':
+                                    openSubMenu === 'masterlist',
+                            }"
+                            class="w-4 h-4 transition-transform duration-200"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 9l-7 7-7-7"
+                            ></path>
+                        </svg>
+                    </button>
+                    <div
+                        v-show="openSubMenu === 'masterlist'"
+                        class="mt-2 py-2 bg-gray-50"
+                    >
+                        <a
+                            href="#"
+                            class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
+                            >Import</a
+                        >
+                        <a
+                            href="#"
+                            class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
+                            >Export</a
+                        >
+                    </div>
+                </div>
+
+                <!-- Documents Submenu -->
+                <div class="mt-2">
+                    <button
+                        @click="toggleSubMenu('documents')"
+                        class="flex items-center justify-between w-full px-6 py-2 text-gray-700 hover:bg-gray-100 focus:outline-none"
+                    >
+                        <span class="flex items-center">
+                            <svg
+                                class="w-5 h-5 mr-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                ></path>
+                            </svg>
+                            Documents
+                        </span>
+                        <svg
+                            :class="{
+                                'transform rotate-180':
+                                    openSubMenu === 'documents',
+                            }"
+                            class="w-4 h-4 transition-transform duration-200"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M19 9l-7 7-7-7"
+                            ></path>
+                        </svg>
+                    </button>
+                    <div
+                        v-show="openSubMenu === 'documents'"
+                        class="mt-2 py-2 bg-gray-50"
+                    >
+                        <a
+                            href="#"
+                            class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
+                            >Payroll Form</a
+                        >
+                        <a
+                            href="#"
+                            class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
+                            >Cash Report</a
+                        >
+                        <a
+                            href="#"
+                            class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
+                            >RCD</a
+                        >
+                        <a
+                            href="#"
+                            class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
+                            >CDR</a
+                        >
+                    </div>
                 </div>
             </div>
+        </nav>
+
+        <!-- Footer -->
+        <div class="mt-auto p-2 border-t">
+            <p class="text-sm text-gray-600 text-center">DRMD@ACE 2024</p>
         </div>
-    </div>
+    </aside>
 </template>
 
-<script>
-import { ref, onMounted, onUnmounted } from "vue";
-import axios from "axios";
+<script setup lang="ts">
+import { ref } from "vue";
 
-export default {
-    name: "SidebarLayout",
-    setup() {
-        const isMenuOpen = ref(false);
-        const isModalOpen = ref(false);
-        const isSuccessModalOpen = ref(false);
-        const openSubMenu = ref(null);
+const props = defineProps<{
+    isOpen: boolean;
+}>();
 
-        const toggleMenu = () => {
-            isMenuOpen.value = !isMenuOpen.value;
-        };
+const emit = defineEmits(["open-modal"]);
 
-        const toggleSubMenu = (menu) => {
-            if (openSubMenu.value === menu) {
-                openSubMenu.value = null;
-            } else {
-                openSubMenu.value = menu;
-            }
-        };
+const openSubMenu = ref(null);
 
-        const openModal = () => {
-            isModalOpen.value = true;
-        };
-
-        const closeModal = () => {
-            isModalOpen.value = false;
-        };
-
-        const openSuccessModal = () => {
-            isSuccessModalOpen.value = true;
-        };
-
-        const closeSuccessModal = () => {
-            isSuccessModalOpen.value = false;
-        };
-
-        const addBeneficiary = async () => {
-            try {
-                const response = await axios.post(
-                    route("beneficiaries.store"),
-                    beneficiary
-                );
-                console.log("Beneficiary added:", response.data);
-                closeModal();
-                openSuccessModal();
-            } catch (error) {
-                console.error("Error adding beneficiary:", error);
-            }
-        };
-
-        const handleOutsideClick = (event) => {
-            const sidebar = document.querySelector(".sidebar");
-            const menuToggle = document.querySelector(".menu-toggle");
-
-            if (
-                isMenuOpen.value &&
-                sidebar &&
-                !sidebar.contains(event.target) &&
-                !menuToggle.contains(event.target)
-            ) {
-                isMenuOpen.value = false;
-            }
-        };
-
-        onMounted(() => {
-            document.addEventListener("click", handleOutsideClick);
-        });
-
-        onUnmounted(() => {
-            document.removeEventListener("click", handleOutsideClick);
-        });
-
-        return {
-            isMenuOpen,
-            isModalOpen,
-            isSuccessModalOpen,
-            openSubMenu,
-            toggleMenu,
-            toggleSubMenu,
-            openModal,
-            closeModal,
-            openSuccessModal,
-            closeSuccessModal,
-            addBeneficiary,
-            handleOutsideClick,
-        };
-    },
+const toggleSubMenu = (menu: string) => {
+    if (openSubMenu.value === menu) {
+        openSubMenu.value = null;
+    } else {
+        openSubMenu.value = menu;
+    }
 };
 </script>
 
 <style scoped>
-/* Add any additional styles here */
+/* Add any component-specific styles here */
 </style>

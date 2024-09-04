@@ -86,3 +86,4 @@ Route::post('/register-request', [RegisteredUserController::class, 'storeRequest
 
 // Include authentication routes
 require __DIR__ . '/auth.php';
+
