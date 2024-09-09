@@ -95,3 +95,32 @@ const navigateToMunicipality = (municipality: string) => {
     window.location.href = `/municipality/${formattedMunicipality}`;
 };
 </script>
+
+<style scoped>
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+body {
+    font-family: "Inter", sans-serif;
+}
+
+/* Custom scroll bar for the table */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #6b7280; /* Custom thumb color */
+    border-radius: 10px; /* Rounded corners */
+    border: 2px solid #e5e7eb; /* Border around the thumb */
+}
+
+::-webkit-scrollbar-track {
+    background-color: #f3f4f6; /* Track color */
+    border-radius: 10px; /* Rounded corners */
+}
+
+/* Scrollbar hover effect */
+::-webkit-scrollbar-thumb:hover {
+    background-color: #374151; /* Darker on hover */
+}
+</style>

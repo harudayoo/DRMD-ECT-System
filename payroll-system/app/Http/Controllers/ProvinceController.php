@@ -11,7 +11,7 @@ class ProvinceController extends Controller
     {
         $provinces = Province::all();
 
-        return Inertia::render('User/MainDashboard', [
+        return Inertia::render('User/MainDash', [
             'provinces' => $provinces,
         ]);
     }

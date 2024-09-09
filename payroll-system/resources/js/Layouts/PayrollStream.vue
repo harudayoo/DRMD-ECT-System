@@ -10,60 +10,58 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from "vue";
+import { onMounted, watch, ref, computed } from "vue";
 import Chart from "chart.js/auto";
 
 const props = defineProps<{
     showGraph: boolean;
+    provinces: Array<{
+        provinceName: string;
+        totalBeneficiaries: number;
+        totalAmountReleased: string;
+    }>;
 }>();
 
 let chart: Chart | null = null;
 
-const labels = [
-    "Asuncion",
-    "Braulio E. Dujali",
-    "Carmen",
-    "Kapalong",
-    "New Corella'",
-    "Panabo",
-    "Samal",
-    "San Isidro",
-    "Santo Tomas",
-    "Tagum",
-    "Talaingod",
-];
+const labels = computed(() =>
+    props.provinces.map((province) => province.provinceName)
+);
 
-const data = {
-    labels: labels,
+const data = computed(() => ({
+    labels: labels.value,
     datasets: [
         {
             label: "Number of Beneficiaries",
             backgroundColor: "rgb(59, 68, 122)",
-            data: [
-                350521, 303566, 207897, 227991, 351564, 986325, 238545, 264642,
-                781348, 637586, 626488,
-            ],
+            data: props.provinces.map(
+                (province) => province.totalBeneficiaries
+            ),
         },
         {
             label: "Amount Released",
             backgroundColor: "rgb(166, 170, 238)",
-            data: [
-                171624, 188943, 345234, 415853, 510427, 259873, 628714, 985524,
-                639631, 678135, 259364,
-            ],
+            data: props.provinces.map((province) =>
+                parseFloat(province.totalAmountReleased)
+            ),
         },
     ],
-};
+}));
 
 const createChart = () => {
     const ctx = document.getElementById("myChart") as HTMLCanvasElement;
     if (ctx) {
         chart = new Chart(ctx, {
             type: "bar",
-            data: data,
+            data: data.value,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                    },
+                },
                 plugins: {
                     legend: {
                         position: "bottom",
@@ -94,5 +92,16 @@ watch(
             }
         }
     }
+);
+
+watch(
+    () => props.provinces,
+    () => {
+        if (chart) {
+            chart.data = data.value;
+            chart.update();
+        }
+    },
+    { deep: true }
 );
 </script>
