@@ -24,19 +24,13 @@
             class="hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <td
-              v-for="(value, key, index) in beneficiary"
+              v-for="(key, index) in displayFields"
               :key="key"
               :class="getColumnClass(index)"
               class="py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100"
             >
-              {{ value }}
+              {{ key === "status" ? getStatusText(beneficiary[key]) : beneficiary[key] }}
             </td>
-            <button
-              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              @click="$emit('edit-beneficiary', beneficiary)"
-            >
-              Edit
-            </button>
           </tr>
         </tbody>
       </table>
@@ -136,6 +130,16 @@ const headers = [
   "Status",
 ];
 
+const displayFields = [
+  "beneficiaryNumber",
+  "lastName",
+  "firstName",
+  "middleName",
+  "extensionName",
+  "dateOfBirth",
+  "status",
+];
+
 const getColumnClass = (index: number) => {
   const alignments = [
     "text-center w-[15%]", // Beneficiary Number
@@ -147,6 +151,16 @@ const getColumnClass = (index: number) => {
     "text-center", // Status
   ];
   return alignments[index] || "text-left";
+};
+
+const getStatusText = (status: number) => {
+  const statusMap = {
+    1: "Claimed",
+    2: "Unclaimed",
+    3: "Disqualified",
+    4: "Duplicate",
+  };
+  return statusMap[status as keyof typeof statusMap] || "Unknown";
 };
 
 // Pagination

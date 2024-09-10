@@ -26,4 +26,8 @@ class Municipality extends Model
     {
         return $this->belongsTo(Province::class);
     }
+
+    public function barangay(){
+        return $this->hasMany(Barangay::class, 'municipalityID', 'municipalityID');
+    }
 }

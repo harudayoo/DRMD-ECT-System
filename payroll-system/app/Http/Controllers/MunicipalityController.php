@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use App\Models\Province;
 use App\Models\Municipality;
 
+
 class MunicipalityController extends Controller
 {
     public function index($provinceID)
@@ -25,7 +26,7 @@ class MunicipalityController extends Controller
             ->get();
         $province = Province::find($provinceID);
 
-        return Inertia::render('Municipalities', [
+        return Inertia::render('User/Municipalities', [
             'municipalities' => $municipalities,
             'provinceID' => $provinceID,
             'provinceName' => $province->name,

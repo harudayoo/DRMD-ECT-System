@@ -11,8 +11,9 @@ class BarangayController extends Controller
 {
     public function index($municipalityID)
     {
-        $barangays = Barangay::where('municipalityID', $municipalityID)->get();
+
         $municipality = Municipality::where('municipalityID', $municipalityID)->first();
+        $barangays = Barangay::where('municipalityID', $municipalityID)->get();
 
         $totalClaimed = $barangays->sum('claimed');
         $totalUnclaimed = $barangays->sum('unclaimed');
