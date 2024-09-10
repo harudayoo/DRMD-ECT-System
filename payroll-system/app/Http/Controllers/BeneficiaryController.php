@@ -8,9 +8,20 @@ use App\Models\Municipality;
 use App\Models\Province;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Validation\ValidatesRequests;
 
 class BeneficiaryController extends Controller
 {
+    use ValidatesRequests;
+
+    public function index()
+    {
+        $beneficiaries = Beneficiary::all();
+        return Inertia::render('User/EditBeneficiary', [
+            'beneficiaries' => $beneficiaries
+        ]);
+    }
+
     public function create()
     {
         $provinces = Province::all(['provinceID', 'provinceName'])->toArray();
@@ -20,7 +31,6 @@ class BeneficiaryController extends Controller
             'barangays' => [],
         ]);
     }
-
 
     public function store(Request $request)
     {
@@ -45,6 +55,31 @@ class BeneficiaryController extends Controller
         } catch (\Exception $e) {
             \Log::error('Error adding beneficiary: ' . $e->getMessage());
             return response()->json(['message' => 'An error occurred while adding the beneficiary'], 500);
+        }
+    }
+
+    public function update(Request $request, $beneficiaryID)
+    {
+        try {
+            $this->validate($request, [
+                'lastName' => 'required|string|max:255',
+                'firstName' => 'required|string|max:255',
+                'middleName' => 'required|string|max:255',
+                'extensionName' => 'nullable|string|max:255',
+                'dateOfBirth' => 'required|date',
+            ]);
+
+            $beneficiary = Beneficiary::findOrFail($beneficiaryID);
+            $beneficiary->update($request->all());
+
+            return response()->json($beneficiary);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Beneficiary not found'], 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error updating beneficiary: ' . $e->getMessage());
+            return response()->json(['message' => 'An error occurred while updating the beneficiary'], 500);
         }
     }
 

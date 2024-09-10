@@ -1,231 +1,199 @@
 <template>
-    <div class="h-screen flex flex-col overflow-hidden bg-white">
-        <!-- Top bar -->
-        <nav
-            class="bg-red-700 shadow-2xl flex items-center justify-end px-4 py-1"
-        >
-            <div class="relative">
-                <button
-                    @click="toggleUserMenu"
-                    class="text-white focus:outline-none mt-1 hover:text-blue-700 transition-colors duration-200"
-                >
-                    <svg
-                        class="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
+    <NSAdmin>
+        <div class="h-full flex flex-col px-14 overflow-hidden bg-stone-100">
+            <div class="flex-1 flex flex-col overflow-hidden p-4">
+                <div class="flex justify-between items-center mt-2 mb-4">
+                    <h1 class="text-2xl font-black text-black">
+                        User Requests
+                    </h1>
+                    <button
+                        @click="goBack"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl"
                     >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-                        ></path>
-                    </svg>
-                </button>
+                        Back to Dashboard
+                    </button>
+                </div>
+
+                <!-- User List Page -->
                 <div
-                    v-if="isUserMenuOpen"
-                    class="absolute right-0 w-48 bg-white rounded-md shadow-lg py-1 z-10"
+                    class="h-[85%] bg-white shadow-xl rounded-2xl overflow-hidden"
                 >
-                    <a
-                        href="#"
-                        @click="logout"
-                        class="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-300"
-                        >Log out</a
-                    >
-                </div>
-            </div>
-        </nav>
-
-        <!-- Header -->
-        <div class="flex-1 flex flex-col overflow-hidden p-4">
-            <header class="mb-2 ml-1">
-                <h1 class="text-3xl font-black text-black">Admin</h1>
-            </header>
-
-            <!-- User List Page -->
-            <div
-                class="flex-1 bg-gray-100 shadow-2xl rounded-lg overflow-hidden"
-            >
-                <div class="p-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-bold">User Requests</h2>
-                        <button
-                            @click="goBack"
-                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                        >
-                            Back to Dashboard
-                        </button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full bg-white">
-                            <thead>
-                                <tr>
-                                    <th
-                                        class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Full Name
-                                    </th>
-                                    <th
-                                        class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Email
-                                    </th>
-                                    <th
-                                        class="py-2 px-4 border-b border-gray-200 bg-gray-50 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
-                                    >
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr
-                                    v-for="request in userRequests"
-                                    :key="request.id"
-                                >
-                                    <td
-                                        class="py-2 px-4 border-b border-gray-200"
-                                    >
-                                        {{ getFullName(request) }}
-                                    </td>
-                                    <td
-                                        class="py-2 px-4 border-b border-gray-200"
-                                    >
-                                        {{ request.email }}
-                                    </td>
-                                    <td
-                                        class="py-2 px-4 border-b border-gray-200"
-                                    >
-                                        <button
-                                            @click="
-                                                openConfirmationModal(request)
-                                            "
-                                            class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded mr-2"
+                    <div class="p-4">
+                        <div class="overflow-x-auto">
+                            <table class="w-full bg-white">
+                                <thead>
+                                    <tr>
+                                        <th
+                                            class="py-2 px-4 border-b border-gray-200 text-left text-lg leading-4 font-medium text-gray-500 tracking-wider"
                                         >
-                                            Create
-                                        </button>
-                                        <button
-                                            @click="confirmDeny(request.id)"
-                                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                                            Full Name
+                                        </th>
+                                        <th
+                                            class="py-2 px-4 border-b border-gray-200 text-left text-lg leading-4 font-medium text-gray-500 tracking-wider"
                                         >
-                                            Deny
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                            Email
+                                        </th>
+                                        <th
+                                            class="py-2 px-4 border-b border-gray-200 text-left text-lg leading-4 font-medium text-gray-500 tracking-wider"
+                                        >
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        v-for="request in userRequests"
+                                        :key="request.id"
+                                    >
+                                        <td
+                                            class="py-2 px-4 border-b border-gray-200"
+                                        >
+                                            {{ getFullName(request) }}
+                                        </td>
+                                        <td
+                                            class="py-2 px-4 border-b border-gray-200"
+                                        >
+                                            {{ request.email }}
+                                        </td>
+                                        <td
+                                            class="py-2 px-4 border-b border-gray-200"
+                                        >
+                                            <button
+                                                @click="
+                                                    openConfirmationModal(
+                                                        request
+                                                    )
+                                                "
+                                                class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded mr-2"
+                                            >
+                                                Create
+                                            </button>
+                                            <button
+                                                @click="confirmDeny(request.id)"
+                                                class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded"
+                                            >
+                                                Deny
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Confirmation Modal -->
-            <div
-                v-if="showConfirmationModal"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-            >
-                <div class="bg-white p-8 rounded-lg shadow-xl text-center">
-                    <h2
-                        class="text-2xl font-bold mb-4 flex items-center justify-center"
-                    >
-                        Confirmation
-                    </h2>
-                    <p>
-                        Are you sure you want to create a new <br />
-                        user for
-                        {{ selectedRequest.email }}?
-                    </p>
-                    <div class="mt-6 flex justify-center space-x-4">
-                        <button
-                            @click="showConfirmationModal = false"
-                            class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+                <!-- Confirmation Modal -->
+                <div
+                    v-if="showConfirmationModal"
+                    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                >
+                    <div class="bg-white p-8 rounded-lg shadow-xl text-center">
+                        <h2
+                            class="text-2xl font-bold mb-4 flex items-center justify-center"
                         >
-                            Cancel
-                        </button>
-                        <button
-                            @click="createUser"
-                            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-                        >
-                            Create
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Success Message Pop-up -->
-            <div
-                v-if="showSuccessMessage"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-            >
-                <div class="bg-white p-8 rounded-lg shadow-xl w-1/5">
-                    <div class="text-center">
-                        <svg
-                            class="mx-auto mb-4 w-14 h-14 text-green-500"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                            ></path>
-                        </svg>
-                        <h2 class="text-2xl font-bold mb-4 text-gray-900">
-                            Success!
+                            Confirmation
                         </h2>
-                        <p class="text-gray-600 mb-8">
-                            New user has been created successfully.
+                        <p>
+                            Are you sure you want to create a new <br />
+                            user for
+                            {{ selectedRequest.email }}?
                         </p>
-                        <button
-                            @click="closeSuccessMessage"
-                            class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                        >
-                            Close
-                        </button>
+                        <div class="mt-6 flex justify-center space-x-4">
+                            <button
+                                @click="showConfirmationModal = false"
+                                class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                @click="createUser"
+                                class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                            >
+                                Create
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Deny Confirmation Modal -->
-            <div
-                v-if="showDenyConfirmation"
-                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-            >
-                <div class="bg-white p-8 rounded-lg shadow-xl">
-                    <h2
-                        class="text-2xl font-bold mb-4 flex items-center justify-center"
-                    >
-                        Confirmation
-                    </h2>
-                    <p>Are you sure you want to deny this request?</p>
-                    <div class="mt-6 flex justify-center space-x-4">
-                        <button
-                            @click="showDenyConfirmation = false"
-                            class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+                <!-- Success Message Pop-up -->
+                <div
+                    v-if="showSuccessMessage"
+                    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                >
+                    <div class="bg-white p-8 rounded-lg shadow-xl w-1/5">
+                        <div class="text-center">
+                            <svg
+                                class="mx-auto mb-4 w-14 h-14 text-green-500"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                ></path>
+                            </svg>
+                            <h2 class="text-2xl font-bold mb-4 text-gray-900">
+                                Success!
+                            </h2>
+                            <p class="text-gray-600 mb-8">
+                                New user has been created successfully.
+                            </p>
+                            <button
+                                @click="closeSuccessMessage"
+                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deny Confirmation Modal -->
+                <div
+                    v-if="showDenyConfirmation"
+                    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+                >
+                    <div class="bg-white p-8 rounded-lg shadow-xl">
+                        <h2
+                            class="text-2xl font-bold mb-4 flex items-center justify-center"
                         >
-                            Cancel
-                        </button>
-                        <button
-                            @click="denyRequest"
-                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                        >
-                            Confirm
-                        </button>
+                            Confirmation
+                        </h2>
+                        <p>Are you sure you want to deny this request?</p>
+                        <div class="mt-6 flex justify-center space-x-4">
+                            <button
+                                @click="showDenyConfirmation = false"
+                                class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                @click="denyRequest"
+                                class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                            >
+                                Confirm
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </NSAdmin>
 </template>
 
 <script>
+import NSAdmin from "@/Layouts/NSAdmin.vue";
 import { ref, onMounted } from "vue";
 import axios from "axios";
 
 export default {
+    components: {
+        NSAdmin,
+    },
     setup() {
         const userRequests = ref([]);
         const showConfirmationModal = ref(false);

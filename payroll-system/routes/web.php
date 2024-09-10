@@ -44,11 +44,14 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/barangays/{municipalityID}', [BarangayController::class, 'index'])->name('barangays.index');
     Route::get('/barangay/{barangayID}', [BarangayController::class, 'masterlist'])->name('barangay.masterlist');
 
+
     //Beneficiary Routes
     Route::get('/add-beneficiary', [BeneficiaryController::class, 'create'])->name('beneficiaries.create');
     Route::post('/beneficiaries', [BeneficiaryController::class, 'store'])->name('beneficiaries.store');
     Route::get('/api/municipalities', [BeneficiaryController::class, 'getMunicipalities'])->name('api.municipalities.index');
     Route::get('/api/barangays', [BeneficiaryController::class, 'getBarangays'])->name('api.barangays.index');
+    Route::put('/api/beneficiaries/{beneficiaryID}', [BeneficiaryController::class, 'update'])->name('beneficiaries.update');
+    Route::get('/edit-beneficiary', [BeneficiaryController::class, 'index'])->name('beneficiaries.edit');
 
     //Analytics Routes
     Route::get('/status-analytics/{municipalityId}', [AnalyticsController::class, 'getStatusAnalytics']);

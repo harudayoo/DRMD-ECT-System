@@ -89,11 +89,9 @@ const totalAmount = computed(() => {
     })}`;
 });
 
-const navigateToMunicipality = (municipality: string) => {
-    const formattedMunicipality = municipality.toLowerCase().replace(/ /g, "-");
-    // You might want to use Vue Router here instead of directly manipulating the URL
-    window.location.href = `/municipality/${formattedMunicipality}`;
-};
+const navigateToMunicipality = (provinceID) => {
+    router.visit(`/municipalities/${provinceID}`);
+  };
 </script>
 
 <style scoped>

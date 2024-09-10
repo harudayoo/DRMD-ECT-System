@@ -21,7 +21,9 @@
                     <path d="M19 12H5" />
                 </svg>
             </button>
-            <h3 class="text-gray-700 text-2xl font-medium">Davao del Norte</h3>
+            <h3 class="text-gray-700 text-2xl font-medium">
+                Province or Municipality
+            </h3>
         </div>
         <div class="flex items-center">
             <button

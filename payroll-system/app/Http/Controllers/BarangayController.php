@@ -33,13 +33,13 @@ class BarangayController extends Controller
         ]);
     }
     public function masterlist($barangayID)
-    {
-        $barangay = Barangay::where('barangayID', $barangayID)->first();
-        $beneficiaries = Beneficiary::where('barangayID', $barangayID)->get();
+{
+    $barangay = Barangay::where('barangayID', $barangayID)->first();
+    $beneficiaries = Beneficiary::where('barangayID', $barangayID)->get();
 
-        return Inertia::render('User/Masterlists', [
-            'barangay' => $barangay->toArray(),
-            'beneficiaries' => $beneficiaries->toArray(),
-        ]);
-    }
+    return Inertia::render('User/Masterlists', [
+        'barangay' => $barangay->toArray(),
+        'beneficiaries' => $beneficiaries->toArray(),
+    ]);
+}
 }

@@ -1,5 +1,4 @@
-<?php
-
+<?
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,9 +29,14 @@ class Barangay extends Model
     {
         return $this->belongsTo(Municipality::class, 'municipalityID', 'municipalityID');
     }
+
+    public function masterlist()
+    {
+        return $this->hasMany(Masterlist::class, 'barangayID', 'barangayID');
+    }
+
     public function beneficiaries()
     {
         return $this->hasMany(Beneficiary::class, 'barangayID', 'barangayID');
     }
-
 }

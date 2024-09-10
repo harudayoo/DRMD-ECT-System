@@ -1,14 +1,16 @@
 <template>
-    <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <div class="h-screen flex flex-col overflow-hidden bg-white">
-        <!-- Top bar -->
+    <div
+        class="h-screen flex flex-col overflow-hidden bg-gray-100"
+        :class="{ dark: isDarkMode }"
+    >
+        <!-- Top navigation bar -->
         <nav
-            class="bg-red-700 shadow-2xl flex items-center justify-end px-4 py-1"
+            class="bg-white shadow-sm flex items-center justify-between px-4 py-2 border-b border-stone-300"
         >
-            <div class="relative">
+            <div class="flex items-center">
                 <button
-                    @click="toggleUserMenu"
-                    class="text-white focus:outline-none mt-1 hover:text-blue-700 transition-colors duration-200"
+                    @click="toggleSidebar"
+                    class="text-gray-600 focus:outline-none mr-4"
                 >
                     <svg
                         class="w-6 h-6"
@@ -21,63 +23,239 @@
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             stroke-width="2"
-                            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                            d="M4 6h16M4 12h16M4 18h16"
                         ></path>
                     </svg>
                 </button>
-                <div
-                    v-if="isUserMenuOpen"
-                    class="absolute right-0 w-48 bg-white rounded-md shadow-lg py-1 z-10"
-                >
-                    <a
-                        href="#"
-                        @click="logout"
-                        class="block px-4 py-2 text-sm text-gray-900 hover:bg-gray-300"
-                        >Log out</a
+                <div class="flex items-center">
+                    <img
+                        src="/icons/main-logo.png"
+                        alt="DRMD Logo"
+                        class="h-8 mr-2"
+                    />
+                    <span class="text-xl font-semibold text-gray-800"
+                        >DRMD</span
                     >
                 </div>
+            </div>
+            <div class="flex items-center">
+                <button
+                    @click="toggleDarkMode"
+                    class="text-gray-600 dark:text-gray-300 focus:outline-none mx-2 transition-colors duration-200"
+                >
+                    <svg
+                        v-if="!isDarkMode"
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                        ></path>
+                    </svg>
+                    <svg
+                        v-else
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                        ></path>
+                    </svg>
+                </button>
+                <button
+                    @click="toggleCalendar"
+                    class="text-gray-600 focus:outline-none mx-2"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        ></path>
+                    </svg>
+                </button>
+                <button
+                    @click="toggleNotifications"
+                    class="text-gray-600 focus:outline-none mx-2"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                        ></path>
+                    </svg>
+                </button>
+                <button
+                    @click="logout"
+                    class="text-gray-600 focus:outline-none ml-2"
+                >
+                    <svg
+                        class="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        ></path>
+                    </svg>
+                </button>
             </div>
         </nav>
 
-        <!-- Main content -->
-        <div class="flex-1 flex flex-col overflow-hidden p-4">
-            <!-- Header -->
-            <header class="mb-2 ml-1">
-                <h1 class="text-3xl font-black text-black">Admin</h1>
-            </header>
-
-            <!-- Content rectangle -->
-            <div
-                class="flex-1 bg-grey-100 shadow-2xl rounded-lg flex overflow-hidden"
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <aside
+                v-if="isSidebarOpen"
+                class="bg-white w-64 flex-shrink-0 border-r overflow-y-auto rounded-tr-xl rounded-br-lg shadow-lg flex flex-col h-full"
             >
-                <!-- Left side buttons -->
-                <div
-                    class="w-64 p-4 flex flex-col space-y-4 rounded-xl bg-gray-100"
-                >
-                    <button
-                        @click="showCreateUserForm = true"
-                        class="shadow-xl border-gray-300 border-2 text-xl text-black py-3 px-4 rounded-xl hover:bg-gray-600 hover:text-white transition-colors duration-200"
+                <nav class="mt-5 flex-grow">
+                    <h3
+                        class="px-6 text-xs font-semibold text-gray-600 uppercase tracking-wide"
                     >
-                        Create User
-                    </button>
-                    <button
-                        @click="navigateTo('update')"
-                        class="shadow-xl border-gray-300 border-2 text-xl text-black py-3 px-4 rounded-xl hover:bg-gray-600 hover:text-white transition-colors duration-200"
+                        Home
+                    </h3>
+                    <a
+                        href="#"
+                        @click.prevent="
+                            $inertia.visit(route('admin.dashboard'))
+                        "
+                        class="flex items-center px-6 py-2 text-gray-700 hover:bg-gray-100"
                     >
-                        Update User
-                    </button>
-                    <button
-                        @click="navigateTo('request')"
-                        class="shadow-xl border-gray-300 border-2 text-xl text-black py-3 px-4 rounded-xl hover:bg-gray-600 hover:text-white transition-colors duration-200"
-                    >
-                        Request
-                    </button>
+                        <svg
+                            class="w-5 h-5 mr-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                            ></path>
+                        </svg>
+                        Admin Dashboard
+                    </a>
+                    <div class="mt-4">
+                        <h3
+                            class="px-6 text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                        >
+                            Main Menu
+                        </h3>
+
+                        <!-- Create Function -->
+                        <button
+                            @click="showCreateUserForm = true"
+                            class="flex items-center w-full px-6 py-2 text-gray-700 hover:bg-gray-100 focus:outline-none"
+                        >
+                            <svg
+                                class="w-5 h-5 mr-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                ></path>
+                            </svg>
+                            Create
+                        </button>
+
+                        <!-- Update Function -->
+                        <button
+                            @click="navigateTo('update')"
+                            class="flex items-center w-full px-6 py-2 text-gray-700 hover:bg-gray-100 focus:outline-none"
+                        >
+                            <svg
+                                class="w-5 h-5 mr-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                ></path>
+                            </svg>
+                            Update
+                        </button>
+
+                        <!-- Request Function -->
+                        <button
+                            @click="navigateTo('request')"
+                            class="flex items-center w-full px-6 py-2 text-gray-700 hover:bg-gray-100 focus:outline-none"
+                        >
+                            <svg
+                                class="w-5 h-5 mr-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                                ></path>
+                            </svg>
+                            Request
+                        </button>
+                    </div>
+                </nav>
+
+                <!-- Footer -->
+                <div class="mt-auto p-2 border-t">
+                    <p class="text-sm text-gray-600 text-center">
+                        DRMD@ACE 2024
+                    </p>
                 </div>
-                <!-- Chart area -->
-                <div class="w-4/5 p-4">
-                    <canvas ref="myChart"></canvas>
-                </div>
-            </div>
+            </aside>
+
+            <!-- Main content -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+                <slot></slot>
+            </main>
         </div>
 
         <!-- Create User Form Pop-up -->
@@ -109,7 +287,7 @@
                 </button>
                 <h2 class="text-2xl font-bold mb-4 text-center">Create User</h2>
                 <form
-                    @submit.prevent="submit"
+                    @submit.prevent="submitCreateUserForm"
                     class="flex-1 flex flex-col justify-between"
                 >
                     <div class="space-y-3">
@@ -285,89 +463,20 @@
                 </form>
             </div>
         </div>
-
-        <!-- Success Message Pop-up -->
-        <div
-            v-if="showSuccessMessage"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
-        >
-            <div class="bg-white p-8 rounded-lg shadow-xl w-1/5">
-                <div class="text-center">
-                    <svg
-                        class="mx-auto mb-4 w-14 h-14 text-green-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        ></path>
-                    </svg>
-                    <h2 class="text-2xl font-bold mb-4 text-gray-900">
-                        Success!
-                    </h2>
-                    <p class="text-gray-600 mb-8">
-                        New user has been created successfully.
-                    </p>
-                    <button
-                        @click="closeSuccessMessage"
-                        class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                    >
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
-import Chart from "chart.js/auto";
+import { ref, reactive } from "vue";
 import { useForm } from "@inertiajs/vue3";
-import { Link } from "@inertiajs/vue3";
 import axios from "axios";
 
 export default {
-    name: "Dashboard",
-    components: {
-        Link,
-    },
-    props: {
-        userData: {
-            type: Array,
-            default: () => [],
-        },
-    },
-    emits: ["userCreated"],
-    setup(props, { emit }) {
-        const isMenuOpen = ref(false);
-        const isUserMenuOpen = ref(false);
+    name: "Layout",
+    setup() {
+        const isDarkMode = ref(false);
+        const isSidebarOpen = ref(true);
         const showCreateUserForm = ref(false);
-        const showSuccessMessage = ref(false);
-        const myChart = ref(null);
-
-        const toggleMenu = () => {
-            isMenuOpen.value = !isMenuOpen.value;
-        };
-
-        const toggleUserMenu = () => {
-            isUserMenuOpen.value = !isUserMenuOpen.value;
-        };
-
-        const logout = async () => {
-            try {
-                await axios.post(route("admin.logout"));
-                window.location.href = route("login");
-            } catch (error) {
-                console.error("Logout failed:", error);
-                // Handle the error appropriately
-            }
-        };
 
         const form = useForm({
             firstName: "",
@@ -379,7 +488,7 @@ export default {
             password_confirmation: "",
         });
 
-        const nameFields = ref([
+        const nameFields = reactive([
             {
                 id: "firstName",
                 label: "First Name",
@@ -418,7 +527,7 @@ export default {
             },
         ]);
 
-        const otherFields = ref([
+        const otherFields = reactive([
             {
                 id: "email",
                 label: "Email Address",
@@ -446,13 +555,49 @@ export default {
             },
         ]);
 
+        const toggleDarkMode = () => {
+            isDarkMode.value = !isDarkMode.value;
+            document.documentElement.classList.toggle("dark", isDarkMode.value);
+        };
+
+        const toggleSidebar = () => {
+            isSidebarOpen.value = !isSidebarOpen.value;
+        };
+
+        const logout = async () => {
+            try {
+                await axios.post("/logout");
+                window.location.href = "/login";
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        };
+
+        const toggleCalendar = () => {
+            // Implement calendar toggle functionality
+            console.log("Toggle calendar");
+        };
+
+        const toggleNotifications = () => {
+            // Implement notifications toggle functionality
+            console.log("Toggle notifications");
+        };
+
+        const navigateTo = (route) => {
+            if (route === "update") {
+                window.location.href = "/admin/update";
+            } else if (route === "request") {
+                window.location.href = "/admin/request";
+            }
+        };
+
         const validateNameField = (fieldId, event) => {
             const value = event.target.value;
             form[fieldId] = value.replace(/\d/g, "");
         };
 
         const togglePasswordVisibility = (fieldId) => {
-            const field = otherFields.value.find((f) => f.id === fieldId);
+            const field = otherFields.find((f) => f.id === fieldId);
             if (field) {
                 field.showPassword = !field.showPassword;
             }
@@ -464,19 +609,19 @@ export default {
             return regex.test(password);
         };
 
-        const submit = () => {
+        const submitCreateUserForm = () => {
             let hasError = false;
 
             // Validate password
             if (!validatePassword(form.password)) {
-                otherFields.value.find((f) => f.id === "password").error =
+                otherFields.find((f) => f.id === "password").error =
                     "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.";
                 hasError = true;
             }
 
             // Check if passwords match
             if (form.password !== form.password_confirmation) {
-                otherFields.value.find(
+                otherFields.find(
                     (f) => f.id === "password_confirmation"
                 ).error = "Passwords do not match.";
                 hasError = true;
@@ -487,138 +632,42 @@ export default {
                 return;
             }
 
-            const submissionForm = useForm({
-                firstName: form.firstName,
-                middleName: form.middleName,
-                lastName: form.lastName,
-                nameExt: form.extension,
-                email: form.email,
-                password: form.password,
-                password_confirmation: form.password_confirmation,
-            });
-
-            submissionForm.post(route("register"), {
+            form.post(route("register"), {
                 preserveScroll: true,
-                onSuccess: (response) => {
+                onSuccess: () => {
                     form.reset();
                     showCreateUserForm.value = false;
-                    showSuccessMessage.value = true;
-
-                    emit("userCreated", {
-                        name: `${form.firstName} ${form.lastName}`,
-                        loginNum: 0,
-                    });
-
-                    updateChart();
+                    // You may want to emit an event or update some state here to reflect the new user
                 },
                 onError: (errors) => {
-                    [...nameFields.value, ...otherFields.value].forEach(
-                        (field) => {
-                            if (errors[field.id]) {
-                                field.error = errors[field.id];
-                            } else {
-                                field.error = "";
-                            }
+                    [...nameFields, ...otherFields].forEach((field) => {
+                        if (errors[field.id]) {
+                            field.error = errors[field.id];
+                        } else {
+                            field.error = "";
                         }
-                    );
+                    });
                 },
             });
-            window.location.reload();
         };
-
-        const updateChart = () => {
-            if (myChart.value) {
-                myChart.value.data.labels = props.userData.map(
-                    (user) => user.name
-                );
-                myChart.value.data.datasets[0].data = props.userData.map(
-                    (user) => user.loginNum
-                );
-                myChart.value.update();
-            }
-        };
-
-        const closeSuccessMessage = () => {
-            showSuccessMessage.value = false;
-        };
-
-        onMounted(() => {
-            const ctx = myChart.value.getContext("2d");
-            console.log("Dashboard mounted");
-
-            if (props.userData.length > 0) {
-                const data = {
-                    labels: props.userData.map((user) => user.name),
-                    datasets: [
-                        {
-                            label: "Number of Logins",
-                            backgroundColor: "rgb(255, 102, 178)",
-                            borderColor: "rgb(255, 102, 178)",
-                            data: props.userData.map((user) => user.loginNum),
-                            fill: false,
-                            tension: 0.1,
-                        },
-                    ],
-                };
-
-                const config = {
-                    type: "bar",
-                    data: data,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: "Number of Logins",
-                                },
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: "Users",
-                                },
-                            },
-                        },
-                    },
-                };
-
-                myChart.value = new Chart(ctx, config);
-            } else {
-                ctx.font = "20px Arial";
-                ctx.fillText("No user data available", 10, 50);
-            }
-        });
 
         return {
-            isMenuOpen,
-            isUserMenuOpen,
+            isDarkMode,
+            isSidebarOpen,
             showCreateUserForm,
-            showSuccessMessage,
-            myChart,
-            toggleMenu,
-            toggleUserMenu,
-            logout,
             form,
             nameFields,
             otherFields,
+            toggleDarkMode,
+            toggleSidebar,
+            logout,
+            toggleCalendar,
+            toggleNotifications,
+            navigateTo,
             validateNameField,
             togglePasswordVisibility,
-            submit,
-            closeSuccessMessage,
-            updateChart,
+            submitCreateUserForm,
         };
-    },
-    methods: {
-        navigateTo(route) {
-            if (route === "update") {
-                this.$inertia.visit("/admin/update");
-            } else if (route === "request") {
-                this.$inertia.visit("/admin/request");
-            }
-        },
     },
 };
 </script>

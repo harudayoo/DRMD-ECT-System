@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch, ref, computed } from "vue";
+import { onMounted, watch, computed } from "vue";
 import Chart from "chart.js/auto";
 
 const props = defineProps<{

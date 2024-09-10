@@ -20,6 +20,7 @@ class Beneficiary extends Model
     ];
 
     protected $fillable = [
+        'masterlistID',
         'barangayID',
         'beneficiaryNumber',
         'lastName',
@@ -29,9 +30,7 @@ class Beneficiary extends Model
         'dateOfBirth',
         'amount',
         'status',
-
     ];
-
     public function barangay()
     {
         return $this->belongsTo(Barangay::class, 'barangayID', 'barangayID');
