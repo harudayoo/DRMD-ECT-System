@@ -22,7 +22,7 @@
                 </svg>
             </button>
             <h3 class="text-gray-700 text-2xl font-medium">
-                Province or Municipality
+                {{ title }}
             </h3>
         </div>
         <div class="flex items-center">
@@ -80,6 +80,7 @@ import { useRouter } from "vue-router";
 
 defineProps<{
     showGraph: boolean;
+    title: string;
 }>();
 
 defineEmits<{

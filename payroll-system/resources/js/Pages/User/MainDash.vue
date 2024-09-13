@@ -1,7 +1,10 @@
 <template>
     <div class="h-screen flex flex-col overflow-hidden bg-gray-100">
         <!-- Top navigation bar -->
-        <NavBar @toggle-sidebar="toggleSidebar" @click="toggleDarkMode" />
+        <NavBar
+            @toggle-sidebar="toggleSidebar"
+            @toggle-dark-mode="toggleDarkMode"
+        />
 
         <div class="flex flex-1 overflow-hidden">
             <!-- Sidebar -->
@@ -15,7 +18,7 @@
 
             <!-- Main content -->
             <main
-                class="flex-1 px-14 -mt-4 overflow-x-hidden overflow-y-auto bg-gray-100"
+                class="flex-1 px-14 -mt-3 overflow-x-hidden overflow-y-auto bg-gray-100"
             >
                 <div class="container mx-auto px-6 py-8">
                     <h3 class="text-gray-700 text-2xl font-medium">
@@ -23,13 +26,13 @@
                     </h3>
 
                     <!-- Payroll Stream Chart -->
-                    <div class="mt-3">
+                    <div class="mt-5">
                         <div class="bg-white p-6 rounded-2xl shadow-md">
                             <h4 class="text-xl font-semibold mb-4">
                                 Payroll Stream
                             </h4>
                             <div class="h-48">
-                                <canvas id="myChart"></canvas>
+                                <canvas ref="chartRef"></canvas>
                             </div>
                         </div>
                     </div>
@@ -61,7 +64,7 @@
                         <div class="w-full">
                             <div
                                 class="bg-white p-6 overflow-y-auto rounded-2xl shadow-md"
-                                style="max-height: 280px"
+                                style="max-height: 265px"
                             >
                                 <h4 class="text-xl font-semibold mb-2">
                                     Davao Region
@@ -95,7 +98,8 @@
                                             class="border-t border-gray-200 cursor-pointer hover:bg-gray-100"
                                             @click="
                                                 navigateToMunicipality(
-                                                    row.provinceID
+                                                    row.provinceID,
+                                                    row.provinces
                                                 )
                                             "
                                         >
@@ -234,7 +238,13 @@ const totalAmount = computed((): string => {
         (sum, province) => sum + Number(province.totalAmountReleased),
         0
     );
-    return "₱ " + total.toFixed(2);
+    return (
+        "₱ " +
+        total.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        })
+    );
 });
 
 // Chart configuration
@@ -262,10 +272,11 @@ const data = computed(() => ({
     ],
 }));
 
+const chartRef = ref(null);
+
 onMounted(() => {
-    const ctx = document.getElementById("myChart") as HTMLCanvasElement;
-    if (ctx) {
-        new Chart(ctx, {
+    if (chartRef.value) {
+        new Chart(chartRef.value, {
             type: "bar",
             data: data.value,
             options: {
@@ -281,8 +292,10 @@ onMounted(() => {
     }
 });
 
-const navigateToMunicipality = (provinceID) => {
-    router.visit(`/municipalities/${provinceID}`);
+const navigateToMunicipality = (provinceID, provinceName) => {
+    router.visit(`/municipalities/${provinceID}`, {
+        data: { provinceName: provinceName },
+    });
 };
 </script>
 

@@ -29,7 +29,7 @@ class MunicipalityController extends Controller
         return Inertia::render('User/Municipalities', [
             'municipalities' => $municipalities,
             'provinceID' => $provinceID,
-            'provinceName' => $province->name,
+            'provinceName' => $province->provinceName,
         ]);
     }
 }

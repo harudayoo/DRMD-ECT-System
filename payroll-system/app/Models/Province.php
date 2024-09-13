@@ -19,4 +19,11 @@ class Province extends Model
         'disqualified',
         'double_entry'
     ];
+
+    public function municipality()
+    {
+        return $this->hasMany(Municipality::class, 'provinceID', 'provinceID');
+    }
 }
+
+

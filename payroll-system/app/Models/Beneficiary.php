@@ -28,8 +28,12 @@ class Beneficiary extends Model
         'middleName',
         'extensionName',
         'dateOfBirth',
+        'address',
+        'contactNumber',
         'amount',
         'status',
+        'sex',
+
     ];
     public function barangay()
     {

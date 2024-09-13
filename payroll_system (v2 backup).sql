@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 11, 2024 at 09:14 AM
+-- Generation Time: Sep 11, 2024 at 09:48 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -25,6 +25,26 @@ DELIMITER $$
 --
 -- Procedures
 --
+CREATE DEFINER=`root`@`localhost` PROCEDURE `UpdateMasterlistTotals` (IN `p_masterlistID` INT)   BEGIN
+    -- Update totalBeneficiaries
+    UPDATE masterlists m
+    SET m.totalBeneficiaries = (
+        SELECT COUNT(*) 
+        FROM beneficiaries b 
+        WHERE b.masterlistID = p_masterlistID
+    )
+    WHERE m.masterlistID = p_masterlistID;
+
+    -- Update totalAmountReleased
+    UPDATE masterlists m
+    SET m.totalAmountReleased = (
+        SELECT COALESCE(SUM(b.amount), 0) 
+        FROM beneficiaries b 
+        WHERE b.masterlistID = p_masterlistID
+    )
+    WHERE m.masterlistID = p_masterlistID;
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `update_barangay_claimed` ()   BEGIN
     UPDATE barangays b
     SET claimed = (
@@ -515,7 +535,7 @@ INSERT INTO `barangays` (`barangayID`, `municipalityID`, `barangayName`, `totalB
 (112402126, 1130700000, 'Toril (Pob.)', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
 (112402127, 1130700000, 'Tugbok (Pob.)', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
 (112402128, 1130700000, 'Tungakalan', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
-(112402129, 1130700000, 'Ula', 5, 22000.00, '2024-08-13 11:15:57', '2024-09-10 09:22:29', 5, 0, 0, 0),
+(112402129, 1130700000, 'Ula', 5, 22000.00, '2024-08-13 11:15:57', '2024-09-11 07:44:36', 5, 0, 0, 0),
 (112402131, 1130700000, 'Wangan', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
 (112402133, 1130700000, 'Wines', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
 (112402134, 1130700000, 'Barangay 1-A (Pob.)', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
@@ -1543,6 +1563,36 @@ END
 $$
 DELIMITER ;
 DELIMITER $$
+CREATE TRIGGER `after_beneficiary_update` AFTER UPDATE ON `beneficiaries` FOR EACH ROW BEGIN
+    IF OLD.masterlistID <> NEW.masterlistID THEN
+        CALL UpdateMasterlistTotals(OLD.masterlistID);
+    END IF;
+    CALL UpdateMasterlistTotals(NEW.masterlistID);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `masterlists_after_beneficiary_delete` AFTER DELETE ON `beneficiaries` FOR EACH ROW BEGIN
+    CALL UpdateMasterlistTotals(OLD.masterlistID);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `masterlists_after_beneficiary_insert` AFTER INSERT ON `beneficiaries` FOR EACH ROW BEGIN
+    CALL UpdateMasterlistTotals(NEW.masterlistID);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `masterlists_after_beneficiary_update` AFTER UPDATE ON `beneficiaries` FOR EACH ROW BEGIN
+    IF OLD.masterlistID <> NEW.masterlistID THEN
+        CALL UpdateMasterlistTotals(OLD.masterlistID);
+    END IF;
+    CALL UpdateMasterlistTotals(NEW.masterlistID);
+END
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `update_barangay_counts` AFTER INSERT ON `beneficiaries` FOR EACH ROW BEGIN
     CALL update_barangay_status_counts(NEW.barangayID);
 END
@@ -1596,7 +1646,7 @@ CREATE TABLE `masterlists` (
 --
 
 INSERT INTO `masterlists` (`masterlistID`, `masterlistName`, `totalBeneficiaries`, `totalAmountReleased`, `created_at`, `updated_at`) VALUES
-(1, 'Barangay 112402129 Masterlist', 100, 500000.00, '2024-09-09 14:29:43', '2024-09-09 14:29:43');
+(1, 'Barangay 112402129 Masterlist', 5, 22000.00, '2024-09-09 14:29:43', '2024-09-11 07:46:53');
 
 -- --------------------------------------------------------
 
@@ -2205,6 +2255,25 @@ CREATE DEFINER=`root`@`localhost` EVENT `update_all_barangay_counts` ON SCHEDULE
         b.disqualified = counts.disqualified,
         b.double_entry = counts.double_entry,
         b.updated_at = NOW();
+END$$
+
+CREATE DEFINER=`root`@`localhost` EVENT `update_all_masterlists` ON SCHEDULE EVERY 1 DAY STARTS '2024-09-11 15:46:53' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE curr_masterlistID INT;
+    DECLARE cur CURSOR FOR SELECT masterlistID FROM masterlists;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO curr_masterlistID;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        CALL UpdateMasterlistTotals(curr_masterlistID);
+    END LOOP;
+
+    CLOSE cur;
 END$$
 
 DELIMITER ;

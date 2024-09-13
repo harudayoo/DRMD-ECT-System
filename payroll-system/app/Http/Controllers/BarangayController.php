@@ -11,7 +11,6 @@ class BarangayController extends Controller
 {
     public function index($municipalityID)
     {
-
         $municipality = Municipality::where('municipalityID', $municipalityID)->first();
         $barangays = Barangay::where('municipalityID', $municipalityID)->get();
 
@@ -19,7 +18,6 @@ class BarangayController extends Controller
         $totalUnclaimed = $barangays->sum('unclaimed');
         $totalDisqualified = $barangays->sum('disqualified');
         $totalDoubleEntry = $barangays->sum('double_entry');
-
 
         return Inertia::render('User/Barangays', [
             'barangays' => $barangays->toArray(),
@@ -33,14 +31,16 @@ class BarangayController extends Controller
             ],
         ]);
     }
-    public function masterlist($barangayID)
-{
-    $barangay = Barangay::where('barangayID', $barangayID)->first();
-    $beneficiaries = Beneficiary::where('barangayID', $barangayID)->get();
 
-    return Inertia::render('User/Masterlists', [
-        'barangay' => $barangay->toArray(),
-        'beneficiaries' => $beneficiaries->toArray(),
-    ]);
-}
+    public function masterlist($barangayID, $barangayName = null)
+    {
+        $barangay = Barangay::where('barangayID', $barangayID)->first();
+        $beneficiaries = Beneficiary::where('barangayID', $barangayID)->get();
+
+        return Inertia::render('User/Masterlists', [
+            'barangay' => $barangay->toArray(),
+            'beneficiaries' => $beneficiaries->toArray(),
+            'barangayName' => $barangayName ?? $barangay->barangayName,
+        ]);
+    }
 }

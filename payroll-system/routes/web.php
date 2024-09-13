@@ -7,6 +7,9 @@ use App\Http\Controllers\BarangayController;
 use App\Http\Controllers\BeneficiaryController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\RCDController;
+use App\Http\Controllers\CDRController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -42,17 +45,23 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/provinces', [ProvinceController::class, 'index'])->name('provinces.index');
     Route::get('/municipalities/{provinceID}', [MunicipalityController::class, 'index'])->name('municipalities.index');
     Route::get('/barangays/{municipalityID}', [BarangayController::class, 'index'])->name('barangays.index');
-    Route::get('/barangay/{barangayID}', [BarangayController::class, 'masterlist'])->name('barangay.masterlist');
+    Route::get('/barangay/{barangayID}/{barangayName?}', [BarangayController::class, 'masterlist'])
+        ->name('barangay.masterlist');
 
 
-    //Beneficiary Routes
+    // Beneficiary Routes
     Route::get('/add-beneficiary', [BeneficiaryController::class, 'create'])->name('beneficiaries.create');
     Route::post('/beneficiaries', [BeneficiaryController::class, 'store'])->name('beneficiaries.store');
+    Route::post('/beneficiaries/confirm', [BeneficiaryController::class, 'confirmAdd'])->name('beneficiaries.confirmAdd');
+    Route::get('/api/provinces', [BeneficiaryController::class, 'getProvinces'])->name('api.provinces.index');
     Route::get('/api/municipalities', [BeneficiaryController::class, 'getMunicipalities'])->name('api.municipalities.index');
     Route::get('/api/barangays', [BeneficiaryController::class, 'getBarangays'])->name('api.barangays.index');
+    Route::get('/api/masterlists', [BeneficiaryController::class, 'getMasterlists'])->name('api.masterlists.index');
     Route::put('/api/beneficiaries/{beneficiaryID}', [BeneficiaryController::class, 'update'])->name('beneficiaries.update');
     Route::get('/edit-beneficiary', [BeneficiaryController::class, 'index'])->name('beneficiaries.edit');
-
+    Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');
+    Route::get('/cdr', [CDRController::class, 'index'])->name('cdr.index');
     //Analytics Routes
     Route::get('/status-analytics/{municipalityId}', [AnalyticsController::class, 'getStatusAnalytics']);
 });

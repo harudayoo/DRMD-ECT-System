@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 11, 2024 at 09:14 AM
+-- Generation Time: Sep 11, 2024 at 09:53 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -25,6 +25,26 @@ DELIMITER $$
 --
 -- Procedures
 --
+CREATE DEFINER=`root`@`localhost` PROCEDURE `UpdateMasterlistTotals` (IN `p_masterlistID` INT)   BEGIN
+    -- Update totalBeneficiaries
+    UPDATE masterlists m
+    SET m.totalBeneficiaries = (
+        SELECT COUNT(*) 
+        FROM beneficiaries b 
+        WHERE b.masterlistID = p_masterlistID
+    )
+    WHERE m.masterlistID = p_masterlistID;
+
+    -- Update totalAmountReleased
+    UPDATE masterlists m
+    SET m.totalAmountReleased = (
+        SELECT COALESCE(SUM(b.amount), 0) 
+        FROM beneficiaries b 
+        WHERE b.masterlistID = p_masterlistID
+    )
+    WHERE m.masterlistID = p_masterlistID;
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `update_barangay_claimed` ()   BEGIN
     UPDATE barangays b
     SET claimed = (
@@ -515,7 +535,7 @@ INSERT INTO `barangays` (`barangayID`, `municipalityID`, `barangayName`, `totalB
 (112402126, 1130700000, 'Toril (Pob.)', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
 (112402127, 1130700000, 'Tugbok (Pob.)', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
 (112402128, 1130700000, 'Tungakalan', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
-(112402129, 1130700000, 'Ula', 5, 22000.00, '2024-08-13 11:15:57', '2024-09-10 09:22:29', 5, 0, 0, 0),
+(112402129, 1130700000, 'Ula', 0, 0.00, '2024-08-13 11:15:57', '2024-09-11 07:50:14', 0, 0, 0, 0),
 (112402131, 1130700000, 'Wangan', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
 (112402133, 1130700000, 'Wines', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
 (112402134, 1130700000, 'Barangay 1-A (Pob.)', 0, 0.00, '2024-08-13 11:15:57', '2024-08-13 11:15:57', 0, 0, 0, 0),
@@ -1375,17 +1395,6 @@ CREATE TABLE `beneficiaries` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dumping data for table `beneficiaries`
---
-
-INSERT INTO `beneficiaries` (`beneficiaryID`, `barangayID`, `masterlistID`, `beneficiaryNumber`, `lastName`, `firstName`, `middleName`, `extensionName`, `dateOfBirth`, `amount`, `status`, `created_at`, `updated_at`) VALUES
-(38, 112402129, 1, '0001', 'Garcia Daniel', 'Juan', 'Dela Cruz', NULL, '1980-01-15', 5000.00, 1, '2024-09-09 14:29:43', '2024-09-09 09:15:39'),
-(39, 112402129, 1, '0002', 'Reyes', 'Maria', 'Santos', 'Jr.', '1990-05-20', 4500.00, 1, '2024-09-09 14:29:43', '2024-09-09 14:29:43'),
-(40, 112402129, 1, '0003', 'Cruz', 'Pedro', NULL, NULL, '1985-07-10', 3000.00, 1, '2024-09-09 14:29:43', '2024-09-09 14:29:43'),
-(41, 112402129, 1, '0004', 'Bautista', 'Ana', 'Lopez', NULL, '1975-03-25', 6000.00, 1, '2024-09-09 14:29:43', '2024-09-09 14:29:43'),
-(42, 112402129, 1, '0005', 'Santos', 'Jose', 'Rizal', 'III', '2000-12-30', 3500.00, 1, '2024-09-09 14:29:43', '2024-09-09 14:29:43');
-
---
 -- Triggers `beneficiaries`
 --
 DELIMITER $$
@@ -1543,6 +1552,36 @@ END
 $$
 DELIMITER ;
 DELIMITER $$
+CREATE TRIGGER `after_beneficiary_update` AFTER UPDATE ON `beneficiaries` FOR EACH ROW BEGIN
+    IF OLD.masterlistID <> NEW.masterlistID THEN
+        CALL UpdateMasterlistTotals(OLD.masterlistID);
+    END IF;
+    CALL UpdateMasterlistTotals(NEW.masterlistID);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `masterlists_after_beneficiary_delete` AFTER DELETE ON `beneficiaries` FOR EACH ROW BEGIN
+    CALL UpdateMasterlistTotals(OLD.masterlistID);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `masterlists_after_beneficiary_insert` AFTER INSERT ON `beneficiaries` FOR EACH ROW BEGIN
+    CALL UpdateMasterlistTotals(NEW.masterlistID);
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `masterlists_after_beneficiary_update` AFTER UPDATE ON `beneficiaries` FOR EACH ROW BEGIN
+    IF OLD.masterlistID <> NEW.masterlistID THEN
+        CALL UpdateMasterlistTotals(OLD.masterlistID);
+    END IF;
+    CALL UpdateMasterlistTotals(NEW.masterlistID);
+END
+$$
+DELIMITER ;
+DELIMITER $$
 CREATE TRIGGER `update_barangay_counts` AFTER INSERT ON `beneficiaries` FOR EACH ROW BEGIN
     CALL update_barangay_status_counts(NEW.barangayID);
 END
@@ -1584,19 +1623,13 @@ CREATE TABLE `cache` (
 
 CREATE TABLE `masterlists` (
   `masterlistID` int(11) NOT NULL,
+  `barangayID` bigint(20) UNSIGNED DEFAULT NULL,
   `masterlistName` varchar(255) NOT NULL,
   `totalBeneficiaries` int(11) NOT NULL,
   `totalAmountReleased` decimal(10,2) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `masterlists`
---
-
-INSERT INTO `masterlists` (`masterlistID`, `masterlistName`, `totalBeneficiaries`, `totalAmountReleased`, `created_at`, `updated_at`) VALUES
-(1, 'Barangay 112402129 Masterlist', 100, 500000.00, '2024-09-09 14:29:43', '2024-09-09 14:29:43');
 
 -- --------------------------------------------------------
 
@@ -1683,7 +1716,7 @@ INSERT INTO `municipalities` (`municipalityID`, `provinceID`, `municipalityName`
 (1108603000, 118600000, 'Malita', 0, 0.00, '2024-08-08 06:33:05', '2024-08-08 06:33:05', 0, 0, 0, 0),
 (1108604000, 118600000, 'Santa Maria', 0, 0.00, '2024-08-08 06:33:05', '2024-08-08 06:33:05', 0, 0, 0, 0),
 (1108605000, 118600000, 'Sarangani', 0, 0.00, '2024-08-08 06:33:05', '2024-08-08 06:33:05', 0, 0, 0, 0),
-(1130700000, 112400000, 'City of Davao', 5, 22000.00, '2024-08-08 06:33:05', '2024-08-08 06:33:05', 5, 0, 0, 0);
+(1130700000, 112400000, 'City of Davao', 0, 0.00, '2024-08-08 06:33:05', '2024-08-08 06:33:05', 0, 0, 0, 0);
 
 --
 -- Triggers `municipalities`
@@ -1791,7 +1824,7 @@ CREATE TABLE `provinces` (
 
 INSERT INTO `provinces` (`provinceID`, `provinceName`, `totalBeneficiaries`, `totalAmountReleased`, `created_at`, `updated_at`, `claimed`, `unclaimed`, `disqualified`, `double_entry`) VALUES
 (112300000, 'Davao Del Norte', 0, 0.00, '2024-08-08 06:02:26', '2024-08-08 06:02:26', 0, 0, 0, 0),
-(112400000, 'Davao Del Sur', 5, 22000.00, '2024-08-08 06:02:26', '2024-08-08 06:02:26', 5, 0, 0, 0),
+(112400000, 'Davao Del Sur', 0, 0.00, '2024-08-08 06:02:26', '2024-08-08 06:02:26', 0, 0, 0, 0),
 (112500000, 'Davao Oriental', 0, 0.00, '2024-08-08 06:02:26', '2024-08-08 06:02:26', 0, 0, 0, 0),
 (118200000, 'Davao De Oro', 0, 0.00, '2024-08-08 06:02:26', '2024-08-08 06:02:26', 0, 0, 0, 0),
 (118600000, 'Davao Occidental', 0, 0.00, '2024-08-08 06:02:26', '2024-08-08 06:02:26', 0, 0, 0, 0);
@@ -1971,7 +2004,8 @@ ALTER TABLE `cache`
 -- Indexes for table `masterlists`
 --
 ALTER TABLE `masterlists`
-  ADD PRIMARY KEY (`masterlistID`);
+  ADD PRIMARY KEY (`masterlistID`),
+  ADD KEY `FK_barangayID` (`barangayID`);
 
 --
 -- Indexes for table `migrations`
@@ -2156,6 +2190,12 @@ ALTER TABLE `beneficiaries`
   ADD CONSTRAINT `fk_status` FOREIGN KEY (`status`) REFERENCES `status_table` (`status_id`);
 
 --
+-- Constraints for table `masterlists`
+--
+ALTER TABLE `masterlists`
+  ADD CONSTRAINT `FK_barangayID` FOREIGN KEY (`barangayID`) REFERENCES `barangays` (`barangayID`);
+
+--
 -- Constraints for table `municipalities`
 --
 ALTER TABLE `municipalities`
@@ -2205,6 +2245,25 @@ CREATE DEFINER=`root`@`localhost` EVENT `update_all_barangay_counts` ON SCHEDULE
         b.disqualified = counts.disqualified,
         b.double_entry = counts.double_entry,
         b.updated_at = NOW();
+END$$
+
+CREATE DEFINER=`root`@`localhost` EVENT `update_all_masterlists` ON SCHEDULE EVERY 1 DAY STARTS '2024-09-11 15:46:53' ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE curr_masterlistID INT;
+    DECLARE cur CURSOR FOR SELECT masterlistID FROM masterlists;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO curr_masterlistID;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        CALL UpdateMasterlistTotals(curr_masterlistID);
+    END LOOP;
+
+    CLOSE cur;
 END$$
 
 DELIMITER ;

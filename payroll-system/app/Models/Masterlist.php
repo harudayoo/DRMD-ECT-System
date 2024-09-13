@@ -12,17 +12,22 @@ class Masterlist extends Model
 
     protected $fillable = [
         'barangayID',
-        'masterlistLabel',
+        'masterlistName',
         'totalAmount',
         'totalBeneficiaries',
         'created_at',
         'updated_at'
     ];
 
+    public function barangay()
+    {
+        return $this->belongsTo(Barangay::class, 'barangayID', 'barangayID');
+    }
+
     public function beneficiaries()
-{
-    return $this->hasMany(Beneficiary::class, 'masterlistID', 'masterlistID');
-}
+    {
+        return $this->hasMany(Beneficiary::class, 'masterlistID', 'masterlistID');
+    }
 
 }
 
