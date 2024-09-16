@@ -155,11 +155,15 @@
                             >
                             <a
                                 href="#"
+                                @click.prevent="
+                                    $inertia.visit(route('masterlists.view'))
+                                "
                                 class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
                                 >View</a
                             >
                             <a
                                 href="#"
+                                @click.prevent="openImportModal"
                                 class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
                                 >Import</a
                             >
@@ -372,7 +376,7 @@
                             <select
                                 id="municipality"
                                 v-model="beneficiary.municipalityID"
-                                @change="fetchBarangays"
+                                @change="fetchMasterlists"
                                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
                             >
@@ -388,31 +392,6 @@
                                 </option>
                             </select>
                         </div>
-
-                        <div>
-                            <label for="barangay" class="block mb-2"
-                                >Barangay</label
-                            >
-                            <select
-                                id="barangay"
-                                v-model="beneficiary.barangayID"
-                                @change="fetchMasterlists"
-                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                required
-                            >
-                                <option value="" disabled selected>
-                                    Select Barangay
-                                </option>
-                                <option
-                                    v-for="barangay in barangays"
-                                    :key="barangay.barangayID"
-                                    :value="barangay.barangayID"
-                                >
-                                    {{ barangay.barangayName }}
-                                </option>
-                            </select>
-                        </div>
-
                         <div>
                             <label for="masterlist" class="block mb-2"
                                 >Masterlist</label
@@ -420,6 +399,7 @@
                             <select
                                 id="masterlist"
                                 v-model="beneficiary.masterlistID"
+                                @change="fetchBarangays"
                                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
                             >
@@ -435,29 +415,28 @@
                                 </option>
                             </select>
                         </div>
+
                         <div>
-                            <label for="address" class="block mb-2"
-                                >Address:</label
+                            <label for="barangay" class="block mb-2"
+                                >Barangay</label
                             >
-                            <input
-                                type="text"
-                                id="purok"
-                                v-model="beneficiary.address"
-                                placeholder="Enter address"
+                            <select
+                                id="barangay"
+                                v-model="beneficiary.barangayID"
                                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label for="contactNumber" class="block mb-2"
-                                >Contact Number</label
+                                required
                             >
-                            <input
-                                type="tel"
-                                id="contactNumber"
-                                v-model="beneficiary.contactNumber"
-                                placeholder="Enter Contact Number"
-                                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                                <option value="" disabled selected>
+                                    Select Barangay
+                                </option>
+                                <option
+                                    v-for="barangay in barangays"
+                                    :key="barangay.barangayID"
+                                    :value="barangay.barangayID"
+                                >
+                                    {{ barangay.barangayName }}
+                                </option>
+                            </select>
                         </div>
                     </div>
                     <div class="mt-6 flex justify-end space-x-4">
@@ -535,14 +514,15 @@
                 <p class="text-center">Beneficiary Successfully Added</p>
                 <div class="mt-6 flex justify-center">
                     <button
-                        @click="closeSuccessModal"
+                        @click="closeSuccessModalAndReload"
                         class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
-                        OK
+                        Done
                     </button>
                 </div>
             </div>
         </div>
+
         <!-- Error Modal -->
         <div
             v-if="showErrorModal"
@@ -563,6 +543,166 @@
                 </div>
             </div>
         </div>
+
+        <!-- Updated Import Modal -->
+        <div
+            v-if="showImportModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div class="bg-white p-5 rounded-lg shadow-xl max-w-md w-full">
+                <h2 class="text-xl font-semibold mb-4">Import Masterlist</h2>
+                <div class="mb-4">
+                    <label for="province" class="block mb-2">Province</label>
+                    <select
+                        id="province"
+                        v-model="selectedProvinceId"
+                        @change="fetchImportMunicipalities"
+                        class="w-full px-3 py-2 border rounded-md"
+                    >
+                        <option value="" disabled>Select Province</option>
+                        <option
+                            v-for="province in provinces"
+                            :key="province.provinceID"
+                            :value="province.provinceID"
+                        >
+                            {{ province.provinceName }}
+                        </option>
+                    </select>
+                </div>
+                <div>
+                    <label for="municipality" class="block mb-2"
+                        >Municipality</label
+                    >
+                    <select
+                        id="municipality"
+                        v-model="selectedMunicipalityId"
+                        @change="fetchMasterlists"
+                        class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    >
+                        <option value="" disabled selected>
+                            Select Municipality
+                        </option>
+                        <option
+                            v-for="municipality in municipalities"
+                            :key="municipality.municipalityID"
+                            :value="municipality.municipalityID"
+                        >
+                            {{ municipality.municipalityName }}
+                        </option>
+                    </select>
+                </div>
+                <div
+                    @dragover.prevent
+                    @drop.prevent="handleFileDrop"
+                    class="border-dashed border-2 border-gray-300 p-8 text-center cursor-pointer hover:bg-gray-50 mt-4"
+                >
+                    <p>Drag and drop your spreadsheet here or</p>
+                    <input
+                        type="file"
+                        ref="fileInput"
+                        @change="handleFileSelect"
+                        class="hidden"
+                        accept=".xlsx,.xls,.csv"
+                    />
+                    <button
+                        @click="$refs.fileInput.click()"
+                        class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                        Select File
+                    </button>
+                </div>
+                <div v-if="selectedFile" class="mt-4">
+                    <p>Selected file: {{ selectedFile.name }}</p>
+                    <button
+                        @click="uploadFile"
+                        :disabled="isUploading"
+                        class="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
+                    >
+                        {{ isUploading ? "Uploading..." : "Upload" }}
+                    </button>
+                </div>
+                <button
+                    @click="closeImportModal"
+                    :disabled="isUploading"
+                    class="mt-4 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:bg-gray-200"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Modal -->
+        <div
+            v-if="isUploading"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div
+                class="bg-white p-5 rounded-lg shadow-xl flex flex-col items-center"
+            >
+                <p class="text-lg font-semibold mb-4">
+                    Uploading and processing file...
+                </p>
+                <div
+                    class="w-12 h-12 border-t-4 border-blue-500 border-solid rounded-full animate-spin"
+                ></div>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div
+            v-if="showErrorModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div class="bg-white p-5 rounded-lg shadow-xl max-w-lg w-full">
+                <h2 class="text-xl font-semibold mb-4 text-red-600">
+                    Import Error
+                </h2>
+                <p class="mb-4">{{ errorMessage }}</p>
+                <div v-if="errorDetails.length > 0" class="mb-4">
+                    <h3 class="font-semibold mb-2">Error Details:</h3>
+                    <div class="max-h-60 overflow-y-auto">
+                        <ul class="list-disc list-inside">
+                            <li
+                                v-for="(error, index) in errorDetails"
+                                :key="index"
+                                class="text-sm text-gray-600"
+                            >
+                                {{ error }}
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <button
+                    @click="closeErrorModal"
+                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div
+            v-if="showSuccessModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div class="bg-white p-5 rounded-lg shadow-xl">
+                <h2 class="text-xl font-semibold mb-4 text-green-600">
+                    Import Successful
+                </h2>
+                <p class="mb-4">
+                    The masterlist has been successfully imported.
+                </p>
+                <button
+                    @click="closeSuccessModalAndReload"
+                    class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                >
+                    OK
+                </button>
+            </div>
+        </div>
+        <!-- End of Modals -->
     </div>
 </template>
 
@@ -590,6 +730,12 @@ const errorMessage = ref("");
 const similarBeneficiaries = ref([]);
 const isModalOpen = ref(false);
 const openSubMenu = ref(null);
+const showImportModal = ref(false);
+const selectedFile = ref(null);
+const selectedProvinceId = ref("");
+const selectedMunicipalityId = ref("");
+const isUploading = ref(false);
+const errorDetails = ref([]);
 
 const beneficiary = ref({
     lastName: "",
@@ -602,8 +748,6 @@ const beneficiary = ref({
     municipalityID: "",
     barangayID: "",
     masterlistID: "",
-    address: "",
-    contactNumber: "",
 });
 
 const fetchData = async (route, params = {}) => {
@@ -629,6 +773,23 @@ const fetchMunicipalities = async () => {
         municipalities.value = data.municipalities;
     } else {
         resetDependentFields("municipalityID");
+    }
+};
+const fetchImportMunicipalities = async () => {
+    if (selectedProvinceId.value) {
+        try {
+            const response = await axios.get(
+                route("api.municipalities.index"),
+                {
+                    params: { provinceID: selectedProvinceId.value },
+                }
+            );
+            municipalities.value = response.data.municipalities;
+        } catch (error) {
+            console.error("Error fetching municipalities:", error);
+        }
+    } else {
+        municipalities.value = [];
     }
 };
 
@@ -734,21 +895,118 @@ const resetForm = () => {
 const closeErrorModal = () => {
     showErrorModal.value = false;
     errorMessage.value = "";
+    errorDetails.value = [];
+    // We're not closing the import modal here anymore
 };
 
-const closeSuccessModal = () => {
+const closeSuccessModalAndReload = () => {
     showSuccessModal.value = false;
+    showImportModal.value = false; // Close the import modal as well
+    window.location.reload();
 };
 
 const cancelAdd = () => {
     showSimilarModal.value = false;
 };
 
+const openImportModal = () => {
+    showImportModal.value = true;
+};
+
+const closeImportModal = () => {
+    if (!isUploading.value) {
+        showImportModal.value = false;
+        selectedFile.value = null;
+        selectedProvinceId.value = "";
+        selectedMunicipalityId.value = "";
+        errorMessage.value = "";
+        errorDetails.value = [];
+    }
+};
+
+const handleFileDrop = (event) => {
+    const file = event.dataTransfer.files[0];
+    if (
+        file &&
+        (file.type ===
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+            file.type === "application/vnd.ms-excel" ||
+            file.type === "text/csv")
+    ) {
+        selectedFile.value = file;
+    } else {
+        alert("Please upload a valid Excel or CSV file.");
+    }
+};
+
+const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        selectedFile.value = file;
+    }
+};
+
+const uploadFile = async () => {
+    if (!selectedFile.value || !selectedMunicipalityId.value) {
+        alert("Please select both a file and a municipality before uploading.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", selectedFile.value);
+    formData.append("municipalityId", selectedMunicipalityId.value);
+
+    isUploading.value = true;
+
+    try {
+        const response = await axios.post(
+            route("masterlists.import"),
+            formData,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
+
+        isUploading.value = false;
+
+        if (response.data.message) {
+            showSuccessModal.value = true;
+        } else {
+            throw new Error("An unexpected error occurred.");
+        }
+    } catch (error) {
+        isUploading.value = false;
+        console.error("Error uploading file:", error);
+        errorMessage.value =
+            error.response?.data?.error ||
+            "An error occurred while uploading the file.";
+        errorDetails.value = error.response?.data?.details || [];
+        showErrorModal.value = true;
+        // We're not closing the import modal here anymore
+    }
+};
+
 onMounted(fetchProvinces);
 
-watch(() => beneficiary.value.provinceID, fetchMunicipalities);
-watch(() => beneficiary.value.municipalityID, fetchBarangays);
-watch(() => beneficiary.value.barangayID, fetchMasterlists);
+watch(
+    () => beneficiary.value.provinceID,
+    (newValue, oldValue) => {
+        console.log("provinceID changed from", oldValue, "to", newValue);
+        fetchMunicipalities();
+    }
+);
+
+watch(
+    () => beneficiary.value.municipalityID,
+    (newValue, oldValue) => {
+        console.log("municipalityID changed from", oldValue, "to", newValue);
+        fetchMasterlists();
+        fetchBarangays();
+    }
+);
+watch(() => selectedProvinceId.value, fetchMunicipalities);
 </script>
 
 <!--The controller uses the Levenshtein distance algorithm to compare names,

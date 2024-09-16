@@ -33,14 +33,14 @@
                   />
                 </svg>
               </button>
-              <h3 class="text-gray-900 text-2xl font-medium">List of Beneficiaries</h3>
+              <h3 class="text-gray-900 text-2xl font-medium">List of Masterlists</h3>
             </div>
             <div class="relative">
               <input
                 type="text"
                 v-model="searchQuery"
                 @input="handleSearch"
-                placeholder="Search Name or Beneficiary Number"
+                placeholder="Search..."
                 class="bg-white text-gray-700 rounded-full pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 w-72 h-9 transition-all duration-300 ease-in-out"
               />
               <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
@@ -63,31 +63,20 @@
             </div>
           </div>
 
-          <!-- Beneficiaries Table Component -->
-          <BeneficiaryTable
-            :beneficiaries="filteredBeneficiaries"
-            @edit-beneficiary="showEditModal"
-          />
+          <!-- Masterlists Table Component -->
+          <ViewMasterlistTable :masterlists="filteredMasterlists" />
         </div>
       </main>
     </div>
-
-    <!-- Edit Beneficiary Modal -->
-    <EditBeneficiaryModal
-      v-if="showModal"
-      :beneficiary="editedBeneficiary"
-      @close="closeModal"
-      @save="updateBeneficiary"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import NavBar from "@/Layouts/NavBar.vue";
 import Sidebar from "@/Layouts/Sidebar.vue";
-import BeneficiaryTable from "@/Layouts/BeneficiaryTable.vue";
-import EditBeneficiaryModal from "@/Components/EditBeneficiaryModal.vue";
+import ViewMasterlistTable from "@/Layouts/ViewMasterlistTable.vue";
+import axios from "axios";
 
 // Sidebar functions
 const isSidebarOpen = ref(true);
@@ -117,60 +106,26 @@ const handleSearch = () => {
   console.log("Searching for:", searchQuery.value);
 };
 
-const props = defineProps<{
-  beneficiaries: Array<any>;
-}>();
+const masterlists = ref([]);
 
-const filteredBeneficiaries = computed(() => {
-  if (!searchQuery.value) return props.beneficiaries;
-  const query = searchQuery.value.toLowerCase();
-  return props.beneficiaries.filter(
-    (beneficiary) =>
-      beneficiary.lastName.toLowerCase().includes(query) ||
-      beneficiary.firstName.toLowerCase().includes(query) ||
-      beneficiary.middleName.toString().includes(query) ||
-      beneficiary.beneficiaryNumber.toString().includes(query)
-  );
+onMounted(async () => {
+  try {
+    const response = await axios.get("/api/masterlists");
+    masterlists.value = response.data.masterlists;
+  } catch (error) {
+    console.error("Error fetching masterlists:", error);
+  }
 });
 
-const showModal = ref(false);
-const editedBeneficiary = ref({});
-
-const showEditModal = (beneficiary: any) => {
-  editedBeneficiary.value = { ...beneficiary };
-  showModal.value = true;
-};
-
-const closeModal = () => {
-  showModal.value = false;
-};
-
-const updateBeneficiary = async (updatedBeneficiary) => {
-  try {
-    const response = await axios.put(
-      `/api/beneficiaries/${updatedBeneficiary.beneficiaryID}`,
-      updatedBeneficiary
-    );
-
-    if (response.status === 200) {
-      const updatedData = response.data;
-      const index = props.beneficiaries.findIndex(
-        (b) => b.beneficiaryID === updatedData.beneficiaryID
-      );
-      if (index !== -1) {
-        props.beneficiaries[index] = updatedData;
-      }
-      closeModal();
-      // Optionally, you can show a success message here
-    } else {
-      console.error("Failed to update beneficiary");
-      // Optionally, you can show an error message here
-    }
-  } catch (error) {
-    console.error("Error updating beneficiary:", error);
-    // Optionally, you can show an error message here
-  }
-};
+const filteredMasterlists = computed(() => {
+  if (!searchQuery.value) return masterlists.value;
+  const query = searchQuery.value.toLowerCase();
+  return masterlists.value.filter(
+    (masterlist) =>
+      masterlist.masterlistName.toLowerCase().includes(query) ||
+      masterlist.masterlistID.toString().includes(query)
+  );
+});
 </script>
 
 <style scoped>
@@ -190,11 +145,3 @@ body {
   transform: translateX(-100%);
 }
 </style>
-
-<!-- to add later:
-
-    beneficiary.middleName.toString().includes(query) ||
-      beneficiary.extensionName.toString().includes(query) ||
-      beneficiary.dateOfBirth.toString().includes(query) ||
-      beneficiary.address.toString().includes(query) ||
-      beneficiary.contactNumber.toString().includes(query) -->

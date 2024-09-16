@@ -11,7 +11,8 @@ class Masterlist extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'barangayID',
+        'masterlistID',
+        'municipalityID',
         'masterlistName',
         'totalAmount',
         'totalBeneficiaries',
@@ -19,9 +20,9 @@ class Masterlist extends Model
         'updated_at'
     ];
 
-    public function barangay()
+    public function municipality()
     {
-        return $this->belongsTo(Barangay::class, 'barangayID', 'barangayID');
+        return $this->belongsTo(Municipality::class, 'municipalityID', 'municipalityID');
     }
 
     public function beneficiaries()

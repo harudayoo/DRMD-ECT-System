@@ -7,6 +7,7 @@ use App\Http\Controllers\BarangayController;
 use App\Http\Controllers\BeneficiaryController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\MasterlistController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\RCDController;
 use App\Http\Controllers\CDRController;
@@ -59,6 +60,14 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/api/masterlists', [BeneficiaryController::class, 'getMasterlists'])->name('api.masterlists.index');
     Route::put('/api/beneficiaries/{beneficiaryID}', [BeneficiaryController::class, 'update'])->name('beneficiaries.update');
     Route::get('/edit-beneficiary', [BeneficiaryController::class, 'index'])->name('beneficiaries.edit');
+
+    // Masterlist Routes
+    Route::get('/view-masterlists', [MasterlistController::class, 'index'])->name('masterlists.view');
+    Route::get('/api/masterlists', [MasterlistController::class, 'getMasterlists'])->name('api.masterlists.index');
+    Route::put('/api/masterlists/{masterlistID}', [MasterlistController::class, 'update'])->name('masterlists.update');
+    Route::post('/api/masterlists/import', [MasterlistController::class, 'import'])->name('masterlists.import');
+
+    //Document Routes
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
     Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');
     Route::get('/cdr', [CDRController::class, 'index'])->name('cdr.index');

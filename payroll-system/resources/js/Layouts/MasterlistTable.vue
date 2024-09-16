@@ -134,8 +134,6 @@ const headers = [
     "Extension Name",
     "Date of Birth",
     "Sex",
-    "Address",
-    "Phone Number",
     "Status",
 ];
 
@@ -147,8 +145,6 @@ const displayFields = [
     "extensionName",
     "dateOfBirth",
     "sex",
-    "address",
-    "contactNumber",
     "status",
 ];
 
