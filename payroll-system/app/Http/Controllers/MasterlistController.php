@@ -22,7 +22,7 @@ class MasterlistController extends Controller
 
     public function getMasterlists()
     {
-        $masterlists = Masterlist::with('barangay')->get();
+        $masterlists = Masterlist::with('municipality')->get();
         return response()->json(['masterlists' => $masterlists]);
     }
 
@@ -31,6 +31,78 @@ class MasterlistController extends Controller
         $masterlist = Masterlist::findOrFail($masterlistID);
         $masterlist->update($request->all());
         return response()->json($masterlist);
+    }
+
+    public function getBeneficiaries($masterlistID)
+    {
+        try {
+            $beneficiaries = Beneficiary::where('masterlistID', $masterlistID)
+                ->with('barangay')
+                ->get();
+
+            return response()->json(['beneficiaries' => $beneficiaries]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching beneficiaries: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch beneficiaries'], 500);
+        }
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'municipalityID' => 'required|exists:municipalities,municipalityID',
+                'masterlistName' => 'required|string|max:255',
+            ]);
+
+            $masterlistID = $this->generateMasterlistID();
+
+            $masterlist = Masterlist::create([
+                'masterlistID' => $masterlistID,
+                'municipalityID' => $validatedData['municipalityID'],
+                'masterlistName' => $validatedData['masterlistName'],
+                'totalBeneficiaries' => 0,
+            ]);
+
+            return response()->json(['message' => 'Masterlist created successfully', 'masterlist' => $masterlist], 201);
+        } catch (\Exception $e) {
+            Log::error('Error creating masterlist: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to create masterlist', 'details' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getExistingBeneficiaries(Request $request)
+    {
+        try {
+            $municipalityID = $request->query('municipalityID');
+            $beneficiaries = Beneficiary::whereHas('barangay', function ($query) use ($municipalityID) {
+                $query->where('municipalityID', $municipalityID);
+            })->with('barangay')->get();
+
+            return response()->json(['beneficiaries' => $beneficiaries]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching existing beneficiaries: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch existing beneficiaries'], 500);
+        }
+    }
+
+    public function addToMasterlist(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'beneficiaryID' => 'required|exists:beneficiaries,id',
+                'masterlistID' => 'required|exists:masterlists,masterlistID',
+            ]);
+
+            $beneficiary = Beneficiary::findOrFail($validatedData['beneficiaryID']);
+            $beneficiary->masterlistID = $validatedData['masterlistID'];
+            $beneficiary->save();
+
+            return response()->json(['message' => 'Beneficiary added to masterlist successfully']);
+        } catch (\Exception $e) {
+            Log::error('Error adding beneficiary to masterlist: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to add beneficiary to masterlist'], 500);
+        }
     }
     public function import(Request $request)
     {

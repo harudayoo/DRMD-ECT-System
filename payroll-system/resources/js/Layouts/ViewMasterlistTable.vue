@@ -1,15 +1,53 @@
 <template>
-  <div>
+  <div class="container mx-auto px-4 py-8">
+    <!-- Search Bar -->
+    <div v-if="!showBeneficiaries" class="mb-6">
+      <input
+        v-model="searchQuery"
+        @input="searchMasterlists"
+        type="text"
+        placeholder="Search by ID, Municipality, or Name"
+        class="w-full md:w-1/2 lg:w-1/3 px-4 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+      />
+    </div>
+
+    <!-- Back Button (visible when showing beneficiaries) -->
+    <div v-if="showBeneficiaries" class="mb-6">
+      <button
+        @click="goBackToMasterlists"
+        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+      >
+        ← Back to Masterlists
+      </button>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div v-if="isLoading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    </div>
+
+    <!-- Error Message -->
+    <div
+      v-else-if="error"
+      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6"
+      role="alert"
+    >
+      <strong class="font-bold">Error!</strong>
+      <span class="block sm:inline"> {{ error }}</span>
+    </div>
+
     <!-- Masterlist Table -->
-    <div class="overflow-x-auto bg-white rounded-2xl shadow mt-6">
-      <table class="min-w-[96%] divide-y divide-gray-200 mx-4">
-        <thead class="bg-white">
+    <div
+      v-else-if="!showBeneficiaries"
+      class="bg-white shadow overflow-hidden sm:rounded-lg"
+    >
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
           <tr>
             <th
-              v-for="(header, index) in headers"
+              v-for="header in headers"
               :key="header"
-              :class="getColumnClass(index)"
-              class="pb-4 pt-4 text-md tracking-wider font-semibold text-black"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
             >
               {{ header }}
             </th>
@@ -19,29 +57,81 @@
           <tr
             v-for="masterlist in paginatedMasterlists"
             :key="masterlist.masterlistID"
-            class="hover:bg-gray-50"
+            @click="fetchBeneficiaries(masterlist.masterlistID)"
+            class="hover:bg-gray-100 cursor-pointer"
           >
             <td
-              v-for="(key, index) in displayFields"
+              v-for="key in displayFields"
               :key="key"
-              :class="getColumnClass(index)"
-              class="py-4 whitespace-nowrap text-sm text-gray-900"
-            ></td>
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+            >
+              <template v-if="key === 'municipality.municipalityName'">
+                {{
+                  masterlist.municipality
+                    ? masterlist.municipality.municipalityName
+                    : "N/A"
+                }}
+              </template>
+              <template v-else-if="key === 'totalAmountReleased'">
+                {{ formatCurrency(masterlist[key]) }}
+              </template>
+              <template v-else>
+                {{ masterlist[key] }}
+              </template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Beneficiaries Table -->
+    <div
+      v-else-if="showBeneficiaries"
+      class="bg-white shadow overflow-hidden sm:rounded-lg"
+    >
+      <h2 class="text-xl font-semibold mb-4 px-6 py-4 bg-gray-50">
+        Beneficiaries for Masterlist {{ selectedMasterlistID }}
+      </h2>
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th
+              v-for="header in beneficiaryHeaders"
+              :key="header"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              {{ header }}
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr
+            v-for="beneficiary in paginatedBeneficiaries"
+            :key="beneficiary.beneficiaryNumber"
+            class="hover:bg-gray-100"
+          >
+            <td
+              v-for="key in beneficiaryDisplayFields"
+              :key="key"
+              class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+            >
+              {{ key === "status" ? getStatusText(beneficiary[key]) : beneficiary[key] }}
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Pagination -->
-    <div class="mt-4 flex justify-between items-center">
+    <div v-if="!isLoading && !error" class="mt-6 flex justify-between items-center">
       <div>
         <p class="text-sm text-gray-700">
           Showing
-          <span class="font-medium">{{ startIndex + 1 }}</span>
+          <span class="font-medium">{{ currentStartIndex }}</span>
           to
-          <span class="font-medium">{{ endIndex }}</span>
+          <span class="font-medium">{{ currentEndIndex }}</span>
           of
-          <span class="font-medium">{{ masterlists.length }}</span>
+          <span class="font-medium">{{ totalItems }}</span>
           results
         </p>
       </div>
@@ -53,31 +143,21 @@
           <button
             @click="previousPage"
             :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-2 py-2 rounded-l-xl border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+            :class="{
+              'opacity-50 cursor-not-allowed': currentPage === 1,
+            }"
           >
-            <span class="sr-only">Previous</span>
-            <svg
-              class="h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
+            Previous
           </button>
           <button
-            v-for="page in totalPages"
+            v-for="page in displayedPageNumbers"
             :key="page"
             @click="goToPage(page)"
             :class="[
               currentPage === page
-                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600 '
-                : 'bg-white  border-gray-300 text-gray-500  hover:bg-gray-50 ',
+                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
+                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50',
               'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
             ]"
           >
@@ -87,21 +167,11 @@
             @click="nextPage"
             :disabled="currentPage === totalPages"
             class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+            :class="{
+              'opacity-50 cursor-not-allowed': currentPage === totalPages,
+            }"
           >
-            <span class="sr-only">Next</span>
-            <svg
-              class="h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
+            Next
           </button>
         </nav>
       </div>
@@ -110,61 +180,139 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import axios from "axios";
 
-const props = defineProps({
-  masterlists: {
-    type: Array as () => Array<any>,
-    required: true,
-    default: () => [],
-  },
-});
+const masterlists = ref([]);
+const beneficiaries = ref([]);
+const searchQuery = ref("");
+const showBeneficiaries = ref(false);
+const selectedMasterlistID = ref(null);
+const isLoading = ref(false);
+const error = ref(null);
 
 const headers = [
-  "masterlist ID",
-  "Barangay",
-  "List Label",
-  "Number of Beneficiary",
-  "Amount",
+  "Masterlist ID",
+  "Municipality",
+  "List Name",
+  "Number of Beneficiaries",
+  "Total Amount Released",
 ];
 
 const displayFields = [
   "masterlistID",
-  "barangayID",
+  "municipality.municipalityName",
   "masterlistName",
   "totalBeneficiaries",
   "totalAmountReleased",
 ];
 
-const getColumnClass = (index: number) => {
-  const alignments = [
-    "text-center w-[10%]",
-    "text-center w-[10%]",
-    "text-center w-[10%]",
-    "text-center w-[10%]",
-    "text-center w-[8%]",
-    "text-center w-[10%]",
-    "text-center w-[8%]",
-    "text-left w-[15%]",
-    "text-center w-[10%]",
-    "text-center w-[9%]",
-  ];
-  return alignments[index] || "text-left";
+const beneficiaryHeaders = [
+  "Beneficiary Number",
+  "Last Name",
+  "First Name",
+  "Middle Name",
+  "Extension Name",
+  "Date of Birth",
+  "Sex",
+  "Status",
+];
+
+const beneficiaryDisplayFields = [
+  "beneficiaryNumber",
+  "lastName",
+  "firstName",
+  "middleName",
+  "extensionName",
+  "dateOfBirth",
+  "sex",
+  "status",
+];
+
+// Fetch masterlists data
+const fetchMasterlists = async () => {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    const response = await axios.get("/api/masterlists");
+    masterlists.value = response.data.masterlists;
+  } catch (err) {
+    error.value = "Failed to fetch masterlists. Please try again.";
+    console.error("Error fetching masterlists:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(fetchMasterlists);
+
+// Format currency
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+  }).format(value);
+};
+
+// Search functionality
+const filteredMasterlists = computed(() => {
+  if (!searchQuery.value) return masterlists.value;
+
+  const lowercaseQuery = searchQuery.value.toLowerCase();
+  return masterlists.value.filter((masterlist) => {
+    return (
+      masterlist.masterlistID.toLowerCase().includes(lowercaseQuery) ||
+      (masterlist.municipality &&
+        masterlist.municipality.municipalityName
+          .toLowerCase()
+          .includes(lowercaseQuery)) ||
+      masterlist.masterlistName.toLowerCase().includes(lowercaseQuery)
+    );
+  });
+});
+
+const searchMasterlists = () => {
+  currentPage.value = 1;
 };
 
 // Pagination logic
-const itemsPerPage = 12;
+const itemsPerPage = 10;
 const currentPage = ref(1);
 
-const totalPages = computed(() => Math.ceil(props.masterlists.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));
 
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage);
-const endIndex = computed(() =>
-  Math.min(startIndex.value + itemsPerPage, props.masterlists.length)
+const totalItems = computed(() =>
+  showBeneficiaries.value ? beneficiaries.value.length : filteredMasterlists.value.length
+);
+
+const currentStartIndex = computed(() => (currentPage.value - 1) * itemsPerPage + 1);
+const currentEndIndex = computed(() =>
+  Math.min(currentStartIndex.value + itemsPerPage - 1, totalItems.value)
 );
 
 const paginatedMasterlists = computed(() => {
-  return props.masterlists.slice(startIndex.value, endIndex.value);
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredMasterlists.value.slice(start, end);
+});
+
+const paginatedBeneficiaries = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return beneficiaries.value.slice(start, end);
+});
+
+const displayedPageNumbers = computed(() => {
+  const range = 2;
+  const pages = [];
+  for (
+    let i = Math.max(1, currentPage.value - range);
+    i <= Math.min(totalPages.value, currentPage.value + range);
+    i++
+  ) {
+    pages.push(i);
+  }
+  return pages;
 });
 
 const previousPage = () => {
@@ -182,7 +330,47 @@ const nextPage = () => {
 const goToPage = (page: number) => {
   currentPage.value = page;
 };
+
+// Fetch beneficiaries
+const fetchBeneficiaries = async (masterlistID: string) => {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    const response = await axios.get(`/api/masterlists/${masterlistID}/beneficiaries`);
+    beneficiaries.value = response.data.beneficiaries;
+    selectedMasterlistID.value = masterlistID;
+    currentPage.value = 1;
+    showBeneficiaries.value = true;
+  } catch (err) {
+    error.value = "Failed to fetch beneficiaries. Please try again.";
+    console.error("Error fetching beneficiaries:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const goBackToMasterlists = () => {
+  showBeneficiaries.value = false;
+  selectedMasterlistID.value = null;
+  currentPage.value = 1;
+};
+
+const getStatusText = (status: number) => {
+  const statusMap = {
+    1: "Claimed",
+    2: "Unclaimed",
+    3: "Disqualified",
+    4: "Duplicate",
+  };
+  return statusMap[status as keyof typeof statusMap] || "Unknown";
+};
+
+// Reset page when switching views
+watch(showBeneficiaries, () => {
+  currentPage.value = 1;
+});
 </script>
+
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 

@@ -148,7 +148,7 @@
                             class="mt-2 py-2 bg-gray-50"
                         >
                             <a
-                                @click="openModal"
+                                @click="openAddMasterlistModal"
                                 href="#"
                                 class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
                                 >New</a
@@ -702,6 +702,267 @@
                 </button>
             </div>
         </div>
+
+        <!-- Add Masterlist Modal -->
+        <div
+            v-if="showAddMasterlistModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div class="bg-white p-8 rounded-md shadow-xl max-w-md w-full">
+                <h2 class="text-2xl font-bold mb-4">Add New Masterlist</h2>
+                <div class="mb-4">
+                    <label
+                        class="block text-gray-700 text-sm font-bold mb-2"
+                        for="province"
+                    >
+                        Province
+                    </label>
+                    <select
+                        id="province"
+                        v-model="newMasterlist.provinceID"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        :class="{ 'border-red-500': errors.provinceID }"
+                        :disabled="isLoading"
+                    >
+                        <option value="" disabled selected>
+                            Select Province
+                        </option>
+                        <option
+                            v-for="province in provinces"
+                            :key="province.provinceID"
+                            :value="province.provinceID"
+                        >
+                            {{ province.provinceName }}
+                        </option>
+                    </select>
+                    <p
+                        v-if="errors.provinceID"
+                        class="text-red-500 text-xs italic"
+                    >
+                        {{ errors.provinceID }}
+                    </p>
+                </div>
+                <div class="mb-4">
+                    <label
+                        class="block text-gray-700 text-sm font-bold mb-2"
+                        for="municipality"
+                    >
+                        Municipality
+                    </label>
+                    <select
+                        id="municipality"
+                        v-model="newMasterlist.municipalityID"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        :class="{ 'border-red-500': errors.municipalityID }"
+                        :disabled="isLoading || !newMasterlist.provinceID"
+                    >
+                        <option value="" disabled selected>
+                            Select Municipality
+                        </option>
+                        <option
+                            v-for="municipality in municipalities"
+                            :key="municipality.municipalityID"
+                            :value="municipality.municipalityID"
+                        >
+                            {{ municipality.municipalityName }}
+                        </option>
+                    </select>
+                    <p
+                        v-if="errors.municipalityID"
+                        class="text-red-500 text-xs italic"
+                    >
+                        {{ errors.municipalityID }}
+                    </p>
+                </div>
+                <div class="mb-4">
+                    <label
+                        class="block text-gray-700 text-sm font-bold mb-2"
+                        for="masterlistName"
+                    >
+                        Masterlist Name
+                    </label>
+                    <input
+                        id="masterlistName"
+                        v-model="newMasterlist.masterlistName"
+                        type="text"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        :class="{ 'border-red-500': errors.masterlistName }"
+                        placeholder="Enter Masterlist Name"
+                        :disabled="isLoading"
+                    />
+                    <p
+                        v-if="errors.masterlistName"
+                        class="text-red-500 text-xs italic"
+                    >
+                        {{ errors.masterlistName }}
+                    </p>
+                </div>
+                <div class="flex justify-end">
+                    <button
+                        @click="closeAddMasterlistModal"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mr-2"
+                        :disabled="isLoading"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        @click="createMasterlist"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                        :disabled="isLoading"
+                    >
+                        {{ isLoading ? "Creating..." : "Create" }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div
+            v-if="showAddMListConfirmationModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div class="bg-white p-8 rounded-md shadow-xl max-w-md w-full">
+                <h2 class="text-2xl font-bold mb-4">
+                    Confirm Masterlist Creation
+                </h2>
+                <p>Are you sure you want to create this masterlist?</p>
+                <div class="mt-4 flex justify-end">
+                    <button
+                        @click="showAddMListConfirmationModal = false"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mr-2"
+                        :disabled="isLoading"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        @click="confirmCreateMasterlist"
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                        :disabled="isLoading"
+                    >
+                        {{ isLoading ? "Confirming..." : "Confirm" }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div
+            v-if="showAddMListSuccessModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div class="bg-white p-8 rounded-md shadow-xl max-w-md w-full">
+                <h2 class="text-2xl font-bold mb-4">Success!</h2>
+                <p class="mb-4">
+                    New masterlist has been created successfully.
+                </p>
+                <button
+                    @click="showAddMListSuccessModal = false"
+                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4 w-full"
+                >
+                    OK
+                </button>
+                <h3 class="text-xl font-bold mb-2">Add Beneficiary</h3>
+                <button
+                    @click="openAddBeneficiaryModal"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-2 w-full"
+                >
+                    Add New Beneficiary
+                </button>
+                <button
+                    @click="openExistingBeneficiaryModal"
+                    class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full"
+                >
+                    Add Existing Beneficiary
+                </button>
+                <button
+                    @click="closeAllModals"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mt-4 w-full"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+
+        <!-- Existing Beneficiary Modal -->
+        <div
+            v-if="showExistingBeneficiaryModal"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div class="bg-white p-8 rounded-md shadow-xl max-w-4xl w-full">
+                <h2 class="text-2xl font-bold mb-4">
+                    Add Existing Beneficiary
+                </h2>
+                <input
+                    v-model="searchQuery"
+                    type="text"
+                    placeholder="Search beneficiaries..."
+                    class="w-full p-2 mb-4 border rounded"
+                    :disabled="isLoading"
+                />
+                <div class="max-h-96 overflow-y-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th class="px-4 py-2">Name</th>
+                                <th class="px-4 py-2">Barangay</th>
+                                <th class="px-4 py-2">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                v-for="beneficiary in filteredBeneficiaries"
+                                :key="beneficiary.id"
+                            >
+                                <td class="border px-4 py-2">
+                                    {{ beneficiary.lastName }},
+                                    {{ beneficiary.firstName }}
+                                </td>
+                                <td class="border px-4 py-2">
+                                    {{ beneficiary.barangay.barangayName }}
+                                </td>
+                                <td class="border px-4 py-2">
+                                    <button
+                                        @click="
+                                            addExistingBeneficiary(
+                                                beneficiary.id
+                                            )
+                                        "
+                                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
+                                        :disabled="isLoading"
+                                    >
+                                        {{ isLoading ? "Adding..." : "Add" }}
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button
+                    @click="showExistingBeneficiaryModal = false"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mt-4"
+                    :disabled="isLoading"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div
+            v-if="errorAddMListMessage"
+            class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+        >
+            <div class="bg-white p-8 rounded-md shadow-xl max-w-md w-full">
+                <h2 class="text-2xl font-bold mb-4 text-red-600">Error</h2>
+                <p class="mb-4">{{ errorAddMListMessage }}</p>
+                <button
+                    @click="errorAddMListMessage = ''"
+                    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
         <!-- End of Modals -->
     </div>
 </template>
@@ -736,6 +997,14 @@ const selectedProvinceId = ref("");
 const selectedMunicipalityId = ref("");
 const isUploading = ref(false);
 const errorDetails = ref([]);
+const showExistingBeneficiaryModal = ref(false);
+const searchQuery = ref("");
+const filteredBeneficiaries = ref([]);
+const isLoading = ref(false);
+const showAddMasterlistModal = ref(false);
+const showAddMListConfirmationModal = ref(false);
+const showAddMListSuccessModal = ref(false);
+const errorAddMListMessage = ref(false);
 
 const beneficiary = ref({
     lastName: "",
@@ -750,6 +1019,35 @@ const beneficiary = ref({
     masterlistID: "",
 });
 
+const newMasterlist = ref({
+    municipalityID: "",
+    masterlistName: "",
+});
+
+const errors = ref({
+    municipalityID: "",
+    masterlistName: "",
+});
+
+const createMasterlist = () => {
+    errors.value = {
+        municipalityID: "",
+        masterlistName: "",
+    };
+
+    if (!newMasterlist.value.municipalityID) {
+        errors.value.municipalityID = "Municipality is required";
+    }
+    if (!newMasterlist.value.masterlistName) {
+        errors.value.masterlistName = "Masterlist name is required";
+    }
+
+    if (Object.values(errors.value).some((error) => error)) {
+        return;
+    }
+    showAddMListConfirmationModal.value = true;
+};
+
 const fetchData = async (route, params = {}) => {
     try {
         const response = await axios.get(route, { params });
@@ -761,8 +1059,15 @@ const fetchData = async (route, params = {}) => {
 };
 
 const fetchProvinces = async () => {
-    const data = await fetchData(route("api.provinces.index"));
-    provinces.value = data.provinces;
+    isLoading.value = true;
+    try {
+        const data = await fetchData(route("api.provinces.index"));
+        provinces.value = data.provinces;
+    } catch (error) {
+        handleError(error, "Error fetching provinces");
+    } finally {
+        isLoading.value = false;
+    }
 };
 
 const fetchMunicipalities = async () => {
@@ -775,6 +1080,25 @@ const fetchMunicipalities = async () => {
         resetDependentFields("municipalityID");
     }
 };
+
+const fetchAddMListMunicipalities = async () => {
+    if (newMasterlist.value.provinceID) {
+        isLoading.value = true;
+        try {
+            const data = await fetchData(route("api.municipalities.index"), {
+                provinceID: newMasterlist.value.provinceID,
+            });
+            municipalities.value = data.municipalities;
+        } catch (error) {
+            handleError(error, "Error fetching municipalities");
+        } finally {
+            isLoading.value = false;
+        }
+    } else {
+        municipalities.value = [];
+    }
+};
+
 const fetchImportMunicipalities = async () => {
     if (selectedProvinceId.value) {
         try {
@@ -858,6 +1182,8 @@ const proceedAdd = async () => {
 const handleError = (error, message) => {
     console.error(message, error);
     errorMessage.value =
+        error.response?.data?.message || "An unknown error occurred";
+    errorAddMListMessage.value =
         error.response?.data?.message || "An unknown error occurred";
     showErrorModal.value = true;
 };
@@ -988,6 +1314,96 @@ const uploadFile = async () => {
     }
 };
 
+const confirmCreateMasterlist = async () => {
+    isLoading.value = true;
+    try {
+        const response = await axios.post(
+            route("masterlists.store"),
+            newMasterlist.value
+        );
+        showAddMListConfirmationModal.value = false;
+        showAddMListSuccessModal.value = true;
+        // Reset the form
+        newMasterlist.value = {
+            municipalityID: "",
+            masterlistName: "",
+        };
+    } catch (error) {
+        handleError(error, "Error creating masterlist");
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const openAddMasterlistModal = () => {
+    showAddMasterlistModal.value = true;
+};
+
+const closeAddMasterlistModal = () => {
+    showAddMasterlistModal.value = false;
+    newMasterlist.value = {
+        municipalityID: "",
+        masterlistName: "",
+    };
+    errors.value = {
+        municipalityID: "",
+        masterlistName: "",
+    };
+};
+
+const openAddBeneficiaryModal = () => {
+    // Implement the logic to open the add beneficiary modal
+    // This could involve setting a new ref to true or emitting an event to a parent component
+    emit("openAddBeneficiaryModal");
+};
+
+const openExistingBeneficiaryModal = async () => {
+    showExistingBeneficiaryModal.value = true;
+    await fetchExistingBeneficiaries();
+};
+
+const fetchExistingBeneficiaries = async () => {
+    isLoading.value = true;
+    try {
+        const response = await axios.get(
+            route("masterlists.existing-beneficiaries"),
+            {
+                params: { municipalityID: newMasterlist.value.municipalityID },
+            }
+        );
+        filteredBeneficiaries.value = response.data.beneficiaries;
+    } catch (error) {
+        handleError(error, "Error fetching existing beneficiaries");
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const addExistingBeneficiary = async (beneficiaryId) => {
+    isLoading.value = true;
+    try {
+        await axios.post(route("masterlists.add-beneficiary"), {
+            beneficiaryID: beneficiaryId,
+            masterlistID: newMasterlist.value.masterlistID, // Make sure you have this after creating the masterlist
+        });
+        showExistingBeneficiaryModal.value = false;
+        // Optionally, refresh the beneficiary list or update the UI
+    } catch (error) {
+        handleError(error, "Error adding existing beneficiary");
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const closeAllModals = () => {
+    showAddMasterlistModal.value = false;
+    showAddMListConfirmationModal.value = false;
+    showAddMListSuccessModal.value = false;
+    showExistingBeneficiaryModal.value = false;
+    showErrorModal.value = false;
+    errorAddMListMessage.value = "";
+};
+
 onMounted(fetchProvinces);
 
 watch(
@@ -1007,6 +1423,21 @@ watch(
     }
 );
 watch(() => selectedProvinceId.value, fetchMunicipalities);
+watch(() => newMasterlist.value.provinceID, fetchAddMListMunicipalities);
+
+// Watch for changes in the search query
+watch(searchQuery, (newQuery) => {
+    if (newQuery) {
+        filteredBeneficiaries.value = filteredBeneficiaries.value.filter(
+            (beneficiary) =>
+                `${beneficiary.lastName} ${beneficiary.firstName}`
+                    .toLowerCase()
+                    .includes(newQuery.toLowerCase())
+        );
+    } else {
+        fetchExistingBeneficiaries(); // Reset to full list when query is empty
+    }
+});
 </script>
 
 <!--The controller uses the Levenshtein distance algorithm to compare names,

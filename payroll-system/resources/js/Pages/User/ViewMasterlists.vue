@@ -35,6 +35,7 @@
               </button>
               <h3 class="text-gray-900 text-2xl font-medium">List of Masterlists</h3>
             </div>
+            <!--
             <div class="relative">
               <input
                 type="text"
@@ -60,7 +61,7 @@
                   <path d="m21 21-4.3-4.3" />
                 </svg>
               </div>
-            </div>
+            </div>-->
           </div>
 
           <!-- Masterlists Table Component -->

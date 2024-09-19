@@ -14,8 +14,8 @@ class Masterlist extends Model
         'masterlistID',
         'municipalityID',
         'masterlistName',
-        'totalAmount',
         'totalBeneficiaries',
+        'totalAmountReleased',
         'created_at',
         'updated_at'
     ];

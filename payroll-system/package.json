@@ -26,6 +26,7 @@
         "chart.js": "^4.4.3",
         "jspdf": "^2.5.1",
         "jspdf-autotable": "^3.8.3",
+        "lodash-es": "^4.17.21",
         "vue-router": "^4.4.0",
         "vue-template-compiler": "^0.1.0"
     }
