@@ -19,6 +19,10 @@ class Beneficiary extends Model
         'updated' => BeneficiaryUpdated::class,
     ];
 
+    protected $casts = [
+        'dateOfBirth' => 'date',
+    ];
+
     protected $fillable = [
         'masterlistID',
         'barangayID',

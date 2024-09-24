@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Masterlist extends Model
 {
@@ -20,6 +21,13 @@ class Masterlist extends Model
         'updated_at'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    protected $dates = ['created_at', 'updated_at'];
+
     public function municipality()
     {
         return $this->belongsTo(Municipality::class, 'municipalityID', 'municipalityID');
@@ -30,7 +38,13 @@ class Masterlist extends Model
         return $this->hasMany(Beneficiary::class, 'masterlistID', 'masterlistID');
     }
 
+    public function getCreatedAtAttribute($value)
+    {
+        return Carbon::parse($value);
+    }
+
+    public function getUpdatedAtAttribute($value)
+    {
+        return Carbon::parse($value);
+    }
 }
-
-
-

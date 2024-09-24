@@ -56,8 +56,8 @@ export default {
                         datasets: [
                             {
                                 label: "Number of Logins",
-                                backgroundColor: "rgb(0, 76, 153)",
-                                borderColor: "rgb(255, 102, 178)",
+                                backgroundColor: "rgb(59, 68, 122)",
+                                borderColor: "rgb(166, 170, 238)",
                                 data: props.userData.map(
                                     (user) => user.loginNum
                                 ),
@@ -86,7 +86,7 @@ export default {
                 });
             } else if (myChart.value) {
                 const ctx = myChart.value.getContext("2d");
-                ctx.font = "20px Arial";
+                ctx.font = "20px Figtree";
                 ctx.fillText("No user data available", 10, 50);
             }
         };
@@ -112,11 +112,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap");
-
-.font-inter {
-    font-family: "Inter", sans-serif;
-}
-</style>

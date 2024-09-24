@@ -167,11 +167,6 @@
                                 class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
                                 >Import</a
                             >
-                            <a
-                                href="#"
-                                class="block px-6 py-2 text-gray-600 hover:bg-gray-100"
-                                >Export</a
-                            >
                         </div>
                     </div>
 
@@ -622,13 +617,15 @@
                         {{ isUploading ? "Uploading..." : "Upload" }}
                     </button>
                 </div>
-                <button
-                    @click="closeImportModal"
-                    :disabled="isUploading"
-                    class="mt-4 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:bg-gray-200"
-                >
-                    Cancel
-                </button>
+                <div class="flex justify-center">
+                    <button
+                        @click="closeImportModal"
+                        :disabled="isUploading"
+                        class="mt-4 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:bg-gray-200"
+                    >
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
 

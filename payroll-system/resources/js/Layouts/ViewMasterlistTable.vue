@@ -13,17 +13,34 @@
 
     <!-- Back Button (visible when showing beneficiaries) -->
     <div v-if="showBeneficiaries" class="mb-6">
+      <!-- Search Bar -->
+      <div class="mb-6">
+        <input
+          v-model="searchQuery"
+          @input="showBeneficiaries ? searchBeneficiaries() : searchMasterlists()"
+          type="text"
+          :placeholder="
+            showBeneficiaries
+              ? 'Search by Beneficiary Number, Name, or Status'
+              : 'Search by ID, Municipality, or Name'
+          "
+          class="w-full md:w-1/2 lg:w-1/3 px-4 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+        />
+      </div>
+
       <button
         @click="goBackToMasterlists"
         class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
       >
         ← Back to Masterlists
       </button>
-    </div>
-
-    <!-- Loading Indicator -->
-    <div v-if="isLoading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <button
+        @click="exportMasterlist"
+        :disabled="isLoading"
+        class="flex-auto px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+      >
+        Export Masterlist
+      </button>
     </div>
 
     <!-- Error Message -->
@@ -34,6 +51,31 @@
     >
       <strong class="font-bold">Error!</strong>
       <span class="block sm:inline"> {{ error }}</span>
+    </div>
+
+    <!-- Error Notification -->
+    <div
+      v-if="error"
+      class="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50"
+      role="alert"
+    >
+      <strong class="font-bold">Error!</strong>
+      <span class="block sm:inline"> {{ error }}</span>
+    </div>
+
+    <!-- Export Modal -->
+    <div
+      v-if="showExportModal"
+      class="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-50"
+    >
+      <div class="bg-white rounded-lg shadow-lg p-8">
+        <div class="flex justify-center items-center py-12">
+          <div
+            class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"
+          ></div>
+        </div>
+        <p class="text-center text-gray-700">Exporting Masterlist...</p>
+      </div>
     </div>
 
     <!-- Masterlist Table -->
@@ -122,6 +164,11 @@
       </table>
     </div>
 
+    <!-- Loading Indicator -->
+    <div v-if="isLoading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+    </div>
+
     <!-- Pagination -->
     <div v-if="!isLoading && !error" class="mt-6 flex justify-between items-center">
       <div>
@@ -182,6 +229,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue";
 import axios from "axios";
+import { format } from "date-fns";
 
 const masterlists = ref([]);
 const beneficiaries = ref([]);
@@ -190,6 +238,7 @@ const showBeneficiaries = ref(false);
 const selectedMasterlistID = ref(null);
 const isLoading = ref(false);
 const error = ref(null);
+const showExportModal = ref(false);
 
 const headers = [
   "Masterlist ID",
@@ -331,12 +380,14 @@ const goToPage = (page: number) => {
   currentPage.value = page;
 };
 
-// Fetch beneficiaries
-const fetchBeneficiaries = async (masterlistID: string) => {
+// Updated the fetchBeneficiaries function to include search functionality
+const fetchBeneficiaries = async (masterlistID, search = "") => {
   isLoading.value = true;
   error.value = null;
   try {
-    const response = await axios.get(`/api/masterlists/${masterlistID}/beneficiaries`);
+    const response = await axios.get(`/api/masterlists/${masterlistID}/beneficiaries`, {
+      params: { search },
+    });
     beneficiaries.value = response.data.beneficiaries;
     selectedMasterlistID.value = masterlistID;
     currentPage.value = 1;
@@ -346,6 +397,13 @@ const fetchBeneficiaries = async (masterlistID: string) => {
     console.error("Error fetching beneficiaries:", err);
   } finally {
     isLoading.value = false;
+  }
+};
+
+//function to handle beneficiary search
+const searchBeneficiaries = () => {
+  if (selectedMasterlistID.value) {
+    fetchBeneficiaries(selectedMasterlistID.value, searchQuery.value);
   }
 };
 
@@ -365,9 +423,69 @@ const getStatusText = (status: number) => {
   return statusMap[status as keyof typeof statusMap] || "Unknown";
 };
 
-// Reset page when switching views
-watch(showBeneficiaries, () => {
+//function to export the masterlist
+const exportMasterlist = async () => {
+  showExportModal.value = true;
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    const response = await axios.get(
+      `/api/masterlists/${selectedMasterlistID.value}/export`,
+      {
+        responseType: "blob",
+      }
+    );
+    const blob = new Blob([response.data], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `${
+        masterlists.value.find((m) => m.masterlistID === selectedMasterlistID.value)
+          ?.masterlistName
+      }.xlsx`
+    );
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    showExportModal.value = false;
+  } catch (err) {
+    handleExportError("Failed to export masterlist. Please try again.");
+    console.error("Error exporting masterlist:", err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const handleExportError = (errorMessage: string) => {
+  error.value = errorMessage;
+  setTimeout(() => {
+    error.value = null;
+  }, 5000);
+};
+
+//function to close the export modal when the user clicks outside of it
+const closeExportModal = () => {
+  showExportModal.value = false;
+};
+
+// Add a new event listener to close the export modal when the user clicks outside of it
+onMounted(() => {
+  document.addEventListener("click", closeExportModal);
+});
+
+// Updated the watch function to include beneficiary search
+watch([showBeneficiaries, searchQuery], () => {
   currentPage.value = 1;
+  if (showBeneficiaries.value) {
+    searchBeneficiaries();
+  } else {
+    fetchMasterlists();
+  }
 });
 </script>
 

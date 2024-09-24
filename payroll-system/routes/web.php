@@ -62,8 +62,8 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/edit-beneficiary', [BeneficiaryController::class, 'index'])->name('beneficiaries.edit');
 
     //Adding Beneficiary to Masterlist
-    Route::get('/api/beneficiaries', [BeneficiaryController::class, 'getExistingBeneficiaries'])->name('masterlists.existing-beneficiaries');
-    Route::post('/api/beneficiaries/add-to-masterlist', [BeneficiaryController::class, 'addToMasterlist'])->name('masterlists.add-beneficiary');
+    Route::get('/api/beneficiaries', [MasterlistController::class, 'getExistingBeneficiaries'])->name('masterlists.existing-beneficiaries');
+    Route::post('/api/beneficiaries/add-to-masterlist', [MasterlistController::class, 'addToMasterlist'])->name('masterlists.add-beneficiary');
 
     // Masterlist Routes
     Route::get('/view-masterlists', [MasterlistController::class, 'index'])->name('masterlists.view');
@@ -72,6 +72,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::put('/api/masterlists/{masterlistID}', [MasterlistController::class, 'update'])->name('masterlists.update');
     Route::post('/api/masterlists/import', [MasterlistController::class, 'import'])->name('masterlists.import');
     Route::get('/api/masterlists/{masterlistID}/beneficiaries', [MasterlistController::class, 'getBeneficiaries'])->name('api.masterlists.beneficiaries');
+    Route::get('/api/masterlists/{masterlistID}/export', [MasterlistController::class, 'export'])->name('api.masterlists.export');
 
     //Document Routes
     Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');

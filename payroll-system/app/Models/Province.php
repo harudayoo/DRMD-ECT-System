@@ -20,9 +20,9 @@ class Province extends Model
         'double_entry'
     ];
 
-    public function municipality()
-    {
-        return $this->hasMany(Municipality::class, 'provinceID', 'provinceID');
+    public function municipalities()
+{
+    return $this->hasMany(Municipality::class, 'provinceID', 'provinceID');
     }
 }
 
