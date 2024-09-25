@@ -240,20 +240,13 @@ const isLoading = ref(false);
 const error = ref(null);
 const showExportModal = ref(false);
 
-const headers = [
-  "Masterlist ID",
-  "Municipality",
-  "List Name",
-  "Number of Beneficiaries",
-  "Total Amount Released",
-];
+const headers = ["Masterlist ID", "Municipality", "List Name", "Number of Beneficiaries"];
 
 const displayFields = [
   "masterlistID",
   "municipality.municipalityName",
   "masterlistName",
   "totalBeneficiaries",
-  "totalAmountReleased",
 ];
 
 const beneficiaryHeaders = [

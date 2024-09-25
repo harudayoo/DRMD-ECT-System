@@ -38,6 +38,11 @@ class Masterlist extends Model
         return $this->hasMany(Beneficiary::class, 'masterlistID', 'masterlistID');
     }
 
+    public function payrolls()
+    {
+        return $this->hasMany(Payroll::class, 'masterlistID', 'masterlistID');
+    }
+
     public function getCreatedAtAttribute($value)
     {
         return Carbon::parse($value);

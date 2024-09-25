@@ -9,6 +9,23 @@ class Payroll extends Model
 {
     use HasFactory;
 
+    protected $primaryKey = 'payrollID';
 
+    protected $fillable = [
+        'payrollNumber',
+        'payrollName',
+        'barangayID',
+        'subTotal',
+        'created_at',
+        'updated_at',
+    ];
 
+    protected $casts = [
+        'payrollNumber' => 'string',
+    ];
+
+    public function barangay()
+    {
+        return $this->belongsTo(Barangay::class, 'barangayID', 'barangayID');
+    }
 }

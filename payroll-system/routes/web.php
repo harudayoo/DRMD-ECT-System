@@ -74,8 +74,18 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/api/masterlists/{masterlistID}/beneficiaries', [MasterlistController::class, 'getBeneficiaries'])->name('api.masterlists.beneficiaries');
     Route::get('/api/masterlists/{masterlistID}/export', [MasterlistController::class, 'export'])->name('api.masterlists.export');
 
+   // Payroll Routes
+Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
+
+// API Payroll Routes
+Route::prefix('api')->group(function () {
+    Route::get('/provinces', [PayrollController::class, 'getProvinces'])->name('api.provinces.index');
+    Route::get('/municipalities', [PayrollController::class, 'getMunicipalities'])->name('api.municipalities.index');
+    Route::get('/barangays', [PayrollController::class, 'getBarangays'])->name('api.barangays.index');
+});
+
     //Document Routes
-    Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
     Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');
     Route::get('/cdr', [CDRController::class, 'index'])->name('cdr.index');
     //Analytics Routes
