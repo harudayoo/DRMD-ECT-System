@@ -79,7 +79,7 @@ Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index
 Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
 Route::get('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'getBeneficiaries'])->name('payroll.beneficiaries');
 Route::post('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'updateBeneficiaries'])->name('payroll.updateBeneficiaries');
-
+Route::get('/payroll/{payrollId}/export', [PayrollController::class, 'export'])->name('payroll.export');
 
 // API Payroll Routes
 Route::prefix('api')->group(function () {

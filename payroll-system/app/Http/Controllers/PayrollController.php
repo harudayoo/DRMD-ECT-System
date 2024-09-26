@@ -10,6 +10,7 @@ use App\Models\Municipality;
 use App\Models\Province;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class PayrollController extends Controller
 {
@@ -153,5 +154,40 @@ class PayrollController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'An error occurred while updating beneficiaries.'], 500);
         }
+    }
+    public function export($payrollId)
+    {
+        try {
+            $payroll = Payroll::with(['barangay.municipality.province', 'beneficiaries' => function ($query) {
+                $query->where('status', 2); // Unclaimed status
+            }])->findOrFail($payrollId);
+
+            if ($payroll->beneficiaries->isEmpty()) {
+                return response()->json(['error' => 'No unclaimed beneficiaries found for this payroll'], 404);
+            }
+
+            $pdf = $this->generatePdf($payroll);
+
+            return $pdf->download("payroll_{$payroll->payrollNumber}.pdf");
+        } catch (\Exception $e) {
+            \Log::error('PDF generation failed: ' . $e->getMessage(), ['payroll_id' => $payrollId]);
+            return response()->json(['error' => 'PDF generation failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function generatePdf(Payroll $payroll)
+    {
+        $pdf = PDF::loadView('pdfs.payroll', [
+            'payroll' => $payroll,
+            'beneficiaries' => $payroll->beneficiaries->chunk(10),
+        ]);
+
+        $pdf->setPaper('legal', 'landscape');
+        $pdf->setOptions([
+            'defaultFont' => 'Arial',
+            'isRemoteEnabled' => true,
+        ]);
+
+        return $pdf;
     }
 }
