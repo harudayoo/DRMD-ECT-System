@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Payroll;
+use App\Models\Beneficiary;
 use App\Models\Barangay;
 use App\Models\Municipality;
 use App\Models\Province;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class PayrollController extends Controller
 {
@@ -45,16 +47,13 @@ class PayrollController extends Controller
             'barangayID' => 'required|exists:barangays,barangayID',
         ]);
 
-        // Generate a unique 15-digit payroll number
         do {
             $payrollNumber = $this->generatePayrollNumber();
         } while (Payroll::where('payrollNumber', $payrollNumber)->exists());
 
-        // Fetch the totalAmountReleased from the selected barangay
         $barangay = Barangay::findOrFail($validated['barangayID']);
         $subTotal = $barangay->totalAmountReleased;
 
-        // Create the new payroll
         $payroll = Payroll::create([
             'payrollNumber' => $payrollNumber,
             'payrollName' => $validated['payrollName'],
@@ -69,12 +68,10 @@ class PayrollController extends Controller
 
     private function generatePayrollNumber()
     {
-        // Generate a random 15-digit number as a string
         $number = '';
         for ($i = 0; $i < 15; $i++) {
             $number .= mt_rand(0, 9);
         }
-        // Ensure the first digit is not zero
         if ($number[0] === '0') {
             $number[0] = mt_rand(1, 9);
         }
@@ -99,4 +96,62 @@ class PayrollController extends Controller
         return response()->json(['barangays' => $barangays]);
     }
 
+    public function getBeneficiaries(Request $request, $payrollId)
+    {
+        try {
+            $payroll = Payroll::with('beneficiaries')->findOrFail($payrollId);
+            $search = $request->input('search', '');
+            $perPage = $request->input('per_page', 10);
+
+            $beneficiaries = $payroll->beneficiaries()
+                ->where(function ($query) use ($search) {
+                    $query->where('beneficiaryNumber', 'like', "%{$search}%")
+                        ->orWhere('lastName', 'like', "%{$search}%")
+                        ->orWhere('firstName', 'like', "%{$search}%")
+                        ->orWhere('middleName', 'like', "%{$search}%");
+                })
+                ->paginate($perPage);
+
+            return response()->json([
+                'payroll' => $payroll,
+                'beneficiaries' => $beneficiaries,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while fetching beneficiaries: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function updateBeneficiaries(Request $request, $payrollId)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'beneficiaries' => 'required|array',
+            'beneficiaries.*.beneficiaryID' => 'required|exists:beneficiaries,beneficiaryID',
+            'beneficiaries.*.status' => 'required|integer|min:1|max:4',
+        ]);
+
+        try {
+            $payroll = Payroll::findOrFail($payrollId);
+
+            DB::transaction(function () use ($payroll, $validated) {
+                Beneficiary::where('barangayID', $payroll->barangayID)
+                    ->update(['amount' => $validated['amount']]);
+
+                foreach ($validated['beneficiaries'] as $beneficiary) {
+                    Beneficiary::where('beneficiaryID', $beneficiary['beneficiaryID'])
+                        ->update(['status' => $beneficiary['status']]);
+                }
+
+                $totalAmount = Beneficiary::where('barangayID', $payroll->barangayID)
+                    ->where('status', '!=', 4)
+                    ->sum('amount');
+
+                $payroll->update(['subTotal' => $totalAmount]);
+            });
+
+            return response()->json(['message' => 'Beneficiaries updated successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while updating beneficiaries.'], 500);
+        }
+    }
 }

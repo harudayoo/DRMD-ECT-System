@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen flex flex-col overflow-hidden bg-gray-100">
+  <div class="min-h-screen flex flex-col bg-gray-100">
     <!-- Top navigation bar -->
     <NavBar @toggle-sidebar="toggleSidebar" @click="toggleDarkMode" />
 
@@ -10,17 +10,19 @@
       </transition>
 
       <!-- Main content -->
-      <div class="p-6 flex px-14 flex-col w-full">
-        <div class="flex justify-between items-center mb-4">
-          <h1 class="text-2xl font-bold">Cash Assistance Payroll</h1>
-          <button
-            @click="openNewPayrollModal"
-            class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            New
-          </button>
+      <div class="flex-1 overflow-auto">
+        <div class="p-6 px-14">
+          <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold">Cash Assistance Payroll</h1>
+            <button
+              @click="openNewPayrollModal"
+              class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              New
+            </button>
+          </div>
+          <PayrollView :payrolls="payrolls" />
         </div>
-        <PayrollView :payrolls="payrolls" />
       </div>
     </div>
 
@@ -141,4 +143,24 @@ onMounted(() => {
 
 <style scoped>
 /* Add your component styles here */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  transform: translateX(-100%);
+}
+
+/* Ensure the content area takes up at least the full viewport height */
+.min-h-screen {
+  min-height: 100vh;
+}
+
+/* Allow the main content to scroll independently */
+.overflow-auto {
+  overflow-y: auto;
+  max-height: calc(100vh - 64px); /* Adjust this value based on your NavBar height */
+}
 </style>

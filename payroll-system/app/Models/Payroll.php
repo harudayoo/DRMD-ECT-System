@@ -24,6 +24,11 @@ class Payroll extends Model
         'payrollNumber' => 'string',
     ];
 
+    public function beneficiaries()
+    {
+        return $this->hasMany(Beneficiary::class, 'barangayID', 'barangayID');
+    }
+
     public function barangay()
     {
         return $this->belongsTo(Barangay::class, 'barangayID', 'barangayID');
