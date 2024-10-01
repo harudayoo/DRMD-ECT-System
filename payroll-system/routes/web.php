@@ -71,22 +71,23 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::post('/api/masterlists/store', [MasterlistController::class, 'store'])->name('masterlists.store');
     Route::put('/api/masterlists/{masterlistID}', [MasterlistController::class, 'update'])->name('masterlists.update');
     Route::post('/api/masterlists/import', [MasterlistController::class, 'import'])->name('masterlists.import');
+    Route::post('/masterlist/preview', [MasterlistController::class, 'preview'])->name('masterlist.preview');
     Route::get('/api/masterlists/{masterlistID}/beneficiaries', [MasterlistController::class, 'getBeneficiaries'])->name('api.masterlists.beneficiaries');
     Route::get('/api/masterlists/{masterlistID}/export', [MasterlistController::class, 'export'])->name('api.masterlists.export');
 
-   // Payroll Routes
-Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
-Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
-Route::get('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'getBeneficiaries'])->name('payroll.beneficiaries');
-Route::post('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'updateBeneficiaries'])->name('payroll.updateBeneficiaries');
-Route::get('/payroll/{payrollId}/export', [PayrollController::class, 'export'])->name('payroll.export');
+    // Payroll Routes
+    Route::get('/payroll', [PayrollController::class, 'index'])->name('payroll.index');
+    Route::post('/payroll', [PayrollController::class, 'store'])->name('payroll.store');
+    Route::get('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'getBeneficiaries'])->name('payroll.beneficiaries');
+    Route::post('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'updateBeneficiaries'])->name('payroll.updateBeneficiaries');
+    Route::get('/payroll/{payrollId}/export', [PayrollController::class, 'export'])->name('payroll.export');
 
-// API Payroll Routes
-Route::prefix('api')->group(function () {
-    Route::get('/provinces', [PayrollController::class, 'getProvinces'])->name('api.provinces.index');
-    Route::get('/municipalities', [PayrollController::class, 'getMunicipalities'])->name('api.municipalities.index');
-    Route::get('/barangays', [PayrollController::class, 'getBarangays'])->name('api.barangays.index');
-});
+    // API Payroll Routes
+    Route::prefix('api')->group(function () {
+        Route::get('/provinces', [PayrollController::class, 'getProvinces'])->name('api.provinces.index');
+        Route::get('/municipalities', [PayrollController::class, 'getMunicipalities'])->name('api.municipalities.index');
+        Route::get('/barangays', [PayrollController::class, 'getBarangays'])->name('api.barangays.index');
+    });
 
     //Document Routes
     Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');

@@ -47,13 +47,14 @@
             padding: 30px 0;
             font-size: 24px;
             text-align: center;
-            font-weight: bold;
             width: 25%;
             word-break: break-all;
         }
     </style>
 </head>
 <body>
+ @foreach($beneficiaries as $pageIndex => $pageBeneficiaries)
+
     <div class="header">
         <p>Republic of the Philippines</p>
         <p>DEPARTMENT OF SOCIAL WELFARE AND DEVELOPMENT</p>
@@ -62,10 +63,10 @@
     </div>
 
     <p>MAIN</p>
-    <p>FOR PAYMENT OF CASH FOR EMERGENCY CASH TRANSFER (ECT) FOR THE FAMILIES AFFECTED BY TROUGH OF LPA IN THE PROVINCE OF {{ strtoupper($payroll->barangay->municipality->province->provinceName) }} THE PERIOD OF <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>, 2024</p>
+    <p>FOR PAYMENT OF CASH FOR EMERGENCY CASH TRANSFER (ECT) FOR THE FAMILIES AFFECTED BY <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u> IN THE PROVINCE OF {{ strtoupper($payroll->barangay->municipality->province->provinceName) }} THE PERIOD OF <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u>, 2024</p>
     <p>Project Name: <u>{{ $payroll->barangay->barangayName }}, {{ $payroll->barangay->municipality->municipalityName }}</u></p>
 
-    @foreach($beneficiaries as $pageIndex => $pageBeneficiaries)
+
         <table>
             <thead>
                 <tr>
@@ -130,8 +131,8 @@
           @foreach($payroll->beneficiaries->chunk(2) as $pair)
               <tr>
                   @foreach($pair as $beneficiary)
-                      <td>{{ $beneficiary->beneficiaryNumber }}</td>
-                      <td>{{ $beneficiary->beneficiaryNumber }}</td>
+                      <td>Stub Number:<br><strong>{{ $beneficiary->beneficiaryNumber }}</strong><br>Company Copy</td>
+                      <td>Stub Number:<br><strong>{{ $beneficiary->beneficiaryNumber }}</strong><br>Beneficiary Number</td>
                   @endforeach
               </tr>
           @endforeach

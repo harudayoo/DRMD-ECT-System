@@ -34,29 +34,29 @@ class MasterlistController extends Controller
     }
 
     public function getBeneficiaries($masterlistID, Request $request)
-{
-    try {
-        $search = $request->input('search', '');
-        $query = Beneficiary::where('masterlistID', $masterlistID)->with('barangay');
+    {
+        try {
+            $search = $request->input('search', '');
+            $query = Beneficiary::where('masterlistID', $masterlistID)->with('barangay');
 
-        if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('beneficiaryNumber', 'like', "%{$search}%")
-                  ->orWhere('firstName', 'like', "%{$search}%")
-                  ->orWhere('lastName', 'like', "%{$search}%")
-                  ->orWhere('middleName', 'like', "%{$search}%")
-                  ->orWhere('status', 'like', "%{$search}%");
-            });
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('beneficiaryNumber', 'like', "%{$search}%")
+                        ->orWhere('firstName', 'like', "%{$search}%")
+                        ->orWhere('lastName', 'like', "%{$search}%")
+                        ->orWhere('middleName', 'like', "%{$search}%")
+                        ->orWhere('status', 'like', "%{$search}%");
+                });
+            }
+
+            $beneficiaries = $query->get();
+
+            return response()->json(['beneficiaries' => $beneficiaries]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching beneficiaries: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch beneficiaries'], 500);
         }
-
-        $beneficiaries = $query->get();
-
-        return response()->json(['beneficiaries' => $beneficiaries]);
-    } catch (\Exception $e) {
-        Log::error('Error fetching beneficiaries: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to fetch beneficiaries'], 500);
     }
-}
 
     public function store(Request $request)
     {
@@ -131,15 +131,15 @@ class MasterlistController extends Controller
             $worksheet = $spreadsheet->getActiveSheet();
             $rows = $worksheet->toArray();
 
-            // Remove header row
-            array_shift($rows);
+            // Skip the first 5 rows (headers)
+            $dataRows = array_slice($rows, 5);
 
             // Filter out blank rows
-            $rows = array_filter($rows, function ($row) {
+            $dataRows = array_filter($dataRows, function ($row) {
                 return !empty(array_filter($row));
             });
 
-            $totalBeneficiaries = count($rows);
+            $totalBeneficiaries = count($dataRows);
 
             DB::beginTransaction();
 
@@ -157,10 +157,11 @@ class MasterlistController extends Controller
             $processedRows = 0;
             $batchSize = 100;
 
-            foreach (array_chunk($rows, $batchSize) as $chunk) {
+            foreach (array_chunk($dataRows, $batchSize) as $chunk) {
                 foreach ($chunk as $index => $row) {
-                    $rowNumber = $processedRows + $index + 2;
+                    $rowNumber = $processedRows + $index + 6; // Start from row 6
                     try {
+                        Log::debug("Processing row", ['rowNumber' => $rowNumber, 'data' => $row]);
                         $this->processRow($masterlist, $row, $rowNumber);
                     } catch (\Exception $e) {
                         $errors[] = "Row {$rowNumber}: " . $e->getMessage();
@@ -192,11 +193,28 @@ class MasterlistController extends Controller
 
     private function processRow(Masterlist $masterlist, array $row, int $rowNumber)
     {
+        // Adjust rowNumber to account for header rows
+        $actualRowNumber = $rowNumber + 5;
+
         // Trim all input values to remove leading/trailing whitespace
         $row = array_map('trim', $row);
 
+        // Log the row data for debugging
+        Log::debug("Processing row data", [
+            'rowNumber' => $rowNumber,
+            'lastName' => $row[1] ?? null,
+            'firstName' => $row[2] ?? null,
+            'middleName' => $row[3] ?? null,
+            'barangay' => $row[9] ?? null,
+        ]);
+
+        // Validate only if required fields are not empty
+        if (empty($row[1]) || empty($row[2]) || empty($row[6]) || empty($row[9])) {
+            Log::warning("Row {$rowNumber}: Empty required fields", ['row' => $row]);
+            throw new \Exception("Required fields are empty");
+        }
+
         $validator = Validator::make([
-            'no' => $row[0],
             'lastName' => $row[1],
             'firstName' => $row[2],
             'middleName' => $row[3],
@@ -205,20 +223,19 @@ class MasterlistController extends Controller
             'dateOfBirth' => $row[6],
             'barangay' => $row[9],
         ], [
-            'no' => 'required|integer',
-            'lastName' => 'required|string|max:255',
-            'firstName' => 'required|string|max:255',
-            'middleName' => 'nullable|string|max:255',
+            'lastName' => 'required|string|max:25',
+            'firstName' => 'required|string|max:25',
+            'middleName' => 'nullable|string|max:25',
             'ext' => 'nullable|string|max:10',
             'sex' => 'nullable|string|max:10',
-            'dateOfBirth' => 'required|string',
+            'dateOfBirth' => 'required',
             'barangay' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
             Log::warning("Row {$rowNumber} validation failed", ['errors' => $errors]);
-            throw new \Exception("Row {$rowNumber}: Validation failed: " . implode(", ", $errors));
+            throw new \Exception("Validation failed: " . implode(", ", $errors));
         }
 
         $barangayName = $row[9];
@@ -226,7 +243,7 @@ class MasterlistController extends Controller
 
         if (!$barangay) {
             Log::warning("Row {$rowNumber}: Barangay not found", ['barangay' => $barangayName]);
-            throw new \Exception("Row {$rowNumber}: Barangay not found: {$barangayName}");
+            throw new \Exception("Barangay not found: {$barangayName}");
         }
 
         $beneficiaryNumber = Beneficiary::generateUniqueBeneficiaryNumber($barangay->barangayID);
@@ -237,7 +254,7 @@ class MasterlistController extends Controller
         // Parse and format date of birth
         $formattedDateOfBirth = $this->parseAndFormatDate($row[6]);
         if (!$formattedDateOfBirth) {
-            throw new \Exception("Row {$rowNumber}: Invalid date format for date of birth");
+            throw new \Exception("Row {$actualRowNumber}: Invalid date format for date of birth");
         }
 
         $existingBeneficiary = Beneficiary::where('lastName', $row[1])
@@ -255,7 +272,7 @@ class MasterlistController extends Controller
                 'extensionName' => $row[4] ?: null,
                 'sex' => $sex,
             ]);
-            Log::info("Row {$rowNumber}: Existing beneficiary updated", ['beneficiaryId' => $existingBeneficiary->id]);
+            Log::info("Row {$actualRowNumber}: Existing beneficiary updated", ['beneficiaryId' => $existingBeneficiary->id]);
         } else {
             $beneficiary = new Beneficiary([
                 'masterlistID' => $masterlist->masterlistID,
@@ -269,9 +286,8 @@ class MasterlistController extends Controller
                 'dateOfBirth' => $formattedDateOfBirth,
                 'status' => 2,
             ]);
-
             $beneficiary->save();
-            Log::info("Row {$rowNumber}: New beneficiary added", ['beneficiaryId' => $beneficiary->id]);
+            Log::info("Row {$actualRowNumber}: New beneficiary added", ['beneficiaryId' => $beneficiary->id]);
         }
     }
 
@@ -299,8 +315,8 @@ class MasterlistController extends Controller
             }
         }
 
-        // Only return a match if the similarity is above a certain threshold
-        return $highestSimilarity > 0.8 ? $bestMatch : null;
+        // Reduce the threshold to 0.7 for a more lenient match
+        return $highestSimilarity > 0.7 ? $bestMatch : null;
     }
 
     private function normalizeBarangayName($name)
@@ -367,100 +383,100 @@ class MasterlistController extends Controller
     }
 
     public function export($masterlistID)
-{
-    try {
-        $masterlist = Masterlist::with([
-            'municipality' => function ($query) {
-                $query->with('province');
-            },
-            'beneficiaries.barangay.municipality.province'
-        ])->findOrFail($masterlistID);
+    {
+        try {
+            $masterlist = Masterlist::with([
+                'municipality' => function ($query) {
+                    $query->with('province');
+                },
+                'beneficiaries.barangay.municipality.province'
+            ])->findOrFail($masterlistID);
 
-        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-        $worksheet = $spreadsheet->getActiveSheet();
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $worksheet = $spreadsheet->getActiveSheet();
 
-        $worksheet->setCellValue('A1', 'Emergency Cash Transfer Masterlist: ' . $masterlist->masterlistName . ', ' . $masterlist->created_at->format('Y-m-d'));
-        $worksheet->getStyle('A1')->getFont()->setBold(true);
+            $worksheet->setCellValue('A1', 'Emergency Cash Transfer Masterlist: ' . $masterlist->masterlistName . ', ' . $masterlist->created_at->format('Y-m-d'));
+            $worksheet->getStyle('A1')->getFont()->setBold(true);
 
-        // Add masterlist's municipality and province information
-        $worksheet->setCellValue('A2', 'Municipality: ' . ($masterlist->municipality ? strtoupper($masterlist->municipality->municipalityName) : 'N/A'));
-        $worksheet->setCellValue('A3', 'Province: ' . ($masterlist->municipality && $masterlist->municipality->province ? strtoupper($masterlist->municipality->province->provinceName) : 'N/A'));
+            // Add masterlist's municipality and province information
+            $worksheet->setCellValue('A2', 'Municipality: ' . ($masterlist->municipality ? strtoupper($masterlist->municipality->municipalityName) : 'N/A'));
+            $worksheet->setCellValue('A3', 'Province: ' . ($masterlist->municipality && $masterlist->municipality->province ? strtoupper($masterlist->municipality->province->provinceName) : 'N/A'));
 
-        $worksheet->setCellValue('A5', 'No.');
-        $worksheet->setCellValue('B5', 'LAST NAME');
-        $worksheet->setCellValue('C5', 'FIRST NAME');
-        $worksheet->setCellValue('D5', 'MIDDLE NAME');
-        $worksheet->setCellValue('E5', 'NAME EXTENSION');
-        $worksheet->setCellValue('F5', 'SEX');
-        $worksheet->setCellValue('G5', 'DATE OF BIRTH (mm-dd-yyyy)');
-        $worksheet->setCellValue('H5', 'CITY/MUNICIPALITY');
-        $worksheet->setCellValue('I5', 'PROVINCE');
-        $worksheet->setCellValue('J5', 'BARANGAY');
+            $worksheet->setCellValue('A5', 'No.');
+            $worksheet->setCellValue('B5', 'LAST NAME');
+            $worksheet->setCellValue('C5', 'FIRST NAME');
+            $worksheet->setCellValue('D5', 'MIDDLE NAME');
+            $worksheet->setCellValue('E5', 'NAME EXTENSION');
+            $worksheet->setCellValue('F5', 'SEX');
+            $worksheet->setCellValue('G5', 'DATE OF BIRTH (mm-dd-yyyy)');
+            $worksheet->setCellValue('H5', 'CITY/MUNICIPALITY');
+            $worksheet->setCellValue('I5', 'PROVINCE');
+            $worksheet->setCellValue('J5', 'BARANGAY');
 
-        $worksheet->getStyle('A5:J5')->getFont()->setBold(true);
-        $worksheet->getStyle('A5:J5')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-        $worksheet->getStyle('A5:J5')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            $worksheet->getStyle('A5:J5')->getFont()->setBold(true);
+            $worksheet->getStyle('A5:J5')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+            $worksheet->getStyle('A5:J5')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
-        $row = 6;
-        foreach ($masterlist->beneficiaries as $index => $beneficiary) {
-            $worksheet->setCellValue('A' . $row, $row - 5);
-            $worksheet->setCellValue('B' . $row, strtoupper($beneficiary->lastName));
-            $worksheet->setCellValue('C' . $row, strtoupper($beneficiary->firstName));
-            $worksheet->setCellValue('D' . $row, strtoupper($beneficiary->middleName));
-            $worksheet->setCellValue('E' . $row, strtoupper($beneficiary->extensionName));
-            $worksheet->setCellValue('F' . $row, strtoupper($beneficiary->sex));
-            $worksheet->setCellValue('G' . $row, $beneficiary->dateOfBirth ? $beneficiary->dateOfBirth->format('m-d-Y') : '');
+            $row = 6;
+            foreach ($masterlist->beneficiaries as $index => $beneficiary) {
+                $worksheet->setCellValue('A' . $row, $row - 5);
+                $worksheet->setCellValue('B' . $row, strtoupper($beneficiary->lastName));
+                $worksheet->setCellValue('C' . $row, strtoupper($beneficiary->firstName));
+                $worksheet->setCellValue('D' . $row, strtoupper($beneficiary->middleName));
+                $worksheet->setCellValue('E' . $row, strtoupper($beneficiary->extensionName));
+                $worksheet->setCellValue('F' . $row, strtoupper($beneficiary->sex));
+                $worksheet->setCellValue('G' . $row, $beneficiary->dateOfBirth ? $beneficiary->dateOfBirth->format('m-d-Y') : '');
 
-            if (!$beneficiary->barangay) {
-                Log::warning("Beneficiary {$beneficiary->beneficiaryID} has no barangay", ['beneficiary' => $beneficiary->toArray()]);
-                $worksheet->setCellValue('H' . $row, 'N/A');
-                $worksheet->setCellValue('I' . $row, 'N/A');
-                $worksheet->setCellValue('J' . $row, 'N/A');
-            } elseif (!$beneficiary->barangay->municipality) {
-                Log::warning("Barangay {$beneficiary->barangay->barangayID} has no municipality", ['barangay' => $beneficiary->barangay->toArray()]);
-                $worksheet->setCellValue('H' . $row, 'N/A');
-                $worksheet->setCellValue('I' . $row, 'N/A');
-                $worksheet->setCellValue('J' . $row, strtoupper($beneficiary->barangay->barangayName));
-            } else {
-                $municipality = $beneficiary->barangay->municipality;
-                $worksheet->setCellValue('H' . $row, strtoupper($municipality->municipalityName));
-                $worksheet->setCellValue('I' . $row, $municipality->province ? strtoupper($municipality->province->provinceName) : 'N/A');
-                $worksheet->setCellValue('J' . $row, strtoupper($beneficiary->barangay->barangayName));
+                if (!$beneficiary->barangay) {
+                    Log::warning("Beneficiary {$beneficiary->beneficiaryID} has no barangay", ['beneficiary' => $beneficiary->toArray()]);
+                    $worksheet->setCellValue('H' . $row, 'N/A');
+                    $worksheet->setCellValue('I' . $row, 'N/A');
+                    $worksheet->setCellValue('J' . $row, 'N/A');
+                } elseif (!$beneficiary->barangay->municipality) {
+                    Log::warning("Barangay {$beneficiary->barangay->barangayID} has no municipality", ['barangay' => $beneficiary->barangay->toArray()]);
+                    $worksheet->setCellValue('H' . $row, 'N/A');
+                    $worksheet->setCellValue('I' . $row, 'N/A');
+                    $worksheet->setCellValue('J' . $row, strtoupper($beneficiary->barangay->barangayName));
+                } else {
+                    $municipality = $beneficiary->barangay->municipality;
+                    $worksheet->setCellValue('H' . $row, strtoupper($municipality->municipalityName));
+                    $worksheet->setCellValue('I' . $row, $municipality->province ? strtoupper($municipality->province->provinceName) : 'N/A');
+                    $worksheet->setCellValue('J' . $row, strtoupper($beneficiary->barangay->barangayName));
+                }
+
+                $worksheet->getStyle('A' . $row . ':J' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+                $worksheet->getStyle('A' . $row . ':J' . $row)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+                $row++;
             }
 
-            $worksheet->getStyle('A' . $row . ':J' . $row)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
-            $worksheet->getStyle('A' . $row . ':J' . $row)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+            $worksheet->getColumnDimension('A')->setWidth(10);
+            $worksheet->getColumnDimension('B')->setWidth(20);
+            $worksheet->getColumnDimension('C')->setWidth(20);
+            $worksheet->getColumnDimension('D')->setWidth(20);
+            $worksheet->getColumnDimension('E')->setWidth(20);
+            $worksheet->getColumnDimension('F')->setWidth(10);
+            $worksheet->getColumnDimension('G')->setWidth(20);
+            $worksheet->getColumnDimension('H')->setWidth(20);
+            $worksheet->getColumnDimension('I')->setWidth(20);
+            $worksheet->getColumnDimension('J')->setWidth(20);
 
-            $row++;
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $tempFile = tempnam(sys_get_temp_dir(), 'export_');
+            $writer->save($tempFile);
+
+            $headers = [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'Content-Disposition' => 'attachment; filename="' . $masterlist->masterlistName . '.xlsx"',
+            ];
+
+            return response()->file($tempFile, $headers)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            Log::error('Error exporting masterlist: ' . $e->getMessage(), [
+                'masterlistID' => $masterlistID,
+                'exception' => $e,
+            ]);
+            return response()->json(['error' => 'Failed to export masterlist: ' . $e->getMessage()], 500);
         }
-
-        $worksheet->getColumnDimension('A')->setWidth(10);
-        $worksheet->getColumnDimension('B')->setWidth(20);
-        $worksheet->getColumnDimension('C')->setWidth(20);
-        $worksheet->getColumnDimension('D')->setWidth(20);
-        $worksheet->getColumnDimension('E')->setWidth(20);
-        $worksheet->getColumnDimension('F')->setWidth(10);
-        $worksheet->getColumnDimension('G')->setWidth(20);
-        $worksheet->getColumnDimension('H')->setWidth(20);
-        $worksheet->getColumnDimension('I')->setWidth(20);
-        $worksheet->getColumnDimension('J')->setWidth(20);
-
-        $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
-        $tempFile = tempnam(sys_get_temp_dir(), 'export_');
-        $writer->save($tempFile);
-
-        $headers = [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $masterlist->masterlistName . '.xlsx"',
-        ];
-
-        return response()->file($tempFile, $headers)->deleteFileAfterSend(true);
-    } catch (\Exception $e) {
-        Log::error('Error exporting masterlist: ' . $e->getMessage(), [
-            'masterlistID' => $masterlistID,
-            'exception' => $e,
-        ]);
-        return response()->json(['error' => 'Failed to export masterlist: ' . $e->getMessage()], 500);
     }
-}
 }
