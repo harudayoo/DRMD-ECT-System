@@ -442,10 +442,10 @@
     <!-- Updated Import Modal -->
     <div
       v-if="showImportModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
     >
       <div class="bg-white p-5 rounded-lg shadow-xl max-w-md w-full">
-        <h2 class="text-xl font-semibold mb-4">Import Masterlist</h2>
+        <h2 class="text-xl font-semibold mb-4 flex justify-center">Import Masterlist</h2>
         <div class="mb-4">
           <label for="province" class="block mb-2">Province</label>
           <select
@@ -503,7 +503,7 @@
             Select File
           </button>
         </div>
-        <div v-if="selectedFile" class="mt-4">
+        <div v-if="selectedFile" class="mt-4 text-center">
           <p>Selected file: {{ selectedFile.name }}</p>
           <button
             @click="uploadFile"
@@ -543,7 +543,7 @@
       v-if="showErrorModal"
       class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
     >
-      <div class="bg-white p-5 rounded-lg shadow-xl max-w-lg w-full">
+      <div class="bg-white text-center p-5 rounded-lg shadow-xl max-w-lg w-full">
         <h2 class="text-xl font-semibold mb-4 text-red-600">Import Error</h2>
         <p class="mb-4">{{ errorMessage }}</p>
         <div v-if="errorDetails.length > 0" class="mb-4">
@@ -572,9 +572,9 @@
     <!-- Success Modal -->
     <div
       v-if="showSuccessModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
     >
-      <div class="bg-white p-5 rounded-lg shadow-xl">
+      <div class="bg-white text-center p-5 rounded-lg shadow-xl">
         <h2 class="text-xl font-semibold mb-4 text-green-600">Import Successful</h2>
         <p class="mb-4">The masterlist has been successfully imported.</p>
         <button
@@ -589,10 +589,10 @@
     <!-- Add Masterlist Modal -->
     <div
       v-if="showAddMasterlistModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
     >
       <div class="bg-white p-8 rounded-md shadow-xl max-w-md w-full">
-        <h2 class="text-2xl font-bold mb-4">Add New Masterlist</h2>
+        <h2 class="text-2xl font-bold mb-4 flex justify-center">Add New Masterlist</h2>
         <div class="mb-4">
           <label class="block text-gray-700 text-sm font-bold mb-2" for="province">
             Province
@@ -974,9 +974,9 @@ const fetchBarangays = async () => {
 };
 
 const fetchMasterlists = async () => {
-  if (beneficiary.value.barangayID) {
+  if (beneficiary.value.municipalityID) {
     const data = await fetchData(route("api.masterlists.index"), {
-      barangayID: beneficiary.value.barangayID,
+      municipalityID: beneficiary.value.municipalityID,
     });
     masterlists.value = data.masterlists;
   } else {
