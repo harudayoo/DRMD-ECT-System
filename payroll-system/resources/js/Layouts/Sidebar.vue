@@ -229,22 +229,12 @@
     <div
       v-if="isModalOpen"
       class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
+      @mousedown.self="closeModal"
     >
       <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
         <h2 class="text-2xl font-bold mb-4 text-center">Add Beneficiary</h2>
         <form @submit.prevent="addBeneficiary">
           <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="lastName" class="block mb-2">Last Name</label>
-              <input
-                type="text"
-                id="lastName"
-                v-model="beneficiary.lastName"
-                placeholder="Enter your Last Name"
-                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
             <div>
               <label for="firstName" class="block mb-2">First Name</label>
               <input
@@ -268,14 +258,32 @@
               />
             </div>
             <div>
-              <label for="extensionName" class="block mb-2">Name Extension</label>
+              <label for="lastName" class="block mb-2">Last Name</label>
               <input
                 type="text"
+                id="lastName"
+                v-model="beneficiary.lastName"
+                placeholder="Enter your Last Name"
+                class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label for="extensionName" class="block mb-2">Extension Name</label>
+              <select
                 id="extensionName"
                 v-model="beneficiary.extensionName"
-                placeholder="Enter your Extension Name"
                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              >
+                <option value="" disabled selected>Select an Extension</option>
+                <option value="Jr.">Jr.</option>
+                <option value="Sr.">Sr.</option>
+                <option value="I">I</option>
+                <option value="II">II</option>
+                <option value="III">III</option>
+                <option value="IV">IV</option>
+                <option value="V">V</option>
+              </select>
             </div>
             <div>
               <label for="dateOfBirth" class="block mb-2">Date of Birth:</label>
@@ -443,6 +451,7 @@
     <div
       v-if="showImportModal"
       class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
+      @mousedown.self="closeImportModal"
     >
       <div class="bg-white p-5 rounded-lg shadow-xl max-w-md w-full">
         <h2 class="text-xl font-semibold mb-4 flex justify-center">Import Masterlist</h2>
@@ -510,7 +519,7 @@
             :disabled="isUploading"
             class="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:bg-gray-400"
           >
-            {{ isUploading ? "Uploading..." : "Upload" }}
+            {{ isUploading ? "Uploading..." : "Upload File" }}
           </button>
         </div>
         <div class="flex justify-center">
@@ -590,13 +599,12 @@
     <div
       v-if="showAddMasterlistModal"
       class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
+      @mousedown.self="closeAddMasterlistModal"
     >
-      <div class="bg-white p-8 rounded-md shadow-xl max-w-md w-full">
+      <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
         <h2 class="text-2xl font-bold mb-4 flex justify-center">Add New Masterlist</h2>
         <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="province">
-            Province
-          </label>
+          <label class="block mb-2" for="province"> Province </label>
           <select
             id="province"
             v-model="newMasterlist.provinceID"
@@ -618,9 +626,7 @@
           </p>
         </div>
         <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="municipality">
-            Municipality
-          </label>
+          <label class="block mb-2" for="municipality"> Municipality </label>
           <select
             id="municipality"
             v-model="newMasterlist.municipalityID"
@@ -642,9 +648,7 @@
           </p>
         </div>
         <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="masterlistName">
-            Masterlist Name
-          </label>
+          <label class="block mb-2" for="masterlistName"> Masterlist Name </label>
           <input
             id="masterlistName"
             v-model="newMasterlist.masterlistName"
@@ -1038,10 +1042,11 @@ const openModal = () => {
 };
 
 const closeModal = () => {
-  isModalOpen.value = false;
-  resetForm();
+  if (!isUploading.value) {
+    isModalOpen.value = false;
+    resetForm();
+  }
 };
-
 const resetForm = () => {
   Object.assign(beneficiary.value, {
     lastName: "",
@@ -1172,15 +1177,17 @@ const openAddMasterlistModal = () => {
 };
 
 const closeAddMasterlistModal = () => {
-  showAddMasterlistModal.value = false;
-  newMasterlist.value = {
-    municipalityID: "",
-    masterlistName: "",
-  };
-  errors.value = {
-    municipalityID: "",
-    masterlistName: "",
-  };
+  if (!isLoading.value) {
+    showAddMasterlistModal.value = false;
+    newMasterlist.value = {
+      municipalityID: "",
+      masterlistName: "",
+    };
+    errors.value = {
+      municipalityID: "",
+      masterlistName: "",
+    };
+  }
 };
 
 const openAddBeneficiaryModal = () => {

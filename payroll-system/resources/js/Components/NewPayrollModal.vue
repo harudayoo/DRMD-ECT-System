@@ -1,6 +1,7 @@
 <template>
   <div
     class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
+    @click.self="closeModal"
   >
     <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-2xl">
       <h2 class="text-2xl font-bold mb-4 text-center">New Payroll</h2>
@@ -208,5 +209,9 @@ const submitPayroll = async () => {
   } finally {
     isLoading.value = false;
   }
+};
+
+const closeModal = () => {
+  emit("close");
 };
 </script>

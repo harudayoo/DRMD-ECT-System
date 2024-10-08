@@ -10,21 +10,54 @@
       </transition>
 
       <!-- Main content -->
-      <div class="flex-1 overflow-auto">
-        <div class="p-6 px-14">
-          <div class="flex justify-between items-center mb-4">
-            <h1 class="text-3xl font-bold">Cash Assistance Payroll</h1>
+      <main class="flex-1 px-14 -mt-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+        <div class="container mx-auto px-6 py-8">
+          <div class="flex justify-between items-center mb-2">
+            <div class="flex items-center">
+              <button
+                @click="goBack"
+                class="mr-4 text-gray-600 hover:text-gray-400 focus:outline-none"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  />
+                </svg>
+              </button>
+              <h3 class="text-gray-900 text-2xl font-medium">Cash Assistance Payroll</h3>
+            </div>
             <button
               @click="openNewPayrollModal"
-              class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="text-center px-4 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out flex items-center space-x-2"
             >
-              New
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span>New Payroll</span>
             </button>
           </div>
 
           <PayrollView :payrolls="payrolls" />
         </div>
-      </div>
+      </main>
     </div>
 
     <!-- New Payroll Modal -->
@@ -58,6 +91,11 @@ const municipalities = ref([]);
 const masterlists = ref([]);
 
 //Vue Component consts
+const goBack = () => {
+  if (window.history.length > 1) {
+    window.history.back();
+  }
+};
 
 const toggleDarkMode = () => {
   isDarkMode.value = !isDarkMode.value;
@@ -143,7 +181,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Add your component styles here */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+body {
+  font-family: "Inter", sans-serif;
+}
+
 .slide-enter-active,
 .slide-leave-active {
   transition: transform 0.3s ease;
