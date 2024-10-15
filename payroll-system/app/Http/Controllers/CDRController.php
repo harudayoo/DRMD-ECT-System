@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\RCD;
 use App\Models\CDR;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -13,7 +14,7 @@ class CDRController extends Controller
      */
     public function index()
     {
-        return Inertia::render('User/CDR', [
+        return Inertia::render('User/cdrForm', [
 
         ]);
     }

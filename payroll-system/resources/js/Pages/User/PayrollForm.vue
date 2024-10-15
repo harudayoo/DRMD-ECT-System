@@ -1,73 +1,81 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-100">
-    <!-- Top navigation bar -->
-    <NavBar @toggle-sidebar="toggleSidebar" @click="toggleDarkMode" />
+    <div class="min-h-screen flex flex-col bg-gray-100">
+        <!-- Top navigation bar -->
+        <NavBar @toggle-sidebar="toggleSidebar" @click="toggleDarkMode" />
 
-    <div class="flex flex-1 overflow-hidden">
-      <!-- Sidebar -->
-      <transition name="slide">
-        <Sidebar v-if="isSidebarOpen" :is-open="isSidebarOpen" @open-modal="openModal" />
-      </transition>
-
-      <!-- Main content -->
-      <main class="flex-1 px-14 -mt-1 overflow-x-hidden overflow-y-auto bg-gray-100">
-        <div class="container mx-auto px-6 py-8">
-          <div class="flex justify-between items-center mb-2">
-            <div class="flex items-center">
-              <button
-                @click="goBack"
-                class="mr-4 text-gray-600 hover:text-gray-400 focus:outline-none"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                  />
-                </svg>
-              </button>
-              <h3 class="text-gray-900 text-2xl font-medium">Cash Assistance Payroll</h3>
-            </div>
-            <button
-              @click="openNewPayrollModal"
-              class="text-center px-4 py-1.5 bg-blue-500 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-150 ease-in-out flex items-center space-x-2"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fill-rule="evenodd"
-                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-                  clip-rule="evenodd"
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <transition name="slide">
+                <Sidebar
+                    v-if="isSidebarOpen"
+                    :is-open="isSidebarOpen"
+                    @open-modal="openModal"
                 />
-              </svg>
-              <span>New Payroll</span>
-            </button>
-          </div>
+            </transition>
 
-          <PayrollView :payrolls="payrolls" />
+            <!-- Main content -->
+            <main
+                class="flex-1 px-14 -mt-1 overflow-x-hidden overflow-y-auto bg-gray-100"
+            >
+                <div class="container mx-auto px-6 py-8">
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center">
+                            <button
+                                @click="goBack"
+                                class="mr-4 text-gray-600 hover:text-gray-400 focus:outline-none"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-6 w-6"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                                    />
+                                </svg>
+                            </button>
+                            <h3 class="text-gray-900 text-2xl font-medium">
+                                Cash Assistance Payroll
+                            </h3>
+                        </div>
+                        <button
+                            @click="openNewPayrollModal"
+                            class="text-center px-4 py-1.5 bg-blue-900 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 transition duration-150 ease-in-out flex items-center space-x-2"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                            >
+                                <path
+                                    fill-rule="evenodd"
+                                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            <span>New Payroll</span>
+                        </button>
+                    </div>
+
+                    <PayrollView :payrolls="payrolls" />
+                </div>
+            </main>
         </div>
-      </main>
-    </div>
 
-    <!-- New Payroll Modal -->
-    <NewPayrollModal
-      v-if="isNewPayrollModalOpen"
-      @close="closeNewPayrollModal"
-      :provinces="provinces"
-      @submit="handlePayrollSubmit"
-    />
-  </div>
+        <!-- New Payroll Modal -->
+        <NewPayrollModal
+            v-if="isNewPayrollModalOpen"
+            @close="closeNewPayrollModal"
+            :provinces="provinces"
+            @submit="handlePayrollSubmit"
+        />
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -80,7 +88,7 @@ import NewPayrollModal from "@/Components/NewPayrollModal.vue";
 import { useForm } from "@inertiajs/vue3";
 
 defineProps({
-  payrolls: Object,
+    payrolls: Object,
 });
 
 const isSidebarOpen = ref(true);
@@ -92,91 +100,91 @@ const masterlists = ref([]);
 
 //Vue Component consts
 const goBack = () => {
-  if (window.history.length > 1) {
-    window.history.back();
-  }
+    if (window.history.length > 1) {
+        window.history.back();
+    }
 };
 
 const toggleDarkMode = () => {
-  isDarkMode.value = !isDarkMode.value;
-  document.body.classList.toggle("dark", isDarkMode.value);
+    isDarkMode.value = !isDarkMode.value;
+    document.body.classList.toggle("dark", isDarkMode.value);
 };
 
 const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value;
+    isSidebarOpen.value = !isSidebarOpen.value;
 };
 
 const openNewPayrollModal = () => {
-  isNewPayrollModalOpen.value = true;
-  fetchProvinces();
+    isNewPayrollModalOpen.value = true;
+    fetchProvinces();
 };
 
 const closeNewPayrollModal = () => {
-  isNewPayrollModalOpen.value = false;
+    isNewPayrollModalOpen.value = false;
 };
 
 //Modal Fetching Consts
 
 const fetchProvinces = async () => {
-  try {
-    const response = await axios.get(route("api.provinces.index"));
-    provinces.value = response.data.provinces;
-  } catch (error) {
-    console.error("Error fetching provinces:", error);
-  }
+    try {
+        const response = await axios.get(route("api.provinces.index"));
+        provinces.value = response.data.provinces;
+    } catch (error) {
+        console.error("Error fetching provinces:", error);
+    }
 };
 
 const fetchMunicipalities = async (provinceId) => {
-  try {
-    const response = await axios.get(route("api.municipalities.index"), {
-      params: { provinceID: provinceId },
-    });
-    municipalities.value = response.data.municipalities;
-  } catch (error) {
-    console.error("Error fetching municipalities:", error);
-  }
+    try {
+        const response = await axios.get(route("api.municipalities.index"), {
+            params: { provinceID: provinceId },
+        });
+        municipalities.value = response.data.municipalities;
+    } catch (error) {
+        console.error("Error fetching municipalities:", error);
+    }
 };
 
 const fetchMasterlists = async (municipalityId) => {
-  try {
-    const response = await axios.get(route("api.masterlists.index"), {
-      params: { municipalityID: municipalityId },
-    });
-    masterlists.value = response.data.masterlists;
-  } catch (error) {
-    console.error("Error fetching masterlists:", error);
-  }
+    try {
+        const response = await axios.get(route("api.masterlists.index"), {
+            params: { municipalityID: municipalityId },
+        });
+        masterlists.value = response.data.masterlists;
+    } catch (error) {
+        console.error("Error fetching masterlists:", error);
+    }
 };
 
 //Payroll Submission
 
 const form = useForm({
-  payrollName: "",
-  barangayID: "",
+    payrollName: "",
+    barangayID: "",
 });
 
 const handlePayrollSubmit = (payrollData) => {
-  console.log("Handling payroll submit:", payrollData);
-  form.payrollName = payrollData.payrollName;
-  form.barangayID = payrollData.barangayID;
+    console.log("Handling payroll submit:", payrollData);
+    form.payrollName = payrollData.payrollName;
+    form.barangayID = payrollData.barangayID;
 
-  form.post(route("payroll.store"), {
-    preserveScroll: true,
-    onSuccess: () => {
-      closeNewPayrollModal();
-      // Optionally, refresh the payroll list
-      Inertia.reload({ only: ["payrolls"] });
-    },
-    onError: (errors) => {
-      console.error("Error submitting payroll:", errors);
-    },
-  });
+    form.post(route("payroll.store"), {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeNewPayrollModal();
+            // Optionally, refresh the payroll list
+            Inertia.reload({ only: ["payrolls"] });
+        },
+        onError: (errors) => {
+            console.error("Error submitting payroll:", errors);
+        },
+    });
 };
 
 //Onmounteds
 
 onMounted(() => {
-  fetchProvinces();
+    fetchProvinces();
 });
 </script>
 
@@ -184,27 +192,29 @@ onMounted(() => {
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 body {
-  font-family: "Inter", sans-serif;
+    font-family: "Inter", sans-serif;
 }
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform 0.3s ease;
+    transition: transform 0.3s ease;
 }
 
 .slide-enter-from,
 .slide-leave-to {
-  transform: translateX(-100%);
+    transform: translateX(-100%);
 }
 
 /* Ensure the content area takes up at least the full viewport height */
 .min-h-screen {
-  min-height: 100vh;
+    min-height: 100vh;
 }
 
 /* Allow the main content to scroll independently */
 .overflow-auto {
-  overflow-y: auto;
-  max-height: calc(100vh - 64px); /* Adjust this value based on your NavBar height */
+    overflow-y: auto;
+    max-height: calc(
+        100vh - 64px
+    ); /* Adjust this value based on your NavBar height */
 }
 </style>

@@ -242,5 +242,10 @@ class BeneficiaryController extends Controller
             return response()->json(['error' => 'Failed to fetch masterlists'], 500);
         }
     }
-
+    public function getByPayrollID(Request $request)
+   {
+    $payrollID = $request->query('payrollID');
+    $beneficiaries = Beneficiary::where('payrollID', $payrollID)->get();
+    return response()->json($beneficiaries);
+   }
 }

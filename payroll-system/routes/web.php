@@ -17,6 +17,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use Inertia\Inertia;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\OtpController;
+use App\Http\Controllers\SearchController;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
@@ -90,10 +91,19 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     });
 
     //Document Routes
+    //RCD Routes
     Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');
+    Route::post('/rcds', [RcdController::class, 'store'])->name('rcd.store');
+
+    //CDR Routes
     Route::get('/cdr', [CDRController::class, 'index'])->name('cdr.index');
+
+
     //Analytics Routes
     Route::get('/status-analytics/{municipalityId}', [AnalyticsController::class, 'getStatusAnalytics']);
+
+    //Search Route
+    Route::get(uri: '/search', action: [SearchController::class, 'search'])->name(name: 'search.bar');
 });
 
 // Admin routes

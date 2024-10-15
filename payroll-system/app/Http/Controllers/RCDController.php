@@ -2,67 +2,79 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Payroll;
 use App\Models\RCD;
+use App\Models\Beneficiary;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class RCDController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('User/RCD', [
+        $query = RCD::query();
 
+        if ($request->has('search')) {
+            $searchTerm = $request->input('search');
+            $query->where('rcdName', 'like', "%{$searchTerm}%");
+        }
+
+        $rcds = $query->paginate(10)->withQueryString();
+        $payrolls = Payroll::select('payrollID', 'payrollNumber', 'payrollName')->get();
+
+        return Inertia::render('User/rcdForm', [
+            'rcds' => $rcds,
+            'payrolls' => $payrolls,
         ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'rcdName' => 'required|string|max:255',
+            'payrollID' => 'required|exists:payrolls,payrollID',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $lastRcd = RCD::orderBy('rcdID', 'desc')->first();
+            $nextRcdID = $lastRcd ? str_pad((intval($lastRcd->rcdID) + 1), 6, '0', STR_PAD_LEFT) : '000001';
+
+            $rcd = new RCD();
+            $rcd->rcdID = $nextRcdID;
+            $rcd->rcdName = $request->rcdName;
+            $rcd->payrollID = $request->payrollID;
+            $rcd->save();
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'RCD created successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['generalError' => 'Failed to create RCD: ' . $e->getMessage()]);
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(RCD $rCD)
+    public function getBeneficiaries(Request $request)
     {
-        //
-    }
+        try {
+            $request->validate([
+                'payrollID' => 'required|exists:payrolls,payrollID',
+            ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(RCD $rCD)
-    {
-        //
-    }
+            $payroll = Payroll::findOrFail($request->payrollID);
+            Log::info("Fetching beneficiaries for payrollID: {$request->payrollID}, payrollNumber: {$payroll->payrollNumber}");
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, RCD $rCD)
-    {
-        //
-    }
+            $beneficiaries = Beneficiary::where('payrollNumber', $payroll->payrollNumber)->get();
+            Log::info("Found " . $beneficiaries->count() . " beneficiaries");
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(RCD $rCD)
-    {
-        //
+            return response()->json($beneficiaries);
+        } catch (\Exception $e) {
+            Log::error("Error fetching beneficiaries: " . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

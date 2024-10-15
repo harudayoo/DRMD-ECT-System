@@ -21,11 +21,14 @@ class Beneficiary extends Model
 
     protected $casts = [
         'dateOfBirth' => 'date',
+        'amount' => 'decimal:2',
     ];
 
     protected $fillable = [
+        'beneficiaryID',
         'masterlistID',
         'barangayID',
+        'payrollNumber',
         'beneficiaryNumber',
         'lastName',
         'firstName',
@@ -60,4 +63,8 @@ class Beneficiary extends Model
         return $number;
     }
 
+    public function payroll()
+   {
+    return $this->belongsTo(Payroll::class, 'payrollNumber', 'payrollNumber');
+   }
 }

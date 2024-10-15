@@ -64,7 +64,7 @@
       class="bg-white shadow overflow-hidden sm:rounded-lg"
     >
       <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+        <thead class="bg-indigo-100">
           <tr>
             <th
               v-for="header in headers"
@@ -88,7 +88,7 @@
               payroll.subTotal,
               payroll.created_at,
             ]"
-            class="hover:bg-gray-100 cursor-pointer"
+            class="hover:bg-gray-50 cursor-pointer"
             @click="selectPayroll(payroll)"
           >
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -104,7 +104,7 @@
               {{ payroll.barangayName }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-              {{ formatCurrency(payroll.subTotal) }}
+              {{ formatSubTotal(payroll.subTotal) }}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               {{ formatDate(payroll.created_at) }}
@@ -141,6 +141,15 @@
       </button>
       <h2 class="text-3xl font-semibold mb-4">
         Beneficiaries for {{ selectedPayroll.payrollName }}
+        <span
+          v-if="selectedPayroll.exportNum > 0"
+          class="text-sm font-normal text-gray-600 ml-2"
+        >
+          (exported {{ selectedPayroll.exportNum }} time{{
+            selectedPayroll.exportNum > 1 ? "s" : ""
+          }}
+          with latest export at {{ formatDateTime(selectedPayroll.updated_at) }})
+        </span>
       </h2>
 
       <!-- Search and Set Amount Section -->
@@ -160,21 +169,26 @@
           <h1 class="text-xl font-bold ml-6 mr-3">PHP:</h1>
           <input
             v-model="beneficiaryAmount"
-            type="number"
+            type="text"
             placeholder="Set Amount for Beneficiaries"
             class="flex-grow px-4 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mr-2"
+            @input="beneficiaryAmount = formatAmount($event.target.value)"
           />
           <button
             @click="setAmount"
-            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap"
+            class="px-4 py-2 bg-indigo-900 text-white rounded-full hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300 whitespace-nowrap"
+            :disabled="amountError !== ''"
           >
             Set Amount
           </button>
         </div>
+        <p v-if="amountError" class="text-red-500 mt-2">
+          {{ amountError }}
+        </p>
         <div>
           <button
             @click="exportPayroll"
-            class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap"
+            class="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap"
           >
             {{ isExporting ? "Exporting..." : "Export Payroll" }}
           </button>
@@ -304,6 +318,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { Link, useForm } from "@inertiajs/vue3";
 import { debounce } from "lodash-es";
 import axios from "axios";
+import moment from "moment";
 
 const props = defineProps({
   payrolls: Object,
@@ -316,6 +331,7 @@ const error = ref(null);
 const selectedPayroll = ref(null);
 const beneficiaries = ref([]);
 const beneficiaryAmount = ref(null);
+const amountError = ref("");
 const beneficiariesPagination = ref(null);
 const beneficiarySearch = ref("");
 const beneficiariesPerPage = 10;
@@ -405,6 +421,10 @@ const formatDate = (date) => {
   });
 };
 
+const formatDateTime = (dateTime) => {
+  return moment(dateTime).format("MMMM D, YYYY [at] h:mm A");
+};
+
 const filteredLinks = computed(() => {
   return props.payrolls.links.filter((link) => link.url !== null);
 });
@@ -444,10 +464,13 @@ const fetchBeneficiaries = async (payrollId, page = 1, search = "") => {
       total: response.data.beneficiaries.total,
       links: response.data.beneficiaries.links,
     };
-    selectedPayroll.value = response.data.payroll;
+    selectedPayroll.value = {
+      ...response.data.payroll,
+      exportNum: response.data.payroll.exportNum,
+      updated_at: response.data.payroll.updated_at,
+    };
   } catch (err) {
     setError("An error occurred while fetching beneficiaries. Please try again.");
-    console.error(err);
   } finally {
     isBeneficiariesLoading.value = false;
   }
@@ -465,13 +488,85 @@ const changeBeneficiariesPage = async (url) => {
   );
 };
 
+const formatAmount = (value) => {
+  // Remove any non-digit characters except for the decimal point
+  let formatted = value.replace(/[^\d.]/g, "");
+
+  // Ensure only one decimal point
+  const parts = formatted.split(".");
+  if (parts.length > 2) {
+    formatted = parts[0] + "." + parts.slice(1).join("");
+  }
+
+  // Limit to two decimal places
+  if (parts.length > 1) {
+    formatted = parts[0] + "." + parts[1].slice(0, 2);
+  }
+
+  // Add thousands separators
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+  return parts.join(".");
+};
+
+const parseAmount = (value) => {
+  // Remove thousand separators and parse as float
+  return parseFloat(value.replace(/,/g, ""));
+};
+
+const validateAmount = (value) => {
+  const numValue = parseAmount(value);
+  if (isNaN(numValue) || numValue < 0 || numValue > 999999.99) {
+    amountError.value = "Amount must be between 0 and 999,999.99";
+    return false;
+  }
+  amountError.value = "";
+  return true;
+};
+
+const formatSubTotal = (value) => {
+  // Parse the value to a float and limit it to 2 decimal places
+  let formattedValue = parseFloat(value).toFixed(2);
+
+  // Ensure the value doesn't exceed 99999.99
+  formattedValue = Math.min(formattedValue, 999999.99);
+
+  // Format the number with commas for thousands
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(formattedValue);
+};
+
+// Update the refreshPayrollData function
+const refreshPayrollData = async () => {
+  try {
+    const response = await axios.get(`/payroll/${selectedPayroll.value.payrollID}`);
+    selectedPayroll.value = {
+      ...response.data.payroll,
+      subTotal: formatSubTotal(response.data.payroll.subTotal),
+    };
+    await fetchBeneficiaries(selectedPayroll.value.payrollID);
+  } catch (err) {
+    setError("An error occurred while refreshing payroll data. Please try again.");
+  }
+};
+
+// Update the setAmount function
 const setAmount = async () => {
   if (!selectedPayroll.value || !beneficiaryAmount.value) return;
+
+  if (!validateAmount(beneficiaryAmount.value)) {
+    setError(amountError.value);
+    return;
+  }
+
+  const parsedAmount = parseFloat(parseAmount(beneficiaryAmount.value)).toFixed(2);
 
   try {
     isBeneficiariesLoading.value = true;
     await axios.post(`/payroll/${selectedPayroll.value.payrollID}/beneficiaries`, {
-      amount: beneficiaryAmount.value,
+      amount: parsedAmount,
       beneficiaries: beneficiaries.value.map((b) => ({
         beneficiaryID: b.beneficiaryID,
         status: b.status,
@@ -480,11 +575,16 @@ const setAmount = async () => {
     // Update local beneficiary amounts
     beneficiaries.value = beneficiaries.value.map((b) => ({
       ...b,
-      amount: beneficiaryAmount.value,
+      amount: parsedAmount,
     }));
     await fetchBeneficiaries(selectedPayroll.value.payrollID);
+    await refreshPayrollData(); // Refresh payroll data to get updated subtotal
   } catch (err) {
-    setError("An error occurred while updating beneficiary amounts. Please try again.");
+    setError(
+      "An error occurred while updating beneficiary amounts: " +
+        (err.response?.data?.error || err.message)
+    );
+    console.error(err);
   } finally {
     isBeneficiariesLoading.value = false;
   }
