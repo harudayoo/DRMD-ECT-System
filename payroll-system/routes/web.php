@@ -82,6 +82,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'getBeneficiaries'])->name('payroll.beneficiaries');
     Route::post('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'updateBeneficiaries'])->name('payroll.updateBeneficiaries');
     Route::get('/payroll/{payrollId}/export', [PayrollController::class, 'export'])->name('payroll.export');
+    Route::post('/payroll/{payrollId}/mark-all-claimed', [PayrollController::class, 'markAllClaimed'])->name('payroll.markAllClaimed');
 
     // API Payroll Routes
     Route::prefix('api')->group(function () {
@@ -94,6 +95,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     //RCD Routes
     Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');
     Route::post('/rcds', [RcdController::class, 'store'])->name('rcd.store');
+    Route::get('/rcd/beneficiaries', [RCDController::class, 'getBeneficiaries'])->name('rcd.beneficiaries');
 
     //CDR Routes
     Route::get('/cdr', [CDRController::class, 'index'])->name('cdr.index');

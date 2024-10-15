@@ -45,7 +45,7 @@
         .beneficiary-table td {
             border: 1px solid black;
             padding: 30px 0;
-            font-size: 24px;
+            font-size: 12px;
             text-align: center;
             width: 25%;
             word-break: break-all;
@@ -131,8 +131,8 @@
           @foreach($payroll->beneficiaries->chunk(2) as $pair)
               <tr>
                   @foreach($pair as $beneficiary)
-                      <td>Stub Number:<br><strong>{{ $beneficiary->beneficiaryNumber }}</strong><br>Company Copy</td>
-                      <td>Stub Number:<br><strong>{{ $beneficiary->beneficiaryNumber }}</strong><br>Beneficiary Number</td>
+                      <td><strong>DEPARTMENT OF SOCIAL WELFARE AND DEVELOPMENT</strong><br>Stub Number:<br><strong>{{ $beneficiary->beneficiaryNumber }}</strong><br>Company Copy</td>
+                      <td><strong>DEPARTMENT OF SOCIAL WELFARE AND DEVELOPMENT</strong><br>Stub Number:<br><strong>{{ $beneficiary->beneficiaryNumber }}</strong><br>Beneficiary Number</td>
                   @endforeach
               </tr>
           @endforeach

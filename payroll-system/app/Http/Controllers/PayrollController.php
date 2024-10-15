@@ -129,18 +129,44 @@ class PayrollController extends Controller
         }
     }
 
+    public function markAllClaimed($payrollId)
+    {
+        try {
+            $payroll = Payroll::findOrFail($payrollId);
+
+            DB::transaction(function () use ($payroll) {
+                Beneficiary::where('payrollNumber', $payroll->payrollNumber)
+                    ->update(['status' => 1]);
+
+                $payroll->subTotal = 0;
+                $payroll->save();
+            });
+
+            return response()->json(['message' => 'All beneficiaries have been marked as claimed.']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while marking beneficiaries as claimed: ' . $e->getMessage()], 500);
+        }
+    }
+
     public function export($payrollId)
     {
         try {
             $payroll = Payroll::with([
                 'barangay.municipality.province',
-                'beneficiaries' => function ($query) {
-                    $query->where('status', 2); // Unclaimed status
-                }
+                'beneficiaries'
             ])->findOrFail($payrollId);
 
-            if ($payroll->beneficiaries->isEmpty()) {
-                return response()->json(['error' => 'No unclaimed beneficiaries found for this payroll'], 404);
+            $claimedCount = $payroll->beneficiaries->where('status', 1)->count();
+            $unclaimedCount = $payroll->beneficiaries->where('status', 2)->count();
+
+            if ($unclaimedCount === 0) {
+                return response()->json(['error' => 'There are no beneficiaries to export.'], 400);
+            }
+
+            if ($claimedCount > 0) {
+                return response()->json([
+                    'message' => "{$claimedCount} Beneficiaries claimed, {$unclaimedCount} to export."
+                ], 200);
             }
 
             $pdf = $this->generatePdf($payroll);
@@ -153,13 +179,10 @@ class PayrollController extends Controller
                 ->where('status', 2) // Only include unclaimed beneficiaries
                 ->sum('amount');
 
-            // Ensured subtotal doesn't exceed 99999.99 (max value for decimal(8,2))
+            // Ensure subtotal doesn't exceed 99999.99 (max value for decimal(8,2))
             $payroll->subTotal = number_format(min($subtotal, 999999.99), 2, '.', '');
             $payroll->updated_at = now();
             $payroll->save();
-
-            // Updated the status of exported beneficiaries to '1'
-        $payroll->beneficiaries()->update(['status' => 1]);
 
             return $pdf->download("payroll_{$payroll->payrollNumber}.pdf");
         } catch (\Exception $e) {
