@@ -15,10 +15,16 @@ class CDR extends Model
     protected $fillable = [
 
         'cdrID',
+        'rcdID',
         'cdrName',
         'created_at',
         'updated_at',
 
     ];
 
+
+    public function RCD()
+    {
+        return $this->belongsTo(RCD::class, 'rcdID');
+    }
 }

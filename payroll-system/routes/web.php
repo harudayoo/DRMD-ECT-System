@@ -97,9 +97,13 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::post('/rcds', [RcdController::class, 'store'])->name('rcd.store');
     Route::get('/rcd/beneficiaries', [RCDController::class, 'getBeneficiaries'])->name('rcd.beneficiaries');
 
-    //CDR Routes
-    Route::get('/cdr', [CDRController::class, 'index'])->name('cdr.index');
-
+    Route::prefix('cdr')->group(function () {
+        Route::get('/', [CDRController::class, 'index'])->name('cdr.index');
+        Route::post('/', [CDRController::class, 'store'])->name('cdr.store');
+        Route::get('/beneficiaries', [CDRController::class, 'getBeneficiaries'])->name('cdr.beneficiaries');
+        Route::get('/search-rcds', [CDRController::class, 'searchRcds'])->name('cdr.searchRcds');
+        Route::get('/{rcdID}', [RCDController::class, 'show'])->name('rcd.show');
+    });
 
     //Analytics Routes
     Route::get('/status-analytics/{municipalityId}', [AnalyticsController::class, 'getStatusAnalytics']);
