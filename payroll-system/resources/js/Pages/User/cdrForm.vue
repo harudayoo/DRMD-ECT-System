@@ -36,7 +36,7 @@
                                 </svg>
                             </button>
                             <h3 class="text-gray-900 text-2xl font-medium">
-                                Cash Disbursement Report
+                                Cash Disbursement Record
                             </h3>
                         </div>
                         <button
