@@ -271,6 +271,7 @@
                                 type="text"
                                 id="firstName"
                                 v-model="beneficiary.firstName"
+                                @input="validateName('firstName')"
                                 placeholder="Enter your First Name"
                                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
@@ -284,6 +285,7 @@
                                 type="text"
                                 id="middleName"
                                 v-model="beneficiary.middleName"
+                                @input="validateName('middleName')"
                                 placeholder="Enter your Middle Name"
                                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
@@ -297,6 +299,7 @@
                                 type="text"
                                 id="lastName"
                                 v-model="beneficiary.lastName"
+                                @input="validateName('lastName')"
                                 placeholder="Enter your Last Name"
                                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 required
@@ -981,6 +984,13 @@ const beneficiary = ref({
     masterlistID: "",
 });
 
+const validateName = (field) => {
+    beneficiary.value[field] = beneficiary.value[field].replace(
+        /[^A-Za-z ]/g,
+        ""
+    );
+};
+
 const newMasterlist = ref({
     municipalityID: "",
     masterlistName: "",
@@ -1370,6 +1380,19 @@ const closeAllModals = () => {
 };
 
 onMounted(fetchProvinces);
+
+watch(
+    () => beneficiary.value.lastName,
+    () => validateName("lastName")
+);
+watch(
+    () => beneficiary.value.firstName,
+    () => validateName("firstName")
+);
+watch(
+    () => beneficiary.value.middleName,
+    () => validateName("middleName")
+);
 
 watch(
     () => beneficiary.value.provinceID,

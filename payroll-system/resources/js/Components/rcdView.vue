@@ -110,7 +110,7 @@
         <!-- Beneficiaries View (updated with client-side pagination and export button) -->
         <div
             v-if="selectedRCD"
-            class="bg-white shadow overflow-hidden sm:rounded-lg"
+            class="bg-white shadow mt-4 overflow-hidden sm:rounded-lg"
         >
             <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
@@ -326,7 +326,7 @@ const selectedRCD = ref(null);
 const beneficiaries = ref([]);
 const isLoadingBeneficiaries = ref(false);
 const currentPage = ref(1);
-const itemsPerPage = 10;
+const itemsPerPage = 6;
 
 const headers = ["RCD ID", "RCD Name", "Date Created"];
 const beneficiaryHeaders = [
