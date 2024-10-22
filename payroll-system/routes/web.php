@@ -11,6 +11,11 @@ use App\Http\Controllers\MasterlistController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\RCDController;
 use App\Http\Controllers\CDRController;
+use App\Http\Controllers\DvPayrollController;
+use App\Http\Controllers\OrsBursController;
+use App\Http\Controllers\RespCodeController;
+use App\Http\Controllers\UacsCodeController;
+use App\Http\Controllers\PaymentNatureController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -91,12 +96,34 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
         Route::get('/barangays', [PayrollController::class, 'getBarangays'])->name('api.barangays.index');
     });
 
-    //Document Routes
+    //Document Routes`
+
     //RCD Routes
     Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');
     Route::post('/rcds', [RcdController::class, 'store'])->name('rcd.store');
     Route::get('/rcd/beneficiaries', [RCDController::class, 'getBeneficiaries'])->name('rcd.beneficiaries');
 
+    // API routes group
+    Route::prefix('api')->group(function () {
+        Route::get('/dvPayroll', [DvPayrollController::class, 'index'])->name('api.dvPayroll.index');
+        Route::post('/dvPayroll', [DvPayrollController::class, 'store'])->name('api.dvPayroll.store');
+
+        Route::get('/orsBurs', [OrsBursController::class, 'index'])->name('api.orsBurs.index');
+        Route::post('/orsBurs', [OrsBursController::class, 'store'])->name('api.orsBurs.store');
+
+        Route::get('/respCode', [RespCodeController::class, 'index'])->name('api.respCode.index');
+        Route::post('/respCode', [RespCodeController::class, 'store'])->name('api.respCode.store');
+
+        Route::get('/uacsCode', [UacsCodeController::class, 'index'])->name('api.uacsCode.index');
+        Route::post('/uacsCode', [UacsCodeController::class, 'store'])->name('api.uacsCode.store');
+
+        Route::get('/paymentNature', [PaymentNatureController::class, 'index'])->name('api.paymentNature.index');
+        Route::post('/paymentNature', [PaymentNatureController::class, 'store'])->name('api.paymentNature.store');
+
+        Route::patch('/rcd/{rcdID}', [RCDController::class, 'update'])->name('api.rcd.update');
+    });
+
+    //CDR Routes
     Route::prefix('cdr')->group(function () {
         Route::get('/', [CDRController::class, 'index'])->name('cdr.index');
         Route::post('/', [CDRController::class, 'store'])->name('cdr.store');

@@ -131,6 +131,52 @@
                     </button>
                 </div>
             </div>
+
+            <div v-if="selectedRCD">
+                <DropdownWithAdd
+                    label="DV/Payroll Number"
+                    :items="dvPayrollItems"
+                    v-model="selectedDvPayroll"
+                    @add="openModal('dvPayroll')"
+                    @change="updateRCD('dvNumber', $event)"
+                />
+                <DropdownWithAdd
+                    label="ORS/BURS Number"
+                    :items="orsBursItems"
+                    v-model="selectedOrsBurs"
+                    @add="openModal('orsBurs')"
+                    @change="updateRCD('orsNumber', $event)"
+                />
+                <DropdownWithAdd
+                    label="Responsibility Center Code"
+                    :items="respCodeItems"
+                    v-model="selectedRespCode"
+                    @add="openModal('respCode')"
+                    @change="updateRCD('responCode', $event)"
+                />
+                <DropdownWithAdd
+                    label="UACS Object Code"
+                    :items="uacsCodeItems"
+                    v-model="selectedUacsCode"
+                    @add="openModal('uacsCode')"
+                    @change="updateRCD('uacsCode', $event)"
+                />
+                <DropdownWithAdd
+                    label="Nature of Payment"
+                    :items="paymentNatureItems"
+                    v-model="selectedPaymentNature"
+                    @add="openModal('paymentNature')"
+                    @change="updateRCD('paymentNature', $event)"
+                />
+
+                <AddItemModal
+                    v-if="showModal"
+                    :modalType="modalType"
+                    @close="closeModal"
+                    @add="addItem"
+                />
+            </div>
+
             <div class="border-t border-gray-200">
                 <div
                     v-if="isLoadingBeneficiaries"
@@ -269,6 +315,31 @@
             <p class="text-gray-500 text-lg">No RCDs found.</p>
         </div>
 
+        <div
+            v-if="apiError"
+            class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6"
+            role="alert"
+        >
+            <strong class="font-bold">Error!</strong>
+            <span class="block sm:inline"> {{ apiError }}</span>
+            <span
+                class="absolute top-0 bottom-0 right-0 px-4 py-3"
+                @click="apiError = null"
+            >
+                <svg
+                    class="fill-current h-6 w-6 text-red-500"
+                    role="button"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                >
+                    <title>Close</title>
+                    <path
+                        d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"
+                    />
+                </svg>
+            </span>
+        </div>
+
         <!-- Pagination -->
         <div
             v-if="rcds.links.length > 3"
@@ -314,6 +385,9 @@
 import { ref, computed, onMounted, watch } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { debounce } from "lodash-es";
+import DropdownWithAdd from "./DropdownWithAdd.vue";
+import AddItemModal from "./AddItemModal.vue";
+import axios from "axios";
 
 const props = defineProps({
     rcds: Object,
@@ -327,6 +401,20 @@ const beneficiaries = ref([]);
 const isLoadingBeneficiaries = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = 6;
+const showModal = ref(false);
+const modalType = ref("");
+
+const dvPayrollItems = ref([]);
+const orsBursItems = ref([]);
+const respCodeItems = ref([]);
+const uacsCodeItems = ref([]);
+const paymentNatureItems = ref([]);
+
+const selectedDvPayroll = ref(null);
+const selectedOrsBurs = ref(null);
+const selectedRespCode = ref(null);
+const selectedUacsCode = ref(null);
+const selectedPaymentNature = ref(null);
 
 const headers = ["RCD ID", "RCD Name", "Date Created"];
 const beneficiaryHeaders = [
@@ -339,12 +427,15 @@ const beneficiaryHeaders = [
     "Status",
 ];
 
+const apiError = ref(null);
+
 const form = useForm({
     search: "",
 });
 
 const setError = (message) => {
     error.value = message;
+    apiError.value = message;
 };
 
 const debouncedSearch = debounce(() => {
@@ -406,6 +497,11 @@ const dismissError = () => {
 
 const selectRCD = (rcd) => {
     selectedRCD.value = rcd;
+    selectedDvPayroll.value = rcd.dvNumber;
+    selectedOrsBurs.value = rcd.orsNumber;
+    selectedRespCode.value = rcd.responCode;
+    selectedUacsCode.value = rcd.uacsCode;
+    selectedPaymentNature.value = rcd.paymentNature;
     fetchBeneficiaries(rcd.payrollID);
 };
 
@@ -497,6 +593,205 @@ const getStatusClass = (statusCode) => {
     }
 };
 
+// for dropdown menu
+const openModal = (type) => {
+    modalType.value = type;
+    showModal.value = true;
+};
+
+const closeModal = () => {
+    showModal.value = false;
+};
+
+const fetchItems = async (endpoint, itemsRef) => {
+    try {
+        const response = await axios.get(`/api/${endpoint}`);
+        if (endpoint === "paymentNature") {
+            // Map to use nOPId as the value
+            itemsRef.value = response.data.map((item) => ({
+                ...item,
+                id: item.nOPId,
+                text: item.natureOfPayment,
+            }));
+        } else if (endpoint === "respCode") {
+            // Map to use responsibilityCode as the value
+            itemsRef.value = response.data.map((item) => ({
+                ...item,
+                id: item.responsibilityCode,
+                text: item.responsibilityCode,
+            }));
+        } else {
+            itemsRef.value = response.data;
+        }
+    } catch (error) {
+        console.error(`Error fetching ${endpoint}:`, error);
+        setError(`Failed to load ${endpoint} data. Please try again later.`);
+    }
+};
+
+const addItem = async (type, value) => {
+    try {
+        const response = await axios.post(`/api/${type}`, { [type]: value });
+        if (response.data) {
+            // Update the corresponding items array
+            switch (type) {
+                case "dvPayroll":
+                    dvPayrollItems.value.push(response.data);
+                    selectedDvPayroll.value = response.data.id;
+                    break;
+                case "orsBurs":
+                    orsBursItems.value.push(response.data);
+                    selectedOrsBurs.value = response.data.id;
+                    break;
+                case "respCode":
+                    respCodeItems.value.push(response.data);
+                    selectedRespCode.value = response.data.id;
+                    break;
+                case "uacsCode":
+                    uacsCodeItems.value.push(response.data);
+                    selectedUacsCode.value = response.data.id;
+                    break;
+                case "paymentNature":
+                    paymentNatureItems.value.push(response.data);
+                    selectedPaymentNature.value = response.data.id;
+                    break;
+            }
+        }
+        closeModal();
+    } catch (error) {
+        console.error("Error adding item:", error);
+        setError(`Failed to add ${type}. Please try again.`);
+    }
+};
+
+const updateRCD = async (field, value) => {
+    if (!selectedRCD.value) return;
+
+    try {
+        isLoading.value = true;
+        console.log(`Updating ${field} with value:`, value);
+
+        // Ensure we're sending the correct value, not the event object
+        const actualValue =
+            typeof value === "object" && value !== null ? value.id : value;
+
+        const payload = {
+            [field]: actualValue,
+        };
+
+        const response = await axios.patch(
+            route("api.rcd.update", selectedRCD.value.rcdID),
+            payload,
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+            }
+        );
+
+        if (response.data.success) {
+            showNotification(
+                "Success",
+                `Successfully updated ${field}`,
+                "success"
+            );
+            Object.assign(selectedRCD.value, response.data.data);
+            updateSelectedValue(field, response.data.data[field]);
+        } else {
+            throw new Error(response.data.message || "Update failed");
+        }
+    } catch (error) {
+        handleUpdateError(error, field);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const handleUpdateError = (error, field) => {
+    console.error(`Error updating RCD ${field}:`, error);
+
+    let errorMessage = "An unexpected error occurred";
+
+    if (error.response?.data?.errors) {
+        errorMessage = Object.values(error.response.data.errors)
+            .flat()
+            .join(", ");
+    } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+
+    showNotification(
+        "Error",
+        `Failed to update ${field}: ${errorMessage}`,
+        "error"
+    );
+    resetSelectedValue(field);
+};
+
+const updateSelectedValue = (field, value) => {
+    switch (field) {
+        case "dvNumber":
+            selectedDvPayroll.value = value;
+            break;
+        case "orsNumber":
+            selectedOrsBurs.value = value;
+            break;
+        case "responCode":
+            selectedRespCode.value = value;
+            break;
+        case "uacsCode":
+            selectedUacsCode.value = value;
+            break;
+        case "paymentNature":
+            selectedPaymentNature.value = value;
+            break;
+    }
+};
+
+const resetSelectedValue = (field) => {
+    switch (field) {
+        case "dvNumber":
+            selectedDvPayroll.value = selectedRCD.value.dvNumber;
+            break;
+        case "orsNumber":
+            selectedOrsBurs.value = selectedRCD.value.orsNumber;
+            break;
+        case "responCode":
+            selectedRespCode.value = selectedRCD.value.responCode;
+            break;
+        case "uacsCode":
+            selectedUacsCode.value = selectedRCD.value.uacsCode;
+            break;
+        case "paymentNature":
+            selectedPaymentNature.value = selectedRCD.value.paymentNature;
+            break;
+    }
+};
+
+// Add a notification system
+const notifications = ref([]);
+const showNotification = (title, message, type = "info") => {
+    const id = Date.now();
+    notifications.value.push({ id, title, message, type });
+    setTimeout(() => {
+        notifications.value = notifications.value.filter((n) => n.id !== id);
+    }, 5000);
+};
+
+// Add these computed properties
+const selectedValues = computed(() => ({
+    dvNumber: selectedRCD.value?.dvNumber,
+    orsNumber: selectedRCD.value?.orsNumber,
+    responCode: selectedRCD.value?.responCode,
+    uacsCode: selectedRCD.value?.uacsCode,
+    paymentNature: selectedRCD.value?.paymentNature,
+}));
+
+//Watchers
+
 watch(search, (value) => {
     form.search = value;
     debouncedSearch();
@@ -504,8 +799,45 @@ watch(search, (value) => {
 
 watch(currentPage, () => {});
 
-onMounted(() => {
+// Update the watchers
+watch(selectedDvPayroll, (newValue) => {
+    if (selectedRCD.value && newValue !== selectedValues.value.dvNumber) {
+        updateRCD("dvNumber", newValue);
+    }
+});
+
+watch(selectedOrsBurs, (newValue) => {
+    if (selectedRCD.value && newValue !== selectedValues.value.orsNumber) {
+        updateRCD("orsNumber", newValue);
+    }
+});
+
+watch(selectedRespCode, (newValue) => {
+    if (selectedRCD.value && newValue !== selectedValues.value.responCode) {
+        updateRCD("responCode", newValue);
+    }
+});
+
+watch(selectedUacsCode, (newValue) => {
+    if (selectedRCD.value && newValue !== selectedValues.value.uacsCode) {
+        updateRCD("uacsCode", newValue);
+    }
+});
+
+watch(selectedPaymentNature, (newValue) => {
+    if (selectedRCD.value && newValue !== selectedValues.value.paymentNature) {
+        updateRCD("paymentNature", newValue);
+    }
+});
+
+onMounted(async () => {
     search.value = form.search;
+
+    fetchItems("dvPayroll", dvPayrollItems);
+    fetchItems("orsBurs", orsBursItems);
+    fetchItems("respCode", respCodeItems);
+    fetchItems("uacsCode", uacsCodeItems);
+    fetchItems("paymentNature", paymentNatureItems);
 });
 </script>
 

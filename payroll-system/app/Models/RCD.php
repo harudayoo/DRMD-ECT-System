@@ -14,10 +14,13 @@ class RCD extends Model
     protected $fillable = [
 
         'rcdID',
-        'payrollID',
         'rcdName',
-        'created_at',
-        'updated_at',
+        'payrollID',
+        'dvNumber',
+        'orsNumber',
+        'responCode',
+        'uacsCode',
+        'paymentNature'
 
 
     ];
@@ -26,4 +29,6 @@ class RCD extends Model
     {
         return $this->belongsTo(Payroll::class, 'payrollID');
     }
+
+
 }

@@ -5,10 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Payroll;
 use App\Models\RCD;
 use App\Models\Beneficiary;
+use App\Models\DvPayroll;
+use App\Models\OrsBurs;
+use App\Models\RespCode;
+use App\Models\UacsCode;
+use App\Models\PaymentNature;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class RCDController extends Controller
 {
@@ -76,5 +82,75 @@ class RCDController extends Controller
             Log::error("Error fetching beneficiaries: " . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    public function update(Request $request, $rcdID)
+    {
+        Log::info("Updating RCD {$rcdID} with data:", $request->all());
+
+        try {
+            $validated = $request->validate([
+                'dvNumber' => [
+                    'nullable',
+                    Rule::exists('dvpayrolls', 'dvPNumber')
+                ],
+                'orsNumber' => [
+                    'nullable',
+                    Rule::exists('orsburs', 'orsBursNumber')
+                ],
+                'responCode' => [
+                    'nullable',
+                    Rule::exists('respcodes', 'responsibilityCode')
+                ],
+                'uacsCode' => [
+                    'nullable',
+                    Rule::exists('uacscodes', 'uacsObjectCode')
+                ],
+                'paymentNature' => [
+                    'nullable',
+                    Rule::exists('paymentsnature', 'nOPId')->where(function ($query) {
+                        $query->whereNotNull('nOPId');
+                    })
+                ]
+            ]);
+
+            $rcd = RCD::findOrFail($rcdID);
+
+            // Clean the input data
+            $updateData = array_filter($validated, function ($value) {
+                return !is_null($value) && $value !== '';
+            });
+
+            $rcd->update($updateData);
+
+            return response()->json([
+                'success' => true,
+                'data' => $rcd->fresh(),
+                'message' => 'RCD updated successfully'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error("Validation error updating RCD: " . json_encode($e->errors()));
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error("Error updating RCD: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update RCD',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function generateNextRcdID()
+    {
+        $lastRcd = RCD::orderBy('rcdID', 'desc')->first();
+        return $lastRcd
+            ? str_pad((intval($lastRcd->rcdID) + 1), 6, '0', STR_PAD_LEFT)
+            : '000001';
     }
 }
