@@ -108,28 +108,34 @@ class RCDController extends Controller
                 ],
                 'paymentNature' => [
                     'nullable',
-                    Rule::exists('paymentsnature', 'nOPId')->where(function ($query) {
-                        $query->whereNotNull('nOPId');
-                    })
+                    Rule::exists('paymentsnature', 'natureOfPayment')
                 ]
             ]);
 
             $rcd = RCD::findOrFail($rcdID);
 
-            // Clean the input data
+            // Clean and prepare the update data
             $updateData = array_filter($validated, function ($value) {
                 return !is_null($value) && $value !== '';
             });
 
+            DB::beginTransaction();
+
             $rcd->update($updateData);
+
+            // Reload the relations
+            $rcd->load(['respCode', 'orsBurs', 'uacsCode', 'paymentNature']);
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'data' => $rcd->fresh(),
+                'data' => $rcd,
                 'message' => 'RCD updated successfully'
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
             Log::error("Validation error updating RCD: " . json_encode($e->errors()));
             return response()->json([
                 'success' => false,
@@ -137,11 +143,12 @@ class RCDController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error("Error updating RCD: " . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update RCD',
-                'error' => $e->getMessage()
+                'error' => app()->environment('local') ? $e->getMessage() : 'An unexpected error occurred'
             ], 500);
         }
     }

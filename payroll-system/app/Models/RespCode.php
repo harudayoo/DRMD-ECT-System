@@ -6,9 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class RespCode extends Model
 {
-    protected $table = 'respCodes';
+    protected $table = 'respcodes';
     protected $primaryKey = 'responsibilityCode';
     public $timestamps = true;
+
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
         'responsibilityCode',
@@ -18,4 +21,8 @@ class RespCode extends Model
 
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
+    public function rcd()
+    {
+        return $this->hasMany(RCD::class, 'responCode', 'responsibilityCode');
+    }
 }

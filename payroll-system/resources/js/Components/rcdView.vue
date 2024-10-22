@@ -138,35 +138,40 @@
                     :items="dvPayrollItems"
                     v-model="selectedDvPayroll"
                     @add="openModal('dvPayroll')"
-                    @change="updateRCD('dvNumber', $event)"
+                    @change="handleDvPayrollChange"
+                    :loading="isLoading"
                 />
                 <DropdownWithAdd
                     label="ORS/BURS Number"
                     :items="orsBursItems"
                     v-model="selectedOrsBurs"
                     @add="openModal('orsBurs')"
-                    @change="updateRCD('orsNumber', $event)"
+                    @change="handleOrsBursChange"
+                    :loading="isLoading"
                 />
                 <DropdownWithAdd
                     label="Responsibility Center Code"
                     :items="respCodeItems"
                     v-model="selectedRespCode"
                     @add="openModal('respCode')"
-                    @change="updateRCD('responCode', $event)"
+                    @change="handleRespCodeChange"
+                    :loading="isLoading"
                 />
                 <DropdownWithAdd
                     label="UACS Object Code"
                     :items="uacsCodeItems"
                     v-model="selectedUacsCode"
                     @add="openModal('uacsCode')"
-                    @change="updateRCD('uacsCode', $event)"
+                    @change="handleUacsCodeChange"
+                    :loading="isLoading"
                 />
                 <DropdownWithAdd
                     label="Nature of Payment"
                     :items="paymentNatureItems"
                     v-model="selectedPaymentNature"
                     @add="openModal('paymentNature')"
-                    @change="updateRCD('paymentNature', $event)"
+                    @change="handlePaymentNatureChange"
+                    :loading="isLoading"
                 />
 
                 <AddItemModal
@@ -390,7 +395,10 @@ import AddItemModal from "./AddItemModal.vue";
 import axios from "axios";
 
 const props = defineProps({
-    rcds: Object,
+    rcds: {
+        type: Object,
+        required: true,
+    },
 });
 
 const search = ref("");
@@ -669,39 +677,42 @@ const updateRCD = async (field, value) => {
 
     try {
         isLoading.value = true;
-        console.log(`Updating ${field} with value:`, value);
 
-        // Ensure we're sending the correct value, not the event object
+        // Process the value
         const actualValue =
-            typeof value === "object" && value !== null ? value.id : value;
+            value?.id || value?.value || value?.target?.value || value;
 
-        const payload = {
-            [field]: actualValue,
-        };
+        if (actualValue === undefined || actualValue === null) {
+            throw new Error(`Invalid value for ${field}`);
+        }
 
         const response = await axios.patch(
-            route("api.rcd.update", selectedRCD.value.rcdID),
-            payload,
+            `/api/rcd/${selectedRCD.value.rcdID}`,
+            { [field]: actualValue },
             {
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "application/json",
+                    "X-CSRF-TOKEN": document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).content,
                 },
             }
         );
 
         if (response.data.success) {
+            Object.assign(selectedRCD.value, response.data.data);
+            updateSelectedValue(field, response.data.data[field]);
             showNotification(
                 "Success",
                 `Successfully updated ${field}`,
                 "success"
             );
-            Object.assign(selectedRCD.value, response.data.data);
-            updateSelectedValue(field, response.data.data[field]);
         } else {
             throw new Error(response.data.message || "Update failed");
         }
     } catch (error) {
+        console.error(`Error updating RCD ${field}:`, error);
         handleUpdateError(error, field);
     } finally {
         isLoading.value = false;
@@ -732,6 +743,7 @@ const handleUpdateError = (error, field) => {
 };
 
 const updateSelectedValue = (field, value) => {
+    console.log(`Updating ${field} with value:`, value);
     switch (field) {
         case "dvNumber":
             selectedDvPayroll.value = value;
@@ -781,7 +793,7 @@ const showNotification = (title, message, type = "info") => {
     }, 5000);
 };
 
-// Add these computed properties
+//Computed properties
 const selectedValues = computed(() => ({
     dvNumber: selectedRCD.value?.dvNumber,
     orsNumber: selectedRCD.value?.orsNumber,
@@ -799,7 +811,7 @@ watch(search, (value) => {
 
 watch(currentPage, () => {});
 
-// Update the watchers
+// Dropdown watchers
 watch(selectedDvPayroll, (newValue) => {
     if (selectedRCD.value && newValue !== selectedValues.value.dvNumber) {
         updateRCD("dvNumber", newValue);
@@ -814,7 +826,11 @@ watch(selectedOrsBurs, (newValue) => {
 
 watch(selectedRespCode, (newValue) => {
     if (selectedRCD.value && newValue !== selectedValues.value.responCode) {
-        updateRCD("responCode", newValue);
+        // Extract the actual value if it's an event object
+        const actualValue = newValue?.target?.value ?? newValue?.id ?? newValue;
+        if (actualValue !== selectedValues.value.responCode) {
+            updateRCD("responCode", actualValue);
+        }
     }
 });
 
