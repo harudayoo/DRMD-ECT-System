@@ -31,9 +31,9 @@ class Payroll extends Model
         return $this->hasMany(Beneficiary::class, 'barangayID', 'barangayID');
     }
 
-    public function rcds()
+    public function cdr()
     {
-        return $this->hasMany(Rcd::class, foreignKey: 'payrollID', localKey: 'payrollID');
+        return $this->hasMany(CDR::class, foreignKey: 'payrollID', localKey: 'payrollID');
     }
 
     public function barangay()
@@ -42,7 +42,7 @@ class Payroll extends Model
     }
 
     public function beneficiariesPayroll()
-{
-    return $this->hasMany(Beneficiary::class, 'payrollNumber', 'payrollNumber');
-}
+    {
+        return $this->hasMany(Beneficiary::class, 'payrollNumber', 'payrollNumber');
+    }
 }

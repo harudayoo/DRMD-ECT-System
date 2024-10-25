@@ -16,7 +16,7 @@ class RCD extends Model
 
         'rcdID',
         'rcdName',
-        'payrollID',
+        'cdrID',
         'dvNumber',
         'orsNumber',
         'responCode',
@@ -26,9 +26,9 @@ class RCD extends Model
 
     ];
 
-    public function payroll()
+    public function CDR()
     {
-        return $this->belongsTo(Payroll::class, 'payrollID');
+        return $this->belongsTo(CDR::class, 'cdrID');
     }
 
     public function orsBurs()

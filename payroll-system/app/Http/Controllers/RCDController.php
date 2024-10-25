@@ -10,11 +10,14 @@ use App\Models\OrsBurs;
 use App\Models\RespCode;
 use App\Models\UacsCode;
 use App\Models\PaymentNature;
+use App\Models\Municipality;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class RCDController extends Controller
 {
@@ -159,5 +162,84 @@ class RCDController extends Controller
         return $lastRcd
             ? str_pad((intval($lastRcd->rcdID) + 1), 6, '0', STR_PAD_LEFT)
             : '000001';
+    }
+
+    public function export($rcdID)
+    {
+        try {
+            // Fetch the RCD with related data
+            $rcd = RCD::with([
+                'payroll',
+                'dvPayroll',
+                'orsBurs',
+                'respCode',
+                'uacsCode',
+                'paymentNature'
+            ])->findOrFail($rcdID);
+
+            // Get beneficiaries for this RCD through payroll
+            $beneficiaries = Beneficiary::where('payrollNumber', $rcd->payroll->payrollNumber)
+                ->orderBy('beneficiaryNumber')
+                ->get();
+
+            // Group beneficiaries in chunks of 10
+            $beneficiaryGroups = $beneficiaries->chunk(10);
+
+            // Get unique municipalities
+            $municipalityIds = $beneficiaries->pluck('barangayID')->unique();
+            $municipalities = Municipality::whereHas('barangays', function ($query) use ($municipalityIds) {
+                $query->whereIn('barangayID', $municipalityIds);
+            })->pluck('municipalityName')->implode(', ');
+
+            // Prepare data for each group
+            $groupedData = [];
+            foreach ($beneficiaryGroups as $group) {
+                $firstBeneficiary = $group->first();
+                $totalAmount = $group->sum('amount');
+
+                $groupedData[] = [
+                    'date' => Carbon::parse($rcd->updated_at)->format('d-M-y'),
+                    'dvNumber' => $rcd->dvNumber,
+                    'orsNumber' => $rcd->orsNumber,
+                    'responCode' => $rcd->responCode,
+                    'payee' => sprintf(
+                        "%s (%s, %s %s ET AL.)",
+                        $municipalities,
+                        $firstBeneficiary->lastName,
+                        $firstBeneficiary->firstName,
+                        $firstBeneficiary->middleName
+                    ),
+                    'uacsCode' => $rcd->uacsCode,
+                    'paymentNature' => $rcd->paymentNature,
+                    'amount' => number_format($totalAmount, 2)
+                ];
+            }
+
+            $totalAmount = $beneficiaries->sum('amount');
+
+            // Create PDF
+            $pdf = PDF::loadView('exports.rcd', [
+                'rcd' => $rcd,
+                'groupedData' => $groupedData,
+                'totalAmount' => $totalAmount,
+                'period' => Carbon::parse($rcd->payroll->updated_at)->format('F d, Y'),
+                'reportNumber' => Carbon::now()->format('Y-m-d') . '-' . $rcd->rcdID,
+                'appendixNumber' => '41' // You might want to make this dynamic
+            ]);
+
+            // Configure PDF
+            $pdf->setPaper('a4', 'portrait');
+            $pdf->setOption(['defaultFont' => 'arial']);
+
+            // Return the PDF for download
+            return $pdf->download('RCD-' . $rcd->rcdID . '.pdf');
+
+        } catch (\Exception $e) {
+            Log::error("PDF Export Error: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate PDF'
+            ], 500);
+        }
     }
 }

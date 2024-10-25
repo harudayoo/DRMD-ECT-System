@@ -102,6 +102,8 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');
     Route::post('/rcds', [RcdController::class, 'store'])->name('rcd.store');
     Route::get('/rcd/beneficiaries', [RCDController::class, 'getBeneficiaries'])->name('rcd.beneficiaries');
+    Route::get('/rcds/export/{rcdID}', [RCDController::class, 'export'])->name('rcds.export');
+    Route::post('/rcds/{rcdID}/fund-center', [RCDController::class, 'storeFundCenter'])->name('rcds.fund-center.store');
 
     // API routes group
     Route::prefix('api')->group(function () {

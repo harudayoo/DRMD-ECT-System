@@ -7,7 +7,7 @@
             <select
                 :value="modelValue"
                 @input="$emit('update:modelValue', $event.target.value)"
-                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-gray-100"
+                class="block w-full rounded-full border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-gray-100"
                 :disabled="loading"
             >
                 <option value="">Select {{ label }}</option>
@@ -24,7 +24,7 @@
                 type="button"
                 @click="$emit('add')"
                 :disabled="loading"
-                class="inline-flex items-center py-3 px-4 border border-transparent text-sm leading-4 font-medium rounded-full text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                class="inline-flex items-center py-3 px-4 border border-transparent text-sm leading-4 font-medium rounded-full text-white bg-blue-900 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
                 <span v-if="loading">...</span>
                 <span v-else>+</span>

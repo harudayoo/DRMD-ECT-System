@@ -107,6 +107,31 @@
             </table>
         </div>
 
+        <!-- Fund Center Modal -->
+        <div v-if="selectedRCD" @close="showFundCenterModal = false">
+            <div class="p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">
+                    Enter Fund Center
+                </h2>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Fund Center
+                    </label>
+                    <input
+                        type="text"
+                        v-model="form.fundCenter"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="Enter fund center"
+                        @keyup.enter="handleExport"
+                    />
+                    <p v-if="exportError" class="mt-2 text-sm text-red-600">
+                        {{ exportError }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <!-- Beneficiaries View (updated with client-side pagination and export button) -->
         <div
             v-if="selectedRCD"
@@ -117,15 +142,18 @@
                     Beneficiaries for RCD: {{ selectedRCD.rcdName }}
                 </h3>
                 <div>
+                    <!-- Export Button -->
                     <button
                         @click="exportReport"
-                        class="mr-2 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        class="mr-2 px-4 py-2 bg-green-500 text-white rounded-full hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+                        :disabled="isExporting"
                     >
-                        Export Report
+                        <span v-if="isExporting">Exporting...</span>
+                        <span v-else>Export Report</span>
                     </button>
                     <button
                         @click="deselectRCD"
-                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
                     >
                         Back to RCD List
                     </button>
@@ -424,6 +452,11 @@ const selectedRespCode = ref(null);
 const selectedUacsCode = ref(null);
 const selectedPaymentNature = ref(null);
 
+const showFundCenterModal = ref(false);
+const fundCenter = ref("");
+const exportError = ref("");
+const isExporting = ref(false);
+
 const headers = ["RCD ID", "RCD Name", "Date Created"];
 const beneficiaryHeaders = [
     "Beneficiary Number",
@@ -439,6 +472,7 @@ const apiError = ref(null);
 
 const form = useForm({
     search: "",
+    fundCenter: "",
 });
 
 const setError = (message) => {
@@ -801,6 +835,52 @@ const selectedValues = computed(() => ({
     uacsCode: selectedRCD.value?.uacsCode,
     paymentNature: selectedRCD.value?.paymentNature,
 }));
+
+//Export
+const openFundCenterModal = (rcd) => {
+    selectedRCD = rcd;
+    showFundCenterModal.value = true;
+    exportError.value = "";
+    form.fundCenter = "";
+};
+
+const exportReport = async () => {
+    // First open modal to get Fund Center
+    if (!selectedRCD.value) {
+        // If no RCD is selected, use the first one from the list
+        selectedRCD.value = props.rcds.data[0];
+    }
+    openFundCenterModal(selectedRCD.value);
+};
+
+const handleExport = async () => {
+    if (!form.fundCenter) {
+        exportError.value = "Please enter the Fund Center";
+        return;
+    }
+
+    try {
+        isExporting.value = true;
+
+        // Make a POST request to store the fund center first
+        await axios.post(`/rcds/${selectedRCD.value.rcdID}/fund-center`, {
+            fundCenter: form.fundCenter,
+        });
+
+        // Then trigger the PDF download
+        window.location.href = `/rcds/export/${selectedRCD.value.rcdID}`;
+
+        // Close the modal
+        showFundCenterModal.value = false;
+        form.fundCenter = "";
+        exportError.value = "";
+    } catch (error) {
+        console.error("Export failed:", error);
+        exportError.value = "Failed to generate the report. Please try again.";
+    } finally {
+        isExporting.value = false;
+    }
+};
 
 //Watchers
 

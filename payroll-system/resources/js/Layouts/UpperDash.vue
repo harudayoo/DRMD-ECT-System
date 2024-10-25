@@ -25,10 +25,10 @@
                 {{ title }}
             </h3>
         </div>
-        <div class="flex items-center">
+        <div class="-mr-4">
             <button
                 @click="$emit('toggle-graph')"
-                class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 mr-4 focus:outline-none"
+                class="text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 mr-4 focus:outline-none"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -47,30 +47,6 @@
                     <line x1="6" y1="20" x2="6" y2="14" />
                 </svg>
             </button>
-            <div class="relative">
-                <input
-                    type="text"
-                    placeholder="Search..."
-                    class="bg-white text-gray-900 rounded-full pl-10 pr-4 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 w-72 h-8 transition-all duration-300 ease-in-out"
-                />
-                <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="3"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="lucide lucide-search text-gray-400"
-                    >
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="m21 21-4.3-4.3" />
-                    </svg>
-                </div>
-            </div>
         </div>
     </div>
 </template>

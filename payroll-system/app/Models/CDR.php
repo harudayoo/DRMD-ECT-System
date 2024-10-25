@@ -15,7 +15,7 @@ class CDR extends Model
     protected $fillable = [
 
         'cdrID',
-        'rcdID',
+        'payrollID',
         'cdrName',
         'created_at',
         'updated_at',
@@ -23,8 +23,13 @@ class CDR extends Model
     ];
 
 
-    public function RCD()
+    public function payroll()
     {
-        return $this->belongsTo(RCD::class, 'rcdID');
+        return $this->belongsTo(Payroll::class, 'payrollID');
+    }
+
+    public function rcd()
+    {
+        return $this->hasMany(RCD::class, 'cdrID');
     }
 }
