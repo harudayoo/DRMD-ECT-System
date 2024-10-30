@@ -322,7 +322,7 @@ class CDRController extends Controller
                 'designations' => Designation::select('designationID', 'accountableOfficer', 'officialDesignation', 'station')->get(),
                 'dvPayrolls' => DVPayroll::select('dvPNumber', 'check_no')->get(),
                 'uacsCodes' => UACSCode::select('uacsObjectCode')->get(),
-                'paymentsNature' => PaymentsNature::select('nOPId', 'natureOfPayment')->get(),
+                'paymentsNature' => PaymentNature::select('nOPId', 'natureOfPayment')->get(),
             ];
 
             return response()->json($data);
@@ -330,6 +330,43 @@ class CDRController extends Controller
         } catch (\Exception $e) {
             Log::error('Error fetching options: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to fetch options'], 500);
+        }
+    }
+
+    public function update(Request $request, $cdrID)
+    {
+        try {
+            $validated = $request->validate([
+                'entityID' => 'required|exists:entities,entityID',
+                'designationID' => 'required|exists:designations,designationID',
+                'dvPNumber' => 'required|exists:dvpayrolls,dvPNumber',
+                'uacsObjectCode' => 'required|exists:uacscodes,uacsObjectCode',
+                'nOPId' => 'required|exists:paymentsnature,nOPId',
+            ]);
+
+            DB::beginTransaction();
+
+            $cdr = CDR::findOrFail($cdrID);
+            $cdr->update($validated);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'CDR updated successfully',
+                'cdr' => $cdr
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating CDR: ' . $e->getMessage(), [
+                'cdrID' => $cdrID,
+                'data' => $request->all()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to update CDR',
+                'message' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
         }
     }
 }

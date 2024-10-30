@@ -130,6 +130,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
         // Main CDR routes
         Route::get('/', [CDRController::class, 'index'])->name('index');
         Route::post('/', [CDRController::class, 'store'])->name('store');
+        Route::put('/update/{cdrID}', [CDRController::class, 'update'])->name('update');
 
         // Beneficiary routes
         Route::get('/beneficiaries', [CDRController::class, 'getBeneficiaries'])->name('beneficiaries');
