@@ -10,9 +10,13 @@ class DvPayroll extends Model
     protected $primaryKey = 'dvPNumber';
     public $timestamps = true;
 
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
     protected $fillable = [
         'dvPNumber',
-        'dvPName',
+        'check_no',
         'created_at',
         'updated_at'
     ];
@@ -20,9 +24,9 @@ class DvPayroll extends Model
     const CREATED_AT = 'created_at';
     const UPDATED_AT = 'updated_at';
 
-    public function rcd()
+    public function cdr()
     {
-        return $this->hasMany(RCD::class, 'dvNumber', 'dvPNumber');
+        return $this->hasMany(CDR::class, 'dvNumber', 'dvPNumber');
     }
 }
 

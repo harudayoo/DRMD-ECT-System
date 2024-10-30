@@ -1,3 +1,4 @@
+<!-- NewCDRModal.vue -->
 <template>
     <div
         class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50"
@@ -9,6 +10,7 @@
             </h2>
             <form @submit.prevent="validateAndSubmit">
                 <div class="grid grid-cols-2 gap-4">
+                    <!-- CDR Name Input -->
                     <div class="col-span-2">
                         <label for="cdrName" class="block mb-2 font-medium"
                             >CDR Name</label
@@ -34,21 +36,23 @@
                             }}
                         </div>
                     </div>
+
+                    <!-- Payroll Selection -->
                     <div class="col-span-2">
-                        <label for="rcdID" class="block mb-2 font-medium"
-                            >RCD</label
+                        <label for="payrollID" class="block mb-2 font-medium"
+                            >Payroll</label
                         >
                         <div class="relative">
                             <input
                                 type="text"
-                                v-model="rcdSearch"
-                                placeholder="Search RCDs..."
+                                v-model="payrollSearch"
+                                placeholder="Search payrolls by number or name..."
                                 class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
-                                @input="debounceSearch"
+                                @input="debouncedSearch"
                                 :disabled="form.processing"
                             />
                             <div
-                                v-if="isLoadingRcds"
+                                v-if="isLoadingPayrolls"
                                 class="absolute right-3 top-2"
                             >
                                 <svg
@@ -74,36 +78,47 @@
                             </div>
                         </div>
                         <select
-                            id="rcdID"
-                            v-model="form.rcdID"
+                            id="payrollID"
+                            v-model="form.payrollID"
                             class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             required
                             :disabled="form.processing"
-                            @change="validateRcdID"
+                            @change="validatePayrollID"
                         >
-                            <option value="" disabled>Select RCD</option>
+                            <option value="" disabled>Select Payroll</option>
                             <option
-                                v-for="rcd in filteredRcds"
-                                :key="rcd.rcdID"
-                                :value="rcd.rcdID"
+                                v-for="payroll in payrolls"
+                                :key="payroll.payrollID"
+                                :value="payroll.payrollID"
                             >
-                                {{ rcd.rcdID }} - {{ rcd.rcdName }}
+                                {{ payroll.payrollNumber }} -
+                                {{ payroll.payrollName }}
                             </option>
                         </select>
                         <div
-                            v-if="form.errors.rcdID || validationErrors.rcdID"
+                            v-if="
+                                form.errors.payrollID ||
+                                validationErrors.payrollID
+                            "
                             class="text-sm text-red-500 mt-1"
                         >
-                            {{ form.errors.rcdID || validationErrors.rcdID }}
+                            {{
+                                form.errors.payrollID ||
+                                validationErrors.payrollID
+                            }}
                         </div>
                     </div>
                 </div>
+
+                <!-- Error Message -->
                 <div
                     v-if="form.errors.generalError"
                     class="mt-4 text-sm text-red-500 p-3 bg-red-50 rounded-md"
                 >
                     {{ form.errors.generalError }}
                 </div>
+
+                <!-- Form Actions -->
                 <div class="mt-6 flex justify-end space-x-4">
                     <button
                         type="button"
@@ -154,7 +169,7 @@ import debounce from "lodash/debounce";
 import axios from "axios";
 
 const props = defineProps({
-    rcds: {
+    initialPayrolls: {
         type: Array,
         required: true,
     },
@@ -162,85 +177,107 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "cdr-created"]);
 
+// Form initialization
 const form = useForm({
     cdrName: "",
-    rcdID: "",
+    payrollID: "",
 });
 
+// State management
 const validationErrors = ref({
     cdrName: "",
-    rcdID: "",
+    payrollID: "",
 });
 
+const payrollSearch = ref("");
+const isLoadingPayrolls = ref(false);
+const filteredPayrolls = ref(props.initialPayrolls);
+const payrolls = ref(props.initialPayrolls);
+
+// Computed properties
 const isFormValid = computed(() => {
     return (
         form.cdrName.length > 0 &&
-        form.rcdID.length > 0 &&
+        form.payrollID.length > 0 &&
         Object.values(validationErrors.value).every((error) => !error)
     );
 });
 
-const rcdSearch = ref("");
-const isLoadingRcds = ref(false);
-const filteredRcds = ref(props.rcds);
-
-const searchRcds = async (search) => {
+// Methods
+const searchPayrolls = async (search) => {
     if (!search) {
-        filteredRcds.value = props.rcds;
+        filteredPayrolls.value = props.initialPayrolls;
         return;
     }
 
     try {
-        isLoadingRcds.value = true;
-        const response = await axios.get(route("cdr.searchRcds", { search }));
-        filteredRcds.value = response.data;
+        isLoadingPayrolls.value = true;
+        const response = await axios.get(
+            route("cdr.searchPayrolls", { search })
+        );
+        filteredPayrolls.value = response.data;
     } catch (error) {
-        console.error("Error searching RCDs:", error);
+        console.error("Error searching payrolls:", error);
         form.setError(
             "generalError",
-            "Failed to search RCDs. Please try again."
+            "Failed to search payrolls. Please try again."
         );
     } finally {
-        isLoadingRcds.value = false;
+        isLoadingPayrolls.value = false;
     }
 };
 
-const debounceSearch = debounce(() => {
-    searchRcds(rcdSearch.value);
+const fetchPayrolls = async () => {
+    try {
+        isLoadingPayrolls.value = true;
+        const response = await axios.get(route("cdr.searchPayrolls"));
+        payrolls.value = response.data;
+    } catch (error) {
+        console.error("Error fetching payrolls:", error);
+        form.setError(
+            "generalError",
+            "Failed to fetch payrolls. Please try again."
+        );
+    } finally {
+        isLoadingPayrolls.value = false;
+    }
+};
+
+const debouncedSearch = debounce(() => {
+    searchPayrolls(payrollSearch.value);
 }, 300);
 
-const validateCdrName = () => {
-    validationErrors.value.cdrName = "";
-    if (!form.cdrName) {
-        validationErrors.value.cdrName = "CDR Name is required";
-    } else if (form.cdrName.length < 3) {
-        validationErrors.value.cdrName =
-            "CDR Name must be at least 3 characters";
-    } else if (form.cdrName.length > 35) {
-        validationErrors.value.cdrName =
-            "CDR Name must not exceed 35 characters";
+const validatePayrollID = () => {
+    validationErrors.value.payrollID = "";
+    if (!form.payrollID) {
+        validationErrors.value.payrollID = "Please select a Payroll";
     }
 };
 
-const validateRcdID = () => {
-    validationErrors.value.rcdID = "";
-    if (!form.rcdID) {
-        validationErrors.value.rcdID = "Please select an RCD";
+const validateCdrName = () => {
+    if (!form.cdrName) {
+        form.setError("cdrName", "CDR Name is required");
+    } else if (form.cdrName.length < 3) {
+        form.setError("cdrName", "CDR Name must be at least 3 characters");
+    } else if (form.cdrName.length > 35) {
+        form.setError("cdrName", "CDR Name must not exceed 35 characters");
+    } else {
+        form.clearErrors("cdrName");
     }
 };
 
 const validateAndSubmit = () => {
     validateCdrName();
-    validateRcdID();
 
-    if (!form.cdrName || !form.rcdID) {
+    if (!form.payrollID) {
+        form.setError("payrollID", "Please select a Payroll");
         return;
     }
 
-    submitCdr();
-};
+    if (Object.keys(form.errors).length > 0) {
+        return;
+    }
 
-const submitCdr = () => {
     form.post(route("cdr.store"), {
         onSuccess: () => {
             emit("cdr-created");
@@ -248,9 +285,6 @@ const submitCdr = () => {
         },
         onError: (errors) => {
             console.error("Form submission errors:", errors);
-            if (errors.generalError) {
-                form.setError("generalError", errors.generalError);
-            }
         },
     });
 };
@@ -259,10 +293,10 @@ const resetForm = () => {
     form.reset();
     validationErrors.value = {
         cdrName: "",
-        rcdID: "",
+        payrollID: "",
     };
-    rcdSearch.value = "";
-    filteredRcds.value = props.rcds;
+    payrollSearch.value = "";
+    filteredPayrolls.value = props.initialPayrolls;
 };
 
 const closeModal = () => {
@@ -270,15 +304,17 @@ const closeModal = () => {
     resetForm();
 };
 
+// Lifecycle hooks
 onMounted(() => {
     resetForm();
+    fetchPayrolls();
 });
 
 watch(
-    () => props.rcds,
-    (newRcds) => {
-        if (!rcdSearch.value) {
-            filteredRcds.value = newRcds;
+    () => props.initialPayrolls,
+    (newPayrolls) => {
+        if (!payrollSearch.value) {
+            filteredPayrolls.value = newPayrolls;
         }
     }
 );

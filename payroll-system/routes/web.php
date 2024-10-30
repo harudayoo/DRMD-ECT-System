@@ -126,13 +126,53 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     });
 
     //CDR Routes
-    Route::prefix('cdr')->group(function () {
-        Route::get('/', [CDRController::class, 'index'])->name('cdr.index');
-        Route::post('/', [CDRController::class, 'store'])->name('cdr.store');
-        Route::get('/beneficiaries', [CDRController::class, 'getBeneficiaries'])->name('cdr.beneficiaries');
-        Route::get('/search-rcds', [CDRController::class, 'searchRcds'])->name('cdr.searchRcds');
-        Route::get('/{rcdID}', [RCDController::class, 'show'])->name('rcd.show');
+    Route::middleware(['auth'])->prefix('cdr')->name('cdr.')->group(function () {
+        // Main CDR routes
+        Route::get('/', [CDRController::class, 'index'])->name('index');
+        Route::post('/', [CDRController::class, 'store'])->name('store');
+
+        // Beneficiary routes
+        Route::get('/beneficiaries', [CDRController::class, 'getBeneficiaries'])->name('beneficiaries');
+
+        // Payroll routes
+        Route::get('/search-payrolls', [CDRController::class, 'searchPayrolls'])->name('searchPayrolls');
+
+        // Options management
+        Route::get('/options', [CDRController::class, 'getOptions'])->name('getOptions');
+        Route::post('/options', [CDRController::class, 'addOption'])->name('addOption');
+
+        // You might also want to add these additional routes for managing options
+        Route::prefix('options')->group(function () {
+            // Entity routes
+            Route::get('/entities', [CDRController::class, 'getEntities'])->name('getEntities');
+            Route::delete('/entities/{entityID}', [CDRController::class, 'deleteEntity'])->name('deleteEntity');
+
+            // Designation routes
+            Route::get('/designations', [CDRController::class, 'getDesignations'])->name('getDesignations');
+            Route::delete('/designations/{designationID}', [CDRController::class, 'deleteDesignation'])->name('deleteDesignation');
+
+            // UACS Code routes
+            Route::get('/uacs-codes', [CDRController::class, 'getUACSCodes'])->name('getUACSCodes');
+            Route::delete('/uacs-codes/{uacsObjectCode}', [CDRController::class, 'deleteUACSCode'])->name('deleteUACSCode');
+
+            // DV Payroll routes
+            Route::get('/dv-payrolls', [CDRController::class, 'getDVPayrolls'])->name('getDVPayrolls');
+            Route::delete('/dv-payrolls/{dvPNumber}', [CDRController::class, 'deleteDVPayroll'])->name('deleteDVPayroll');
+
+            // Nature of Payment routes
+            Route::get('/payments-nature', [CDRController::class, 'getPaymentsNature'])->name('getPaymentsNature');
+            Route::delete('/payments-nature/{nOPId}', [CDRController::class, 'deletePaymentsNature'])->name('deletePaymentsNature');
+
+            // Update routes (if needed)
+            Route::put('/entities/{entityID}', [CDRController::class, 'updateEntity'])->name('updateEntity');
+            Route::put('/designations/{designationID}', [CDRController::class, 'updateDesignation'])->name('updateDesignation');
+            Route::put('/uacs-codes/{uacsObjectCode}', [CDRController::class, 'updateUACSCode'])->name('updateUACSCode');
+            Route::put('/dv-payrolls/{dvPNumber}', [CDRController::class, 'updateDVPayroll'])->name('updateDVPayroll');
+            Route::put('/payments-nature/{nOPId}', [CDRController::class, 'updatePaymentsNature'])->name('updatePaymentsNature');
+        });
     });
+
+
 
     //Analytics Routes
     Route::get('/status-analytics/{municipalityId}', [AnalyticsController::class, 'getStatusAnalytics']);

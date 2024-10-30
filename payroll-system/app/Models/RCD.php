@@ -41,14 +41,4 @@ class RCD extends Model
         return $this->belongsTo(RespCode::class, 'responCode', 'responsibilityCode');
     }
 
-    public function uacsCode()
-    {
-        return $this->belongsTo(UacsCode::class, 'uacsCode', 'uacsObjectCode');
-    }
-
-    public function paymentNature()
-    {
-        return $this->belongsTo(PaymentNature::class, 'paymentNature', 'natureOfPayment');
-    }
-
 }

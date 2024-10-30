@@ -67,7 +67,7 @@
         <!-- New CDR Modal -->
         <NewCDRModal
             v-if="isNewCDRModalOpen"
-            :rcds="rcds"
+            :initial-payrolls="initialPayrolls"
             :is-loading="isLoading"
             @close="closeNewCDRModal"
             @submit="handleCDRSubmit"
