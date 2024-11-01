@@ -11,11 +11,13 @@ use App\Models\UacsCode;
 use App\Models\PaymentNature;
 use App\Models\DvPayroll;
 
+
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache; // Added missing Cache facade
+use Illuminate\Support\Facades\Cache;
 
 class CDRController extends Controller
 {
@@ -342,11 +344,28 @@ class CDRController extends Controller
                 'dvPNumber' => 'required|exists:dvpayrolls,dvPNumber',
                 'uacsObjectCode' => 'required|exists:uacscodes,uacsObjectCode',
                 'nOPId' => 'required|exists:paymentsnature,nOPId',
+                'cashAdvanceReceived' => 'required|numeric|min:0',
             ]);
 
             DB::beginTransaction();
 
             $cdr = CDR::findOrFail($cdrID);
+
+            // Check if fields are already filled
+            $filledFields = [];
+            foreach ($validated as $field => $value) {
+                if ($cdr->$field !== null) {
+                    $filledFields[] = $field;
+                }
+            }
+
+            if (!empty($filledFields)) {
+                return response()->json([
+                    'error' => 'Some fields are already filled',
+                    'filledFields' => $filledFields
+                ], 422);
+            }
+
             $cdr->update($validated);
 
             DB::commit();
@@ -365,6 +384,99 @@ class CDRController extends Controller
 
             return response()->json([
                 'error' => 'Failed to update CDR',
+                'message' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
+            ], 500);
+        }
+    }
+
+    public function exportPDF($cdrID)
+    {
+        try {
+            // Fetch CDR with all related data using proper relationships
+            $cdr = CDR::with([
+                'entity',
+                'designation',
+                'dvPayroll',
+                'uacsCode',
+                'paymentNature',
+                'payroll',
+                'payroll.beneficiariesPayroll' => function ($query) {
+                    $query->select([
+                        'beneficiaries.*',
+                        'barangays.barangayName',
+                        'municipalities.municipalityName'
+                    ])
+                        ->leftJoin('barangays', 'beneficiaries.barangayID', '=', 'barangays.barangayID')
+                        ->leftJoin('municipalities', 'barangays.municipalityID', '=', 'municipalities.municipalityID')
+                        ->orderBy('beneficiaries.lastName')
+                        ->orderBy('beneficiaries.firstName');
+                }
+            ])->findOrFail($cdrID);
+
+            // Format the data for PDF
+            $data = [
+                'entityName' => $cdr->entity->entityName ?? 'N/A',
+                'fundCluster' => $cdr->entity->fundCluster ?? 'N/A',
+                'accountableOfficer' => $cdr->designation->accountableOfficer ?? 'N/A',
+                'officialDesignation' => $cdr->designation->officialDesignation ?? 'N/A',
+                'station' => $cdr->designation->station ?? 'N/A',
+                'appendixNumber' => $cdr->appendixNumber ?? '',
+                'sheetNumber' => $cdr->sheetNumber ?? '1',
+                'cdr_date' => $cdr->created_at->format('m/d/Y'),
+                'referenceNumber' => $cdr->dvPayroll->dvPNumber ?? 'N/A',
+                'checkNumber' => $cdr->dvPayroll->check_no ?? 'N/A',
+                'uacsObjectCode' => $cdr->uacsCode->uacsObjectCode ?? 'N/A',
+                'natureOfPayment' => $cdr->paymentNature->natureOfPayment ?? 'N/A',
+                'cashAdvanceReceived' => $cdr->cashAdvanceReceived ?? 0,
+                'beneficiaries' => $cdr->payroll->beneficiariesPayroll->map(function ($beneficiary) {
+                    return [
+                        'lastName' => $beneficiary->lastName ?? '',
+                        'firstName' => $beneficiary->firstName ?? '',
+                        'middleName' => $beneficiary->middleName ?? '',
+                        'barangayName' => $beneficiary->barangayName ?? 'N/A',
+                        'municipalityName' => $beneficiary->municipalityName ?? 'N/A',
+                        'amount' => $beneficiary->amount ?? 0,
+                        'payrollNo' => $beneficiary->payrollNumber ?? 'N/A',
+                        'updated_at' => $beneficiary->updated_at
+                    ];
+                })->toArray()
+            ];
+
+            // Generate PDF with custom options
+            $pdf = PDF::loadView('pdfs.cdr', $data);
+            $pdf->setPaper([0, 0, 612, 936], 'portrait');
+            $pdf->setOptions([
+                'enable_php' => true,
+                'isPhpEnabled' => true,
+                'isRemoteEnabled' => true,
+                'margin_top' => 12,    // Reduced from 18
+                'margin_right' => 12,  // Reduced from 18
+                'margin_bottom' => 12, // Reduced from 18
+                'margin_left' => 12,   // Reduced from 18
+                'dpi' => 150,
+                'defaultFont' => 'Arial'
+            ]);
+
+            // Generate filename with timestamp
+            $filename = sprintf(
+                'Cash Disbursement Record:_%s_%s.pdf',
+                $cdrID,
+                now()->format('Y-m-d_His')
+            );
+
+            // Return PDF for download
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            Log::error('PDF Export Error', [
+                'cdrID' => $cdrID,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to generate PDF',
                 'message' => config('app.debug') ? $e->getMessage() : 'An unexpected error occurred'
             ], 500);
         }

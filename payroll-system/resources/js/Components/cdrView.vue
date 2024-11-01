@@ -1,10 +1,10 @@
 <template>
-  <div class="relative">
+  <div class="relative mt-16">
     <!-- Back Button - Only show when viewing beneficiaries -->
     <button
       v-if="selectedCdr"
       @click="goBackToCdrList"
-      class="mb-4 flex items-center text-blue-600 hover:text-blue-800"
+      class="m-4 py-2 px-4 flex items-center rounded-md bg-gray-400 hover:bg-gray-600 text-slate-100 hover:text-slate-300"
     >
       <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path
@@ -19,7 +19,7 @@
 
     <!-- Main Header -->
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">CDR Management</h1>
+      <h1 class="text-2xl font-bold">Cash Disbursement Record</h1>
       <!-- Only show search when viewing CDR list -->
       <div v-if="!selectedCdr" class="w-[32%]">
         <label for="search" class="sr-only">Search CDRs</label>
@@ -115,11 +115,13 @@
     <!-- Add loading spinner component -->
     <div
       v-if="loadingStates.table || loadingStates.beneficiaries"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50"
     >
-      <div class="bg-white p-4 rounded-lg shadow-lg">
+      <div class="bg-white p-4 rounded-full shadow-lg">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p class="mt-2 text-gray-600">Loading...</p>
+      </div>
+      <div class="text-center mt-2">
+        <p class="font-bold text-gray-200">Fetching Resources, Please Wait</p>
       </div>
     </div>
 
@@ -186,9 +188,11 @@
     <div v-if="selectedCdr" class="mt-6">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold">
-          Beneficiaries for CDR {{ selectedCdr.cdrID }}
+          Beneficiaries and Document Data of CDR:
+          {{ selectedCdr.cdrID }}
           <span v-if="selectedCdr.payroll" class="text-sm text-gray-500">
-            (Payroll: {{ selectedCdr.payroll.payrollNumber }})
+            (for Payroll Number:
+            {{ selectedCdr.payroll.payrollNumber }})
           </span>
         </h2>
         <span v-if="beneficiaries.length" class="text-sm text-gray-500">
@@ -210,7 +214,7 @@
             id="entityNameFundCluster"
             v-model="selectedFilters.entityNameFundCluster"
             class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-full"
-            :disabled="!selectedCdr"
+            :disabled="!selectedCdr || isFieldFilled('entityNameFundCluster')"
           >
             <option value="">Select Entity Name - Fund Cluster</option>
             <option
@@ -222,6 +226,12 @@
               {{ entity.entityName }} - {{ entity.fundCluster }}
             </option>
           </select>
+          <p
+            v-if="isFieldFilled('entityNameFundCluster')"
+            class="mt-1 text-sm text-green-600"
+          >
+            This field has been filled and saved
+          </p>
         </div>
 
         <!-- Officer - Designation - Station -->
@@ -235,7 +245,7 @@
             id="officerDesignationStation"
             v-model="selectedFilters.officerDesignationStation"
             class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-full"
-            :disabled="!selectedCdr"
+            :disabled="!selectedCdr || isFieldFilled('officerDesignationStation')"
           >
             <option value="">Select Officer - Designation - Station</option>
             <option
@@ -249,6 +259,12 @@
               {{ designation.station }}
             </option>
           </select>
+          <p
+            v-if="isFieldFilled('officerDesignationStation')"
+            class="mt-1 text-sm text-green-600"
+          >
+            This field has been filled and saved
+          </p>
         </div>
 
         <!-- Reference Number -->
@@ -256,13 +272,13 @@
           <label
             for="referenceNumber"
             class="block text-sm font-medium text-gray-700 mb-1"
-            >Reference Number</label
+            >Reference Number - Check Number</label
           >
           <select
             id="referenceNumber"
             v-model="selectedFilters.referenceNumber"
             class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-full"
-            :disabled="!selectedCdr"
+            :disabled="!selectedCdr || isFieldFilled('referenceNumber')"
           >
             <option value="">Select Reference Number</option>
             <option
@@ -274,6 +290,9 @@
               {{ ref.dvPNumber }} - {{ ref.check_no }}
             </option>
           </select>
+          <p v-if="isFieldFilled('referenceNumber')" class="mt-1 text-sm text-green-600">
+            This field has been filled and saved
+          </p>
         </div>
 
         <!-- UACS Object Code -->
@@ -285,7 +304,7 @@
             id="uacsCode"
             v-model="selectedFilters.uacsCode"
             class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-full"
-            :disabled="!selectedCdr"
+            :disabled="!selectedCdr || isFieldFilled('uacsCode')"
           >
             <option value="">Select UACS Code</option>
             <option
@@ -297,6 +316,9 @@
               {{ code.uacsObjectCode }}
             </option>
           </select>
+          <p v-if="isFieldFilled('uacsCode')" class="mt-1 text-sm text-green-600">
+            This field has been filled and saved
+          </p>
         </div>
 
         <!-- Nature of Payment -->
@@ -310,7 +332,7 @@
             id="natureOfPayment"
             v-model="selectedFilters.natureOfPayment"
             class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-full"
-            :disabled="!selectedCdr"
+            :disabled="!selectedCdr || isFieldFilled('natureOfPayment')"
           >
             <option value="">Select Nature of Payment</option>
             <option
@@ -322,28 +344,63 @@
               {{ nature.natureOfPayment }}
             </option>
           </select>
+          <p v-if="isFieldFilled('natureOfPayment')" class="mt-1 text-sm text-green-600">
+            This field has been filled and saved
+          </p>
+        </div>
+
+        <!-- Cash Advance Received-->
+        <div class="relative">
+          <label
+            for="cashAdvanceReceived"
+            class="block text-sm font-medium text-gray-700 mb-1"
+            >Cash Advanced Received</label
+          >
+          <input
+            id="cashAdvanceReceived"
+            v-model="selectedFilters.cashAdvanceReceived"
+            type="number"
+            step="0.01"
+            min="0"
+            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-full"
+            :disabled="!selectedCdr || isFieldFilled('cashAdvanceReceived')"
+            placeholder="Enter amount"
+          />
+          <p
+            v-if="isFieldFilled('cashAdvanceReceived')"
+            class="mt-1 text-sm text-green-600"
+          >
+            This field has been filled and saved
+          </p>
         </div>
       </div>
 
-      <!-- Insert Data Button -->
-      <div class="flex justify-end m-4">
+      <div class="flex justify-end m-4 space-x-4">
+        <!-- Insert Data Button -->
         <button
           @click="insertData"
           class="px-4 py-2 bg-blue-900 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="!isFormValid || isLoading"
+          :disabled="!isFormValid || isLoading || areAllFieldsFilled"
         >
           <span v-if="isLoading">Processing...</span>
           <span v-else>Insert Data</span>
         </button>
-      </div>
-
-      <!-- Add New Button -->
-      <div class="flex justify-end m-4">
+        <!-- Add New Button -->
         <button
           @click="openAddNewModal"
           class="px-4 py-2 bg-blue-900 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           Add New Data
+        </button>
+
+        <!-- Export Button -->
+
+        <button
+          @click="exportPDF(selectedCdr)"
+          :disabled="!selectedCdr || loadingStates.export"
+          class="px-4 py-2 ml-2 text-white bg-green-600 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        >
+          {{ loadingStates.export ? "Exporting..." : "Export PDF" }}
         </button>
       </div>
 
@@ -396,9 +453,11 @@
                 <span
                   class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
                   :class="{
-                    'bg-green-100 text-green-800': beneficiary.status === 'Active',
-                    'bg-red-100 text-red-800': beneficiary.status === 'Inactive',
-                    'bg-gray-100 text-gray-800': beneficiary.status === 'Unknown',
+                    'bg-green-100 text-green-800': beneficiary.status === 'Claimed',
+                    'bg-red-100 text-red-800': beneficiary.status === 'Disqualified',
+                    'bg-gray-100 text-gray-800': beneficiary.status === 'Unclaimed',
+                    'bg-yellow-100 text-yellow-800':
+                      beneficiary.status === 'Double-Entry',
                   }"
                 >
                   {{ beneficiary.status }}
@@ -676,7 +735,10 @@ const selectedFilters = ref({
   referenceNumber: "",
   uacsCode: "",
   natureOfPayment: "",
+  cashAdvanceReceived: "",
 });
+
+const filledFields = ref(new Set());
 
 // Loading states for different operations
 const loadingStates = ref({
@@ -684,6 +746,7 @@ const loadingStates = ref({
   beneficiaries: false,
   dropdown: false,
   insert: false,
+  export: false,
   modal: false,
 });
 
@@ -723,7 +786,7 @@ const isLoadingBeneficiaries = ref(false);
 const beneficiaryError = ref("");
 const isModalOpen = ref(false);
 const selectedCategory = ref("");
-const alert = ref({ show: false, message: "", type: "success" });
+const alert = ref({ show: false, message: "", type: "" });
 
 // Enhanced form validation
 const validationErrors = ref({});
@@ -904,6 +967,22 @@ const saveNewItem = async () => {
   }
 };
 
+const isFieldFilled = (fieldName) => {
+  return filledFields.value.has(fieldName);
+};
+
+const areAllFieldsFilled = computed(() => {
+  const requiredFields = [
+    "entityNameFundCluster",
+    "officerDesignationStation",
+    "referenceNumber",
+    "uacsCode",
+    "natureOfPayment",
+    "cashAdvanceReceived",
+  ];
+  return requiredFields.every((field) => filledFields.value.has(field));
+});
+
 //Client Side Validation
 const validateFields = () => {
   switch (selectedCategory.value) {
@@ -934,11 +1013,14 @@ const isFormValid = computed(() => {
     selectedFilters.value.officerDesignationStation &&
     selectedFilters.value.referenceNumber &&
     selectedFilters.value.uacsCode &&
-    selectedFilters.value.natureOfPayment
+    selectedFilters.value.natureOfPayment &&
+    selectedFilters.value.cashAdvanceReceived &&
+    !isNaN(parseFloat(selectedFilters.value.cashAdvanceReceived)) && // Validate it's a valid number
+    parseFloat(selectedFilters.value.cashAdvanceReceived) >= 0 // Ensure it's not negative
   );
 });
 
-// Enhanced insertData with optimistic updates
+//insertData Function with optimistic updates
 const insertData = async () => {
   if (!isFormValid.value) return;
 
@@ -947,7 +1029,6 @@ const insertData = async () => {
     loadingStates.value.insert = true;
     errorStates.value.insert = null;
 
-    // Store optimistic update
     pendingUpdates.value.set(updateId, {
       ...selectedFilters.value,
       status: "pending",
@@ -959,6 +1040,14 @@ const insertData = async () => {
       dvPNumber: selectedFilters.value.referenceNumber,
       uacsObjectCode: selectedFilters.value.uacsCode,
       nOPId: selectedFilters.value.natureOfPayment,
+      cashAdvanceReceived: parseFloat(selectedFilters.value.cashAdvanceReceived),
+    });
+
+    // Update successful - mark fields as filled
+    Object.keys(selectedFilters.value).forEach((field) => {
+      if (selectedFilters.value[field]) {
+        filledFields.value.add(field);
+      }
     });
 
     // Update successful
@@ -969,9 +1058,13 @@ const insertData = async () => {
 
     alert.value = {
       show: true,
-      message: "Data inserted successfully!",
+      message: "Data inserted successfully! Fields have been locked.",
       type: "success",
     };
+
+    setTimeout(() => {
+      alert.value.show = false;
+    }, 5000);
 
     selectedCdr.value = null;
     resetFilters();
@@ -986,6 +1079,12 @@ const insertData = async () => {
 
     errorStates.value.insert =
       error.response?.data?.message || "Failed to insert data. Please try again.";
+
+    alert.value = {
+      show: true,
+      message: errorStates.value.insert,
+      type: "error",
+    };
   } finally {
     loadingStates.value.insert = false;
     // Remove optimistic update after some time
@@ -1010,7 +1109,9 @@ const resetFilters = () => {
     referenceNumber: "",
     uacsCode: "",
     natureOfPayment: "",
+    cashAdvanceReceived: "",
   };
+  filledFields.value.clear();
 };
 
 const debouncedSearch = debounce(() => {
@@ -1076,6 +1177,41 @@ const goBackToCdrList = () => {
 const changeBeneficiariesPage = (page) => {
   if (page >= 1 && page <= beneficiariesPagination.value.last_page) {
     fetchBeneficiaries(selectedCdr.value.payrollID, page);
+  }
+};
+
+const exportPDF = async (cdr) => {
+  try {
+    loadingStates.value.export = true;
+    const response = await axios.get(route("cdr.export", cdr.cdrID), {
+      responseType: "blob", // Important for handling PDF files
+    });
+
+    // Create a blob URL and trigger download
+    const blob = new Blob([response.data], { type: "application/pdf" });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `CDR_${cdr.cdrID}_${new Date().toISOString().split("T")[0]}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    alert.value = {
+      show: true,
+      message: "PDF exported successfully!",
+      type: "success",
+    };
+  } catch (error) {
+    console.error("Error exporting PDF:", error);
+    alert.value = {
+      show: true,
+      message: "Failed to export PDF. Please try again.",
+      type: "error",
+    };
+  } finally {
+    loadingStates.value.export = false;
   }
 };
 

@@ -131,6 +131,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
         Route::get('/', [CDRController::class, 'index'])->name('index');
         Route::post('/', [CDRController::class, 'store'])->name('store');
         Route::put('/update/{cdrID}', [CDRController::class, 'update'])->name('update');
+        Route::get('/export/{cdrID}', [CDRController::class, 'exportPDF'])->name('export');
 
         // Beneficiary routes
         Route::get('/beneficiaries', [CDRController::class, 'getBeneficiaries'])->name('beneficiaries');
@@ -142,7 +143,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
         Route::get('/options', [CDRController::class, 'getOptions'])->name('getOptions');
         Route::post('/options', [CDRController::class, 'addOption'])->name('addOption');
 
-        // You might also want to add these additional routes for managing options
+        // Additional routes for managing options
         Route::prefix('options')->group(function () {
             // Entity routes
             Route::get('/entities', [CDRController::class, 'getEntities'])->name('getEntities');

@@ -20,7 +20,10 @@ class CDR extends Model
         'uacsObjectCode',
         'dvPNumber',
         'nOPId',
+        'cashAdvanceReceived',
         'cdrName',
+        'created_at',
+        'updated_at',
     ];
 
     public function payroll()
