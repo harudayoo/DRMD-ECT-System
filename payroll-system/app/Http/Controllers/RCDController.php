@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Payroll;
+use App\Models\CDR;
 use App\Models\RCD;
 use App\Models\Beneficiary;
-use App\Models\DvPayroll;
 use App\Models\OrsBurs;
 use App\Models\RespCode;
-use App\Models\UacsCode;
-use App\Models\PaymentNature;
 use App\Models\Municipality;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -23,7 +20,8 @@ class RCDController extends Controller
 {
     public function index(Request $request)
     {
-        $query = RCD::query();
+        $query = RCD::query()
+            ->with(['CDR', 'orsBurs', 'respCode']);
 
         if ($request->has('search')) {
             $searchTerm = $request->input('search');
@@ -31,39 +29,58 @@ class RCDController extends Controller
         }
 
         $rcds = $query->paginate(10)->withQueryString();
-        $payrolls = Payroll::select('payrollID', 'payrollNumber', 'payrollName')->get();
+        $cdrs = CDR::select('cdrID', 'cdrName')->get();
+        $orsBurs = OrsBurs::select('orsBursNumber')->get();
+        $respCodes = RespCode::select('responsibilityCode')->get();
 
         return Inertia::render('User/rcdForm', [
             'rcds' => $rcds,
-            'payrolls' => $payrolls,
+            'cdrs' => $cdrs,
+            'orsBurs' => $orsBurs,
+            'respCodes' => $respCodes,
         ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'rcdName' => 'required|string|max:255',
-            'payrollID' => 'required|exists:payrolls,payrollID',
+            'rcdName' => [
+                'required',
+                'string',
+                'min:3',
+                'max:35', // Updated to match char(35) constraint
+                Rule::unique('rcds', 'rcdName'),
+            ],
+            'cdrID' => [
+                'required',
+                'exists:cdrs,cdrID',
+            ],
+        ], [
+            'rcdName.required' => 'The RCD name is required.',
+            'rcdName.min' => 'The RCD name must be at least 3 characters.',
+            'rcdName.max' => 'The RCD name cannot exceed 35 characters.',
+            'rcdName.unique' => 'This RCD name is already taken.',
+            'cdrID.required' => 'Please select a CDR.',
+            'cdrID.exists' => 'The selected CDR does not exist.',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $lastRcd = RCD::orderBy('rcdID', 'desc')->first();
-            $nextRcdID = $lastRcd ? str_pad((intval($lastRcd->rcdID) + 1), 6, '0', STR_PAD_LEFT) : '000001';
-
+            // Create the new RCD record with auto-incrementing ID
             $rcd = new RCD();
-            $rcd->rcdID = $nextRcdID;
             $rcd->rcdName = $request->rcdName;
-            $rcd->payrollID = $request->payrollID;
+            $rcd->cdrID = $request->cdrID;
             $rcd->save();
 
             DB::commit();
 
             return redirect()->back()->with('success', 'RCD created successfully');
+
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->withErrors(['generalError' => 'Failed to create RCD: ' . $e->getMessage()]);
+            Log::error('RCD Creation Error: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['generalError' => 'Failed to create RCD. Please try again.']);
         }
     }
 
@@ -71,13 +88,13 @@ class RCDController extends Controller
     {
         try {
             $request->validate([
-                'payrollID' => 'required|exists:payrolls,payrollID',
+                'cdrID' => 'required|exists:cdrs,cdrID',
             ]);
 
-            $payroll = Payroll::findOrFail($request->payrollID);
-            Log::info("Fetching beneficiaries for payrollID: {$request->payrollID}, payrollNumber: {$payroll->payrollNumber}");
+            $cdr = CDR::findOrFail($request->cdrID);
+            Log::info("Fetching beneficiaries for cdrID: {$request->cdrID}, cdrID: {$cdr->cdrID}");
 
-            $beneficiaries = Beneficiary::where('payrollNumber', $payroll->payrollNumber)->get();
+            $beneficiaries = Beneficiary::where('cdrID', $cdr->cdrID)->get();
             Log::info("Found " . $beneficiaries->count() . " beneficiaries");
 
             return response()->json($beneficiaries);
@@ -87,89 +104,11 @@ class RCDController extends Controller
         }
     }
 
-    public function update(Request $request, $rcdID)
-    {
-        Log::info("Updating RCD {$rcdID} with data:", $request->all());
-
-        try {
-            $validated = $request->validate([
-                'dvNumber' => [
-                    'nullable',
-                    Rule::exists('dvpayrolls', 'dvPNumber')
-                ],
-                'orsNumber' => [
-                    'nullable',
-                    Rule::exists('orsburs', 'orsBursNumber')
-                ],
-                'responCode' => [
-                    'nullable',
-                    Rule::exists('respcodes', 'responsibilityCode')
-                ],
-                'uacsCode' => [
-                    'nullable',
-                    Rule::exists('uacscodes', 'uacsObjectCode')
-                ],
-                'paymentNature' => [
-                    'nullable',
-                    Rule::exists('paymentsnature', 'natureOfPayment')
-                ]
-            ]);
-
-            $rcd = RCD::findOrFail($rcdID);
-
-            // Clean and prepare the update data
-            $updateData = array_filter($validated, function ($value) {
-                return !is_null($value) && $value !== '';
-            });
-
-            DB::beginTransaction();
-
-            $rcd->update($updateData);
-
-            // Reload the relations
-            $rcd->load(['respCode', 'orsBurs', 'uacsCode', 'paymentNature']);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'data' => $rcd,
-                'message' => 'RCD updated successfully'
-            ]);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            DB::rollBack();
-            Log::error("Validation error updating RCD: " . json_encode($e->errors()));
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Error updating RCD: " . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update RCD',
-                'error' => app()->environment('local') ? $e->getMessage() : 'An unexpected error occurred'
-            ], 500);
-        }
-    }
-
-    private function generateNextRcdID()
-    {
-        $lastRcd = RCD::orderBy('rcdID', 'desc')->first();
-        return $lastRcd
-            ? str_pad((intval($lastRcd->rcdID) + 1), 6, '0', STR_PAD_LEFT)
-            : '000001';
-    }
-
     public function export($rcdID)
     {
         try {
-            // Fetch the RCD with related data
             $rcd = RCD::with([
-                'payroll',
+                'cdr',
                 'dvPayroll',
                 'orsBurs',
                 'respCode',
@@ -177,21 +116,17 @@ class RCDController extends Controller
                 'paymentNature'
             ])->findOrFail($rcdID);
 
-            // Get beneficiaries for this RCD through payroll
-            $beneficiaries = Beneficiary::where('payrollNumber', $rcd->payroll->payrollNumber)
+            $beneficiaries = Beneficiary::where('cdrID', $rcd->cdr->cdrID)
                 ->orderBy('beneficiaryNumber')
                 ->get();
 
-            // Group beneficiaries in chunks of 10
             $beneficiaryGroups = $beneficiaries->chunk(10);
 
-            // Get unique municipalities
             $municipalityIds = $beneficiaries->pluck('barangayID')->unique();
             $municipalities = Municipality::whereHas('barangays', function ($query) use ($municipalityIds) {
                 $query->whereIn('barangayID', $municipalityIds);
             })->pluck('municipalityName')->implode(', ');
 
-            // Prepare data for each group
             $groupedData = [];
             foreach ($beneficiaryGroups as $group) {
                 $firstBeneficiary = $group->first();
@@ -217,21 +152,18 @@ class RCDController extends Controller
 
             $totalAmount = $beneficiaries->sum('amount');
 
-            // Create PDF
             $pdf = PDF::loadView('exports.rcd', [
                 'rcd' => $rcd,
                 'groupedData' => $groupedData,
                 'totalAmount' => $totalAmount,
-                'period' => Carbon::parse($rcd->payroll->updated_at)->format('F d, Y'),
+                'period' => Carbon::parse($rcd->cdr->updated_at)->format('F d, Y'),
                 'reportNumber' => Carbon::now()->format('Y-m-d') . '-' . $rcd->rcdID,
-                'appendixNumber' => '41' // You might want to make this dynamic
+                'appendixNumber' => '41'
             ]);
 
-            // Configure PDF
             $pdf->setPaper('a4', 'portrait');
             $pdf->setOption(['defaultFont' => 'arial']);
 
-            // Return the PDF for download
             return $pdf->download('RCD-' . $rcd->rcdID . '.pdf');
 
         } catch (\Exception $e) {

@@ -12,16 +12,16 @@ class RCD extends Model
 
     protected $primaryKey = 'rcdID';
     protected $table = 'rcds';
+
+    public $incrementing = true;
+    protected $keyType = 'integer';
     protected $fillable = [
 
         'rcdID',
         'rcdName',
         'cdrID',
-        'dvNumber',
         'orsNumber',
         'responCode',
-        'uacsCode',
-        'paymentNature'
 
 
     ];

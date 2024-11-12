@@ -1,4 +1,3 @@
-{{-- resources/views/exports/rcd.blade.php --}}
 <!DOCTYPE html>
 <html>
 <head>
