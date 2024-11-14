@@ -144,6 +144,8 @@
         <AddItemModal
           v-if="showModal"
           :modalType="modalType"
+          :loading="isAddingItem"
+          :error="addItemError"
           @close="closeModal"
           @add="addItem"
         />
@@ -343,6 +345,9 @@ const itemsPerPage = 6;
 const showModal = ref(false);
 const modalType = ref("");
 
+const isAddingItem = ref(false);
+const addItemError = ref(null);
+
 const orsBursItems = ref([]);
 const respCodeItems = ref([]);
 
@@ -351,6 +356,9 @@ const selectedRespCode = ref(null);
 
 const exportError = ref("");
 const isExporting = ref(false);
+
+const payrollInfo = ref(null);
+const cdrInfo = ref(null);
 
 const headers = ["RCD ID", "RCD Name", "Date Created"];
 const beneficiaryHeaders = [
@@ -421,19 +429,19 @@ const formatDate = (date) => {
   });
 };
 
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+  }).format(amount);
+};
+
 const filteredLinks = computed(() => {
   return props.rcds.links.filter((link) => link.url !== null);
 });
 
 const dismissError = () => {
   error.value = null;
-};
-
-const selectRCD = (rcd) => {
-  selectedRCD.value = rcd;
-  selectedOrsBurs.value = rcd.orsNumber;
-  selectedRespCode.value = rcd.responCode;
-  fetchBeneficiaries(rcd.payrollID);
 };
 
 const deselectRCD = () => {
@@ -471,24 +479,133 @@ const paginationRange = computed(() => {
   return range;
 });
 
-const fetchBeneficiaries = async (payrollID) => {
+const fetchBeneficiaries = async (rcdID) => {
+  if (!rcdID) {
+    error.value = "Invalid RCD ID provided";
+    return;
+  }
+
   isLoadingBeneficiaries.value = true;
   error.value = null;
 
   try {
-    const response = await fetch(`/rcd/beneficiaries?payrollID=${payrollID}`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch beneficiaries");
+    const response = await axios.get(`/api/rcd/${rcdID}/beneficiaries`, {
+      headers: {
+        Accept: "application/json",
+        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+      },
+    });
+
+    const { beneficiaries: beneficiaryData, metadata } = response.data;
+
+    if (Array.isArray(beneficiaryData)) {
+      // Update beneficiaries with formatted data
+      beneficiaries.value = beneficiaryData.map((beneficiary) => ({
+        ...beneficiary,
+        amount: formatCurrency(beneficiary.amount),
+        status: getStatusText(beneficiary.status),
+        statusClass: getStatusClass(beneficiary.status),
+        fullName: [
+          beneficiary.lastName,
+          beneficiary.firstName,
+          beneficiary.middleName,
+          beneficiary.extensionName,
+        ]
+          .filter(Boolean)
+          .join(", "),
+      }));
+
+      // Update metadata information
+      if (metadata) {
+        // Update RCD info
+        selectedRCD.value = {
+          ...selectedRCD.value,
+          rcdName: metadata.rcdName,
+          orsNumber: metadata.orsNumber,
+          responCode: metadata.responCode,
+        };
+
+        // Update CDR info
+        cdrInfo.value = {
+          cdrName: metadata.cdrName,
+          dvPNumber: metadata.dvPNumber,
+          cashAdvanceReceived: formatCurrency(metadata.cashAdvanceReceived),
+        };
+
+        // Update Payroll info
+        payrollInfo.value = {
+          payrollNumber: metadata.payrollNumber,
+          payrollName: metadata.payrollName,
+          totalAmount: formatCurrency(metadata.totalAmount),
+          subTotal: formatCurrency(metadata.subTotal),
+          totalBeneficiaries: metadata.totalBeneficiaries,
+        };
+      }
+    } else {
+      throw new Error("Invalid data structure received from server");
     }
-    const data = await response.json();
-    beneficiaries.value = data;
-    currentPage.value = 1; // Reset to first page when new data is fetched
   } catch (err) {
-    error.value = "An error occurred while fetching beneficiaries. Please try again.";
-    console.error(err);
+    console.error("Error fetching beneficiaries:", err);
+    handleError(err);
   } finally {
     isLoadingBeneficiaries.value = false;
   }
+};
+
+const handleError = (err) => {
+  let errorMessage = "An error occurred while fetching beneficiaries.";
+
+  if (err.response) {
+    const { status, data } = err.response;
+
+    switch (status) {
+      case 404:
+        if (data.message.includes("CDR")) {
+          errorMessage = `No CDR found for RCD: ${data.rcdName}`;
+        } else if (data.message.includes("payroll")) {
+          errorMessage = `No payroll found for CDR: ${data.cdrName}`;
+        } else {
+          errorMessage = data.message;
+        }
+        break;
+      case 403:
+        errorMessage = "You do not have permission to view these beneficiaries.";
+        break;
+      case 500:
+        errorMessage = data.detail || "Server error occurred. Please try again later.";
+        break;
+      default:
+        errorMessage = data?.message || errorMessage;
+    }
+  }
+
+  error.value = errorMessage;
+  beneficiaries.value = [];
+  payrollInfo.value = null;
+  cdrInfo.value = null;
+
+  showNotification("Error", errorMessage, "error");
+};
+
+// Add computed properties for summary sections
+const summaryInfo = computed(() => ({
+  rcd: selectedRCD.value
+    ? {
+        name: selectedRCD.value.rcdName,
+        orsNumber: selectedRCD.value.orsNumber,
+        responCode: selectedRCD.value.responCode,
+      }
+    : null,
+  cdr: cdrInfo.value,
+  payroll: payrollInfo.value,
+}));
+
+// Update selectRCD function to handle the new data structure
+const selectRCD = (rcd) => {
+  selectedRCD.value = rcd;
+  selectedOrsBurs.value = rcd.orsNumber;
+  selectedRespCode.value = rcd.responCode;
+  fetchBeneficiaries(rcd.rcdID);
 };
 
 const statusMap = {
@@ -499,7 +616,7 @@ const statusMap = {
 };
 
 const getStatusText = (statusCode) => {
-  return statusMap[statusCode] || `Unknown (${statusCode})`;
+  return statusMap[statusCode] || `${statusCode}`;
 };
 
 const getStatusClass = (statusCode) => {
@@ -530,49 +647,114 @@ const closeModal = () => {
 const fetchItems = async (endpoint, itemsRef) => {
   try {
     const response = await axios.get(`/api/${endpoint}`);
-    if (endpoint === "paymentNature") {
-      // Map to use nOPId as the value
-      itemsRef.value = response.data.map((item) => ({
-        ...item,
-        id: item.nOPId,
-        text: item.natureOfPayment,
-      }));
-    } else if (endpoint === "respCode") {
-      // Map to use responsibilityCode as the value
-      itemsRef.value = response.data.map((item) => ({
-        ...item,
-        id: item.responsibilityCode,
-        text: item.responsibilityCode,
-      }));
-    } else {
-      itemsRef.value = response.data;
-    }
+
+    // Ensure consistent data structure
+    const formattedItems = response.data.map((item) => ({
+      id: item.id || item.value,
+      value: item.value || item.id,
+      label: item.label || item.value || item.id,
+    }));
+
+    itemsRef.value = formattedItems;
   } catch (error) {
     console.error(`Error fetching ${endpoint}:`, error);
-    setError(`Failed to load ${endpoint} data. Please try again later.`);
+    const errorMessage =
+      error.response?.data?.message || `Failed to load ${endpoint} data`;
+    setError(errorMessage);
+    showNotification("Error", errorMessage, "error");
   }
 };
 
 const addItem = async (type, value) => {
+  if (!value) return;
+
+  isAddingItem.value = true;
+  addItemError.value = null;
+
   try {
-    const response = await axios.post(`/api/${type}`, { [type]: value });
-    if (response.data) {
-      // Update the corresponding items array
-      switch (type) {
-        case "orsBurs":
-          orsBursItems.value.push(response.data);
-          selectedOrsBurs.value = response.data.id;
-          break;
-        case "respCode":
-          respCodeItems.value.push(response.data);
-          selectedRespCode.value = response.data.id;
-          break;
-      }
+    let endpoint, payload;
+
+    // Format the payload based on the type
+    switch (type) {
+      case "orsBurs":
+        endpoint = "/api/orsBurs";
+        payload = { orsBurs: value };
+        break;
+      case "respCode":
+        endpoint = "/api/respCode";
+        payload = { responsibilityCode: value };
+        break;
+      default:
+        throw new Error("Invalid item type");
     }
+
+    console.log("Sending request with payload:", payload); // Debug payload
+
+    const response = await axios.post(endpoint, payload, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+      },
+    });
+
+    console.log("Received response:", response.data); // Add logging
+
+    // Check if the response indicates success
+    if (!response.data.success) {
+      throw new Error(response.data.message || "Failed to add item");
+    }
+
+    const newItem = {
+      id: response.data.data.id,
+      value: response.data.data.value,
+      label: response.data.data.label,
+    };
+
+    console.log("New item to add:", newItem); // Add logging
+
+    // Update the corresponding items array
+    switch (type) {
+      case "orsBurs":
+        orsBursItems.value = [...orsBursItems.value, newItem];
+        selectedOrsBurs.value = newItem.id;
+        break;
+      case "respCode":
+        respCodeItems.value = [...respCodeItems.value, newItem];
+        selectedRespCode.value = newItem.id;
+        break;
+    }
+
+    showNotification("Success", `New ${type} added successfully`, "success");
     closeModal();
   } catch (error) {
-    console.error("Error adding item:", error);
-    setError(`Failed to add ${type}. Please try again.`);
+    console.error("Error details:", {
+      message: error.message,
+      response: error.response?.data,
+      validationErrors: error.response?.data?.errors,
+    });
+
+    const errorMessage =
+      error.response?.data?.errors?.[Object.keys(error.response?.data?.errors)[0]]?.[0] ||
+      error.response?.data?.message ||
+      `Failed to add ${type}`;
+
+    addItemError.value = errorMessage;
+    showNotification("Error", errorMessage, "error");
+  } finally {
+    isAddingItem.value = false;
+  }
+};
+
+// Add handlers for dropdown changes
+const handleOrsBursChange = (value) => {
+  if (selectedRCD.value && value !== selectedValues.value.orsNumber) {
+    updateRCD("orsNumber", value);
+  }
+};
+
+const handleRespCodeChange = (value) => {
+  if (selectedRCD.value && value !== selectedValues.value.responCode) {
+    updateRCD("responCode", value);
   }
 };
 

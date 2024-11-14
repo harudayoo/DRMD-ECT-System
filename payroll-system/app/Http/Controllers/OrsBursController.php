@@ -1,67 +1,69 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\OrsBurs;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use App\Http\Requests\StoreOrsBursRequest;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class OrsBursController extends Controller
 {
-    public function index()
+    public function index(): JsonResponse
     {
         try {
-            $orsBurs = OrsBurs::all()->map(function ($item) {
-                return [
-                    'id' => $item->orsBursNumber,
-                    'value' => $item->orsBursNumber,
-                    'label' => $item->orsBursNumber
-                ];
-            });
-
-            Log::info('OrsBurs items fetched:', ['count' => $orsBurs->count()]);
+            $orsBurs = OrsBurs::select('orsBursNumber')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'id' => $item->orsBursNumber,
+                        'value' => $item->orsBursNumber,
+                        'label' => $item->orsBursNumber
+                    ];
+                });
 
             return response()->json($orsBurs);
         } catch (\Exception $e) {
             Log::error('Error fetching OrsBurs items: ' . $e->getMessage());
             return response()->json([
-                'message' => 'An error occurred while fetching ORS/BURS items.',
-                'error' => $e->getMessage()
+                'message' => 'Failed to fetch ORS/BURS items.'
             ], 500);
         }
     }
 
-    public function store(Request $request)
+    public function store(StoreOrsBursRequest $request): JsonResponse
     {
+        DB::beginTransaction();
         try {
-            $validated = $request->validate([
-                'orsBurs' => 'required|string|max:11|unique:orsburs,orsBursNumber',
-            ], [
-                'orsBurs.required' => 'ORS/BURS Number is required.',
-                'orsBurs.unique' => 'This ORS/BURS Number already exists.',
-                'orsBurs.max' => 'ORS/BURS Number must not exceed 11 characters.',
-            ]);
+            $validated = $request->validated();
 
             $orsBurs = OrsBurs::create([
-                'orsBursNumber' => $validated['orsBurs']
+                'orsBursNumber' => strtoupper($validated['orsBurs'])
             ]);
 
+            DB::commit();
+
             return response()->json([
-                'id' => $orsBurs->orsBursNumber,
-                'value' => $orsBurs->orsBursNumber,
+                'success' => true,
+                'data' => [
+                    'id' => $orsBurs->orsBursNumber,
+                    'value' => $orsBurs->orsBursNumber,
+                    'label' => $orsBurs->orsBursNumber,
+                ],
                 'message' => 'ORS/BURS added successfully'
             ], 201);
 
-        } catch (ValidationException $e) {
-            return response()->json([
-                'message' => 'The given data was invalid.',
-                'errors' => $e->errors(),
-            ], 422);
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating OrsBurs:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
-                'message' => 'An error occurred while adding the ORS/BURS.',
-                'errors' => ['general' => [$e->getMessage()]]
+                'success' => false,
+                'message' => 'Failed to add ORS/BURS.'
             ], 500);
         }
     }

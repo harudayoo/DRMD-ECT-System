@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RCD extends Model
 {
@@ -13,22 +12,23 @@ class RCD extends Model
     protected $primaryKey = 'rcdID';
     protected $table = 'rcds';
 
-    public $incrementing = true;
-    protected $keyType = 'integer';
     protected $fillable = [
-
-        'rcdID',
-        'rcdName',
         'cdrID',
+        'rcdName',
         'orsNumber',
         'responCode',
-
-
     ];
 
-    public function CDR()
+    protected $casts = [
+        'rcdID' => 'integer',
+        'cdrID' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
+
+    public function cdr()
     {
-        return $this->belongsTo(CDR::class, 'cdrID');
+        return $this->belongsTo(CDR::class, 'cdrID', 'cdrID');
     }
 
     public function orsBurs()
@@ -40,5 +40,4 @@ class RCD extends Model
     {
         return $this->belongsTo(RespCode::class, 'responCode', 'responsibilityCode');
     }
-
 }

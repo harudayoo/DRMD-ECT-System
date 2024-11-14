@@ -73,7 +73,14 @@ const props = defineProps({
     required: true,
     default: () => [],
     validator: (items) =>
-      items.every((item) => typeof item === "object" && "id" in item && "value" in item),
+      items.every(
+        (item) =>
+          item &&
+          typeof item === "object" &&
+          "id" in item &&
+          "value" in item &&
+          "label" in item
+      ),
   },
   loading: {
     type: Boolean,
@@ -84,26 +91,6 @@ const props = defineProps({
     default: null,
   },
 });
-
-const emit = defineEmits(["update:modelValue", "add", "change"]);
-
-// Computed property to check if the select has a valid selection
-const hasSelection = computed(() => {
-  return !!props.modelValue;
-});
-
-// Enhanced change handler with validation
-const handleChange = (event) => {
-  const value = event.target.value;
-  emit("update:modelValue", value);
-
-  if (value) {
-    const selectedItem = props.items.find(
-      (item) => item.id.toString() === value.toString()
-    );
-    emit("change", selectedItem);
-  }
-};
 </script>
 
 <style scoped>

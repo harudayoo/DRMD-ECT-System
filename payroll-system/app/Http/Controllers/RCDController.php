@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\CDR;
 use App\Models\RCD;
+use App\Models\Payroll;
 use App\Models\Beneficiary;
+
 use App\Models\OrsBurs;
 use App\Models\RespCode;
 use App\Models\Municipality;
@@ -84,23 +86,163 @@ class RCDController extends Controller
         }
     }
 
-    public function getBeneficiaries(Request $request)
+    public function getBeneficiaries(RCD $rcd)
     {
         try {
-            $request->validate([
-                'cdrID' => 'required|exists:cdrs,cdrID',
+            // Debug initial RCD
+            Log::info('Fetching beneficiaries for RCD:', [
+                'rcdID' => $rcd->rcdID,
+                'cdrID' => $rcd->cdrID,
+                'rcdName' => $rcd->rcdName
             ]);
 
-            $cdr = CDR::findOrFail($request->cdrID);
-            Log::info("Fetching beneficiaries for cdrID: {$request->cdrID}, cdrID: {$cdr->cdrID}");
+            if (!$rcd->cdrID) {
+                return response()->json([
+                    'message' => 'This RCD has no associated CDR',
+                    'rcdName' => $rcd->rcdName
+                ], 404);
+            }
 
-            $beneficiaries = Beneficiary::where('cdrID', $cdr->cdrID)->get();
-            Log::info("Found " . $beneficiaries->count() . " beneficiaries");
+            // First, get the CDR
+            $cdr = CDR::where('cdrID', $rcd->cdrID)->first();
 
-            return response()->json($beneficiaries);
+            // Debug CDR
+            Log::info('CDR found:', [
+                'cdrID' => $cdr?->cdrID,
+                'payrollID' => $cdr?->payrollID,
+                'cdrName' => $cdr?->cdrName
+            ]);
+
+            if (!$cdr) {
+                return response()->json([
+                    'message' => 'CDR not found',
+                    'rcdName' => $rcd->rcdName
+                ], 404);
+            }
+
+            // Get the Payroll
+            $payroll = Payroll::where('payrollID', $cdr->payrollID)->first();
+
+            // Debug Payroll
+            Log::info('Payroll found:', [
+                'payrollID' => $payroll?->payrollID,
+                'payrollNumber' => $payroll?->payrollNumber,
+                'payrollName' => $payroll?->payrollName
+            ]);
+
+            if (!$payroll) {
+                return response()->json([
+                    'message' => 'No payroll found for this CDR',
+                    'cdrName' => $cdr->cdrName ?? 'Unknown'
+                ], 404);
+            }
+
+            // Get beneficiaries
+            $beneficiaries = Beneficiary::where('payrollNumber', $payroll->payrollNumber)
+                ->get([
+                    'beneficiaryNumber',
+                    'lastName',
+                    'firstName',
+                    'middleName',
+                    'extensionName',
+                    'amount',
+                    'status',
+                    'payrollNumber'
+                ]);
+
+            // Debug Beneficiaries
+            Log::info('Beneficiaries query:', [
+                'payrollNumber' => $payroll->payrollNumber,
+                'count' => $beneficiaries->count(),
+                'sql' => Beneficiary::where('payrollNumber', $payroll->payrollNumber)->toSql()
+            ]);
+
+            if ($beneficiaries->isEmpty()) {
+                return response()->json([
+                    'message' => 'No beneficiaries found for this payroll',
+                    'payrollNumber' => $payroll->payrollNumber,
+                    'payrollName' => $payroll->payrollName
+                ], 404);
+            }
+
+            return response()->json([
+                'beneficiaries' => $beneficiaries,
+                'metadata' => [
+                    'rcdName' => $rcd->rcdName,
+                    'orsNumber' => $rcd->orsNumber,
+                    'responCode' => $rcd->responCode,
+                    'cdrName' => $cdr->cdrName ?? 'Unknown',
+                    'dvPNumber' => $cdr->dvPNumber ?? 'Unknown',
+                    'payrollNumber' => $payroll->payrollNumber ?? 'Unknown',
+                    'payrollName' => $payroll->payrollName ?? 'Unknown',
+                    'totalAmount' => $beneficiaries->sum('amount'),
+                    'totalBeneficiaries' => $beneficiaries->count(),
+                    'cashAdvanceReceived' => $cdr->cashAdvanceReceived ?? 0,
+                    'subTotal' => $payroll->subTotal ?? 0
+                ]
+            ]);
+
         } catch (\Exception $e) {
-            Log::error("Error fetching beneficiaries: " . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('Error fetching beneficiaries:', [
+                'rcdID' => $rcd->rcdID,
+                'cdrID' => $rcd->cdrID,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'An error occurred while fetching beneficiaries',
+                'detail' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    public function update(Request $request, $rcdID)
+    {
+        try {
+            DB::beginTransaction();
+
+            $rcd = RCD::findOrFail($rcdID);
+
+            $validatedData = $request->validate([
+                'orsNumber' => [
+                    'sometimes',
+                    'string',
+                    Rule::exists('orsburs', 'orsBursNumber'), // Updated table name
+                ],
+                'responCode' => [
+                    'sometimes',
+                    'string',
+                    Rule::exists('respcodes', 'responsibilityCode'), // Updated table name
+                ],
+            ], [
+                'orsNumber.exists' => 'The selected ORS/BURS number does not exist in our records.',
+                'responCode.exists' => 'The selected Responsibility Center Code does not exist.',
+            ]);
+
+            $updates = array_filter($validatedData, function ($value) {
+                return $value !== null;
+            });
+
+            if (!empty($updates)) {
+                $rcd->update($updates);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'RCD updated successfully',
+                'data' => $rcd->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('RCD Update Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update RCD: ' . $e->getMessage()
+            ], 500);
         }
     }
 

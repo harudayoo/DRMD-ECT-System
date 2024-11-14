@@ -10,6 +10,9 @@ class OrsBurs extends Model
     protected $primaryKey = 'orsBursNumber';
     public $timestamps = true;
 
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
         'orsBursNumber',
         'created_at',

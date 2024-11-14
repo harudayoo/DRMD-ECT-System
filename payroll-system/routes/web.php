@@ -101,34 +101,21 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     // RCD Routes
     Route::get('/rcd', [RCDController::class, 'index'])->name('rcd.index');
     Route::post('/rcds', [RCDController::class, 'store'])->name('rcd.store');
-    Route::get('/rcd/beneficiaries', [RCDController::class, 'getBeneficiaries'])->name('rcd.beneficiaries');
     Route::get('/rcds/export/{rcdID}', [RCDController::class, 'export'])->name('rcds.export');
-    Route::post('/rcds/{rcdID}/fund-center', [RCDController::class, 'storeFundCenter'])->name('rcds.fund-center.store');
 
     // API routes group
     Route::prefix('api')->group(function () {
-        // DV Routes
-        Route::get('/dvPayroll', [DvPayrollController::class, 'index'])->name('api.dvPayroll.index');
-        Route::post('/dvPayroll', [DvPayrollController::class, 'store'])->name('api.dvPayroll.store');
 
-        // ORS/BURS Routes
         Route::get('/orsBurs', [OrsBursController::class, 'index'])->name('api.orsBurs.index');
         Route::post('/orsBurs', [OrsBursController::class, 'store'])->name('api.orsBurs.store');
-
-        // Responsibility Center Code Routes
         Route::get('/respCode', [RespCodeController::class, 'index'])->name('api.respCode.index');
         Route::post('/respCode', [RespCodeController::class, 'store'])->name('api.respCode.store');
 
-        // UACS Code Routes
-        Route::get('/uacsCode', [UacsCodeController::class, 'index'])->name('api.uacsCode.index');
-        Route::post('/uacsCode', [UacsCodeController::class, 'store'])->name('api.uacsCode.store');
-
-        // Payment Nature Routes
-        Route::get('/paymentNature', [PaymentNatureController::class, 'index'])->name('api.paymentNature.index');
-        Route::post('/paymentNature', [PaymentNatureController::class, 'store'])->name('api.paymentNature.store');
-
         // RCD API Routes
-        Route::patch('/rcd/{rcdID}', [RCDController::class, 'update'])->name('api.rcd.update');
+        Route::get('/rcd/{rcd}/beneficiaries', [RCDController::class, 'getBeneficiaries'])
+            ->name('api.rcd.beneficiaries');
+        Route::patch('/rcd/{rcdID}', [RCDController::class, 'update'])
+            ->name('api.rcd.update');
     });
 
     //CDR Routes
