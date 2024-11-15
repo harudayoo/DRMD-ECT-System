@@ -246,74 +246,126 @@ class RCDController extends Controller
         }
     }
 
+    public function getCdr(RCD $rcd)
+    {
+        try {
+            // Fetched CDR and Payroll information associated with the selected RCD
+            $cdr = $rcd->cdr;
+            $payroll = $cdr->payroll;
+
+            return response()->json([
+                'cdr' => [
+                    'cdrName' => $cdr->cdrName,
+                    'dvPNumber' => $cdr->dvPNumber,
+                    'cashAdvanceReceived' => $cdr->cashAdvanceReceived,
+                ],
+                'payroll' => [
+                    'payrollNumber' => $payroll->payrollNumber,
+                    'payrollName' => $payroll->payrollName,
+                    'totalAmount' => $payroll->totalAmount,
+                    'subTotal' => $payroll->subTotal,
+                    'totalBeneficiaries' => $payroll->totalBeneficiaries,
+                    'updated_at' => $payroll->updated_at,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching CDR and Payroll:', [
+                'rcdID' => $rcd->rcdID,
+                'cdrID' => $rcd->cdrID,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'An error occurred while fetching CDR and Payroll',
+                'detail' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
     public function export($rcdID)
     {
         try {
+            // Load RCD with necessary relationships
             $rcd = RCD::with([
-                'cdr',
-                'dvPayroll',
+                'cdr.entity',
+                'cdr.designation',
+                'cdr.paymentNature',
+                'cdr.payroll.beneficiaries.barangay.municipality',
                 'orsBurs',
-                'respCode',
-                'uacsCode',
-                'paymentNature'
+                'respCode'
             ])->findOrFail($rcdID);
 
-            $beneficiaries = Beneficiary::where('cdrID', $rcd->cdr->cdrID)
-                ->orderBy('beneficiaryNumber')
-                ->get();
+            // Initialize variables before the modal
+            $data = $this->prepareExportData($rcd);
 
-            $beneficiaryGroups = $beneficiaries->chunk(10);
-
-            $municipalityIds = $beneficiaries->pluck('barangayID')->unique();
-            $municipalities = Municipality::whereHas('barangays', function ($query) use ($municipalityIds) {
-                $query->whereIn('barangayID', $municipalityIds);
-            })->pluck('municipalityName')->implode(', ');
-
-            $groupedData = [];
-            foreach ($beneficiaryGroups as $group) {
-                $firstBeneficiary = $group->first();
-                $totalAmount = $group->sum('amount');
-
-                $groupedData[] = [
-                    'date' => Carbon::parse($rcd->updated_at)->format('d-M-y'),
-                    'dvNumber' => $rcd->dvNumber,
-                    'orsNumber' => $rcd->orsNumber,
-                    'responCode' => $rcd->responCode,
-                    'payee' => sprintf(
-                        "%s (%s, %s %s ET AL.)",
-                        $municipalities,
-                        $firstBeneficiary->lastName,
-                        $firstBeneficiary->firstName,
-                        $firstBeneficiary->middleName
-                    ),
-                    'uacsCode' => $rcd->uacsCode,
-                    'paymentNature' => $rcd->paymentNature,
-                    'amount' => number_format($totalAmount, 2)
-                ];
-            }
-
-            $totalAmount = $beneficiaries->sum('amount');
-
-            $pdf = PDF::loadView('exports.rcd', [
-                'rcd' => $rcd,
-                'groupedData' => $groupedData,
-                'totalAmount' => $totalAmount,
-                'period' => Carbon::parse($rcd->cdr->updated_at)->format('F d, Y'),
-                'reportNumber' => Carbon::now()->format('Y-m-d') . '-' . $rcd->rcdID,
-                'appendixNumber' => '41'
-            ]);
-
+            // Create PDF
+            $pdf = PDF::loadView('pdfs.rcd', $data);
             $pdf->setPaper('a4', 'portrait');
-            $pdf->setOption(['defaultFont' => 'arial']);
+            $pdf->setOptions([
+                'defaultFont' => 'arial',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true
+            ]);
 
             return $pdf->download('RCD-' . $rcd->rcdID . '.pdf');
 
         } catch (\Exception $e) {
-            Log::error("PDF Export Error: " . $e->getMessage());
+            Log::error("PDF Export Error: ", [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate PDF'
+                'message' => 'Failed to generate PDF: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function prepareExportData($rcd)
+    {
+        $beneficiaries = $rcd->cdr->payroll->beneficiaries()
+            ->with(['barangay.municipality'])
+            ->orderBy('beneficiaryNumber')
+            ->get();
+
+        $beneficiaryGroups = $beneficiaries->chunk(10)->map(function ($group) use ($rcd) {
+            $firstBeneficiary = $group->first();
+            $municipality = $firstBeneficiary->barangay->municipality->municipalityName;
+            $barangay = $firstBeneficiary->barangay->barangayName;
+
+            return [
+                'date' => Carbon::parse($rcd->cdr->payroll->updated_at)->format('d-M-y'),
+                'dvNumber' => $rcd->cdr->dvPNumber,
+                'orsNumber' => $rcd->orsBurs->orsBursNumber,
+                'responCode' => $rcd->respCode->responsibilityCode,
+                'payee' => sprintf(
+                    "%s, %s (%s, %s ET AL.)",
+                    $barangay,
+                    $municipality,
+                    $firstBeneficiary->lastName,
+                    $firstBeneficiary->firstName
+                ),
+                'uacsCode' => $rcd->cdr->uacsObjectCode, // Updated to access UACS code directly from CDR
+                'paymentNature' => $rcd->cdr->paymentNature->natureOfPayment,
+                'amount' => $group->sum('amount'),
+                'beneficiaries' => $group
+            ];
+        });
+
+        return [
+            'rcd' => $rcd,
+            'groupedData' => $beneficiaryGroups,
+            'totalAmount' => $beneficiaries->sum('amount'),
+            'period' => Carbon::parse($rcd->cdr->payroll->updated_at)->format('F d, Y'),
+            'reportNumber' => sprintf(
+                '%s-%s-%s',
+                Carbon::now()->format('Y'),
+                Carbon::now()->format('m'),
+                str_pad($rcd->rcdID, 4, '0', STR_PAD_LEFT)
+            ),
+            'appendixNumber' => '41'
+        ];
     }
 }

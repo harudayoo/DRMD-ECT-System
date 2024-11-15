@@ -114,6 +114,8 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
         // RCD API Routes
         Route::get('/rcd/{rcd}/beneficiaries', [RCDController::class, 'getBeneficiaries'])
             ->name('api.rcd.beneficiaries');
+        Route::get('/rcd/{rcd}/cdr', [RCDController::class, 'getCdr'])->name('api.rcd.cdr');
+
         Route::patch('/rcd/{rcdID}', [RCDController::class, 'update'])
             ->name('api.rcd.update');
     });

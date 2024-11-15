@@ -123,6 +123,40 @@
 
       <div v-if="selectedRCD" class="justify-center px-3 mx-2">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-3/4 p-2 m-2">
+          <div v-if="cdrInfo" class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <div>
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                CDR: {{ cdrInfo.cdrName }} Details
+              </h3>
+              <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                DV P Number: {{ cdrInfo.dvPNumber }}<br />
+                Cash Advance Received:
+                {{ cdrInfo.cashAdvanceReceived }}
+              </p>
+            </div>
+          </div>
+
+          <div
+            v-if="payrollInfo"
+            class="px-4 py-5 sm:px-6 flex justify-between items-center"
+          >
+            <div>
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Payroll: {{ payrollInfo.payrollName }} Details
+              </h3>
+              <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                Payroll Number: {{ payrollInfo.payrollNumber }}<br />
+                Total Amount: {{ payrollInfo.totalAmount }}<br />
+                Subtotal: {{ payrollInfo.subTotal }}<br />
+                Total Beneficiaries:
+                {{ payrollInfo.totalBeneficiaries }}<br />
+                Exported at:
+                {{ formatDate(payrollInfo.updated_at) }}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-3/4 p-2 m-2">
           <DropdownWithAdd
             label="ORS/BURS Number"
             :items="orsBursItems"
@@ -375,7 +409,6 @@ const apiError = ref(null);
 
 const form = useForm({
   search: "",
-  fundCenter: "",
 });
 
 const setError = (message) => {
@@ -539,6 +572,7 @@ const fetchBeneficiaries = async (rcdID) => {
           totalAmount: formatCurrency(metadata.totalAmount),
           subTotal: formatCurrency(metadata.subTotal),
           totalBeneficiaries: metadata.totalBeneficiaries,
+          updated_at: metadata.updated_at,
         };
       }
     } else {
@@ -553,7 +587,7 @@ const fetchBeneficiaries = async (rcdID) => {
 };
 
 const handleError = (err) => {
-  let errorMessage = "An error occurred while fetching beneficiaries.";
+  let errorMessage = "An error occurred while fetching data.";
 
   if (err.response) {
     const { status, data } = err.response;
@@ -569,7 +603,7 @@ const handleError = (err) => {
         }
         break;
       case 403:
-        errorMessage = "You do not have permission to view these beneficiaries.";
+        errorMessage = "You do not have permission to view this data.";
         break;
       case 500:
         errorMessage = data.detail || "Server error occurred. Please try again later.";
@@ -600,12 +634,41 @@ const summaryInfo = computed(() => ({
   payroll: payrollInfo.value,
 }));
 
-// Update selectRCD function to handle the new data structure
-const selectRCD = (rcd) => {
+const selectRCD = async (rcd) => {
   selectedRCD.value = rcd;
   selectedOrsBurs.value = rcd.orsNumber;
   selectedRespCode.value = rcd.responCode;
-  fetchBeneficiaries(rcd.rcdID);
+
+  try {
+    isLoadingBeneficiaries.value = true;
+    error.value = null;
+
+    const response = await axios.get(`/api/rcd/${rcd.rcdID}/cdr`);
+    const { cdr, payroll } = response.data;
+
+    // Update the CDR and Payroll information
+    cdrInfo.value = {
+      cdrName: cdr.cdrName,
+      dvPNumber: cdr.dvPNumber,
+      cashAdvanceReceived: formatCurrency(cdr.cashAdvanceReceived),
+    };
+
+    payrollInfo.value = {
+      payrollNumber: payroll.payrollNumber,
+      payrollName: payroll.payrollName,
+      totalAmount: formatCurrency(payroll.totalAmount),
+      subTotal: formatCurrency(payroll.subTotal),
+      totalBeneficiaries: payroll.totalBeneficiaries,
+      updated_at: payroll.updated_at,
+    };
+
+    await fetchBeneficiaries(rcd.rcdID);
+  } catch (err) {
+    console.error("Error fetching CDR and Payroll:", err);
+    handleError(err);
+  } finally {
+    isLoadingBeneficiaries.value = false;
+  }
 };
 
 const statusMap = {
@@ -858,46 +921,26 @@ const selectedValues = computed(() => ({
 }));
 
 //Export
-const openFundCenterModal = (rcd) => {
-  selectedRCD = rcd;
-  showFundCenterModal.value = true;
-  exportError.value = "";
-  form.fundCenter = "";
-};
-
 const exportReport = async () => {
-  // First open modal to get Fund Center
   if (!selectedRCD.value) {
-    // If no RCD is selected, use the first one from the list
-    selectedRCD.value = props.rcds.data[0];
-  }
-  openFundCenterModal(selectedRCD.value);
-};
-
-const handleExport = async () => {
-  if (!form.fundCenter) {
-    exportError.value = "Please enter the Fund Center";
+    showNotification("Error", "Please select an RCD first", "error");
     return;
   }
 
   try {
     isExporting.value = true;
 
-    // Make a POST request to store the fund center first
-    await axios.post(`/rcds/${selectedRCD.value.rcdID}/fund-center`, {
-      fundCenter: form.fundCenter,
-    });
-
-    // Then trigger the PDF download
+    // Directly trigger the PDF download using the RCD ID
     window.location.href = `/rcds/export/${selectedRCD.value.rcdID}`;
 
-    // Close the modal
-    showFundCenterModal.value = false;
-    form.fundCenter = "";
-    exportError.value = "";
+    showNotification("Success", "Export started successfully", "success");
   } catch (error) {
     console.error("Export failed:", error);
-    exportError.value = "Failed to generate the report. Please try again.";
+    showNotification(
+      "Error",
+      "Failed to generate the report. Please try again.",
+      "error"
+    );
   } finally {
     isExporting.value = false;
   }
@@ -913,7 +956,6 @@ watch(search, (value) => {
 watch(currentPage, () => {});
 
 // Dropdown watchers
-
 watch(selectedOrsBurs, (newValue) => {
   if (selectedRCD.value && newValue !== selectedValues.value.orsNumber) {
     updateRCD("orsNumber", newValue);
@@ -922,7 +964,6 @@ watch(selectedOrsBurs, (newValue) => {
 
 watch(selectedRespCode, (newValue) => {
   if (selectedRCD.value && newValue !== selectedValues.value.responCode) {
-    // Extract the actual value if it's an event object
     const actualValue = newValue?.target?.value ?? newValue?.id ?? newValue;
     if (actualValue !== selectedValues.value.responCode) {
       updateRCD("responCode", actualValue);
