@@ -61,7 +61,7 @@
     </div>
 
     <!-- New CDR Modal -->
-    <NewCDRModal
+    <newCDRmodal
       v-if="isNewCDRModalOpen"
       :initial-payrolls="initialPayrolls"
       :is-loading="isLoading"
@@ -72,21 +72,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { Inertia } from "@inertiajs/inertia";
 import { useForm } from "@inertiajs/vue3";
 import NavBar from "@/Layouts/NavBar.vue";
 import Sidebar from "@/Layouts/Sidebar.vue";
 import cdrView from "@/Components/cdrView.vue";
-import NewCDRModal from "@/Components/NewCDRModal.vue";
+import newCDRmodal from "@/Components/newCDRmodal.vue";
 
-const props = defineProps({
-  cdrs: Object,
-  rcds: {
-    type: Array,
-    default: () => [],
-  },
-});
+interface Payroll {
+  payrollID: number;
+  payrollNumber: string;
+  payrollName: string;
+  barangayID: number | null;
+  subTotal: number;
+  exportNum: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+const props = defineProps<{
+  cdrs: Array<{
+    cdrID: string | number;
+    cdrName: string;
+    payrollNumber: number;
+  }>;
+  rcds: Array<{
+    id: string | number;
+  }>;
+  initialPayrolls: Payroll[];
+}>();
 
 const isSidebarOpen = ref(true);
 const isDarkMode = ref(false);
@@ -121,7 +136,7 @@ const form = useForm({
   rcdID: "",
 });
 
-const handleCDRSubmit = (cdrData) => {
+const handleCDRSubmit = (cdrData: { cdrName: string; rcdID: string }) => {
   form.cdrName = cdrData.cdrName;
   form.rcdID = cdrData.rcdID;
 

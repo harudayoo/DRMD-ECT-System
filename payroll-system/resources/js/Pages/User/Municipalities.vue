@@ -21,7 +21,7 @@
             :title="provinceName"
           />
 
-          <PayrollStream :show-graph="showGraph" :municipalities="municipalities" />
+          <PayrollStream :show-graph="showGraph" :municipalities="municipalitiesData" />
 
           <!-- Status Analytics and Allocation Table -->
           <div class="mt-6 flex space-x-4">
@@ -55,20 +55,55 @@ import AllocationTable from "@/Layouts/AllocationTable.vue";
 import UpperDash from "@/Layouts/UpperDash.vue";
 import PayrollStream from "@/Layouts/PayrollStream.vue";
 
-const props = defineProps({
-  municipalities: {
-    type: Array,
-    required: true,
-  },
-  provinceID: {
-    type: Number,
-    required: true,
-  },
-  provinceName: {
-    type: String,
-    required: true,
-  },
-});
+interface Municipality {
+  municipalityID: number;
+  municipalityName: string;
+  totalBeneficiaries: number;
+  totalAmountReleased: number;
+  claimed: number;
+  unclaimed: number;
+  disqualified: number;
+  double_entry: number;
+}
+
+const props = defineProps<{
+  municipalities: Municipality[];
+  showGraph: boolean;
+  provinceName: string;
+}>();
+
+const municipalitiesData = computed(() =>
+  props.municipalities.map((municipality) => ({
+    municipalityName: municipality.municipalityName,
+    totalBeneficiaries: municipality.totalBeneficiaries,
+    totalAmountReleased: municipality.totalAmountReleased,
+  }))
+);
+
+const summaryData = computed(() => ({
+  claimed: props.municipalities.reduce((sum, mun) => sum + mun.claimed, 0),
+  unclaimed: props.municipalities.reduce((sum, mun) => sum + mun.unclaimed, 0),
+  disqualified: props.municipalities.reduce((sum, mun) => sum + mun.disqualified, 0),
+  doubleEntry: props.municipalities.reduce((sum, mun) => sum + mun.double_entry, 0),
+}));
+
+const municipalityTableData = computed(() =>
+  props.municipalities.map((municipality) => ({
+    id: municipality.municipalityID,
+    name: municipality.municipalityName,
+    beneficiaries: municipality.totalBeneficiaries.toLocaleString(),
+    amount: `₱ ${municipality.totalAmountReleased.toLocaleString()}`,
+  }))
+);
+
+const navigateToBarangay = (
+  municipalityID: number | string,
+  municipalityName: string
+) => {
+  router.visit(`/barangays/${municipalityID}`, {
+    data: { municipalityName },
+  });
+};
 
 const isDarkMode = ref(false);
 const isSidebarOpen = ref(true);
@@ -87,7 +122,7 @@ const computedTableData = computed(() =>
   props.municipalities.map((municipality) => ({
     id: municipality.municipalityID,
     name: municipality.municipalityName,
-    beneficiaries: municipality.totalBeneficiaries.toLocaleString(),
+    beneficiaries: municipality.totalBeneficiaries,
     amount: `₱ ${municipality.totalAmountReleased.toLocaleString()}`,
   }))
 );
@@ -102,12 +137,6 @@ const toggleSidebar = () => {
 
 const toggleGraph = () => {
   showGraph.value = !showGraph.value;
-};
-
-const navigateToBarangay = (municipalityID, municipalityName) => {
-  router.visit(`/barangays/${municipalityID}`, {
-    data: { municipalityName: municipalityName },
-  });
 };
 </script>
 

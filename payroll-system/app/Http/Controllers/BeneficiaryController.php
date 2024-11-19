@@ -59,8 +59,11 @@ class BeneficiaryController extends Controller
                 ], 200);
             }
 
-            // If no similar beneficiaries found, proceed with adding the new beneficiary
-            $validatedData['status'] = 2; // Set the status to 2 upon adding
+            // Transform sex value from string to integer
+            $validatedData['sex'] = $validatedData['sex'] === 'Male' ? 1 : 2;
+
+            // Set the status to 2 upon adding
+            $validatedData['status'] = 2;
             $validatedData['beneficiaryNumber'] = Beneficiary::generateUniqueBeneficiaryNumber($validatedData['barangayID']);
 
             $beneficiary = Beneficiary::create($validatedData);
@@ -89,6 +92,9 @@ class BeneficiaryController extends Controller
                 'contactNumber' => 'required|string|max:11',
                 'sex' => 'required|in:Male,Female',
             ]);
+
+            // Transform sex value from string to integer
+            $validatedData['sex'] = $validatedData['sex'] === 'Male' ? 1 : 2;
 
             $validatedData['status'] = 4; // Set status to 4 for potential duplicate
             $validatedData['beneficiaryNumber'] = Beneficiary::generateUniqueBeneficiaryNumber($validatedData['barangayID']);
@@ -243,9 +249,9 @@ class BeneficiaryController extends Controller
         }
     }
     public function getByPayrollID(Request $request)
-   {
-    $payrollID = $request->query('payrollID');
-    $beneficiaries = Beneficiary::where('payrollID', $payrollID)->get();
-    return response()->json($beneficiaries);
-   }
+    {
+        $payrollID = $request->query('payrollID');
+        $beneficiaries = Beneficiary::where('payrollID', $payrollID)->get();
+        return response()->json($beneficiaries);
+    }
 }

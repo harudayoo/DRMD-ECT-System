@@ -41,6 +41,12 @@ class Beneficiary extends Model
 
 
     ];
+
+    public function getSexAttribute($value)
+    {
+        return $value === 1 ? 'Male' : 'Female';
+    }
+
     public function barangay()
     {
         return $this->belongsTo(Barangay::class, 'barangayID', 'barangayID');
@@ -64,7 +70,7 @@ class Beneficiary extends Model
     }
 
     public function payroll()
-   {
-    return $this->belongsTo(Payroll::class, 'payrollNumber', 'payrollNumber');
-   }
+    {
+        return $this->belongsTo(Payroll::class, 'payrollNumber', 'payrollNumber');
+    }
 }

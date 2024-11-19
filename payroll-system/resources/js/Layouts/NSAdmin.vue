@@ -291,7 +291,7 @@
                     class="flex-1 flex flex-col justify-between"
                 >
                     <div class="space-y-3">
-                        <!-- Name fields in one line -->
+                        <!-- Name fields remain the same except for extension/nameExt change -->
                         <div class="flex space-x-2 mb-2">
                             <div
                                 v-for="field in nameFields"
@@ -305,7 +305,7 @@
                                     {{ field.label }}
                                 </label>
                                 <input
-                                    v-if="field.id !== 'extension'"
+                                    v-if="field.id !== 'nameExt'"
                                     :class="[
                                         'shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline',
                                         { 'border-red-500': field.error },
@@ -341,7 +341,7 @@
                             </div>
                         </div>
 
-                        <!-- Other form fields -->
+                        <!-- Updated password fields with proper autocomplete -->
                         <div
                             v-for="field in otherFields"
                             :key="field.id"
@@ -364,23 +364,9 @@
                                     :type="field.type"
                                     :placeholder="field.placeholder"
                                     v-model="form[field.id]"
+                                    :autocomplete="field.autocomplete"
                                     required
                                 />
-                                <svg
-                                    v-if="field.type === 'email'"
-                                    class="h-5 w-5 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                    ></path>
-                                </svg>
                                 <div v-else class="relative">
                                     <input
                                         :class="[
@@ -395,6 +381,7 @@
                                         "
                                         :placeholder="field.placeholder"
                                         v-model="form[field.id]"
+                                        :autocomplete="field.autocomplete"
                                         required
                                     />
                                     <button
@@ -482,7 +469,7 @@ export default {
             firstName: "",
             middleName: "",
             lastName: "",
-            extension: "",
+            nameExt: "", // Changed from extension to nameExt
             email: "",
             password: "",
             password_confirmation: "",
@@ -517,7 +504,7 @@ export default {
                 required: true,
             },
             {
-                id: "extension",
+                id: "nameExt", // Changed from extension to nameExt
                 label: "Ext. Name",
                 type: "select",
                 placeholder: "Ext.",
@@ -534,6 +521,7 @@ export default {
                 type: "email",
                 placeholder: "Enter your email address",
                 error: "",
+                autocomplete: "email",
             },
             {
                 id: "password",
@@ -543,6 +531,7 @@ export default {
                 error: "",
                 isPassword: true,
                 showPassword: false,
+                autocomplete: "new-password",
             },
             {
                 id: "password_confirmation",
@@ -552,8 +541,33 @@ export default {
                 error: "",
                 isPassword: true,
                 showPassword: false,
+                autocomplete: "new-password",
             },
         ]);
+
+        // Updated logout function with CSRF token
+        const logout = async () => {
+            try {
+                await axios.post(
+                    "/logout",
+                    {},
+                    {
+                        headers: {
+                            "X-CSRF-TOKEN": document
+                                .querySelector('meta[name="csrf-token"]')
+                                .getAttribute("content"),
+                        },
+                    }
+                );
+                window.location.href = "/login";
+            } catch (error) {
+                console.error("Logout failed:", error);
+                // Redirect to login if unauthorized
+                if (error.response && error.response.status === 401) {
+                    window.location.href = "/login";
+                }
+            }
+        };
 
         const toggleDarkMode = () => {
             isDarkMode.value = !isDarkMode.value;
@@ -562,15 +576,6 @@ export default {
 
         const toggleSidebar = () => {
             isSidebarOpen.value = !isSidebarOpen.value;
-        };
-
-        const logout = async () => {
-            try {
-                await axios.post("/logout");
-                window.location.href = "/login";
-            } catch (error) {
-                console.error("Logout failed:", error);
-            }
         };
 
         const toggleCalendar = () => {
@@ -632,12 +637,14 @@ export default {
                 return;
             }
 
+            // Submit the form using Inertia
             form.post(route("register"), {
                 preserveScroll: true,
                 onSuccess: () => {
                     form.reset();
                     showCreateUserForm.value = false;
-                    // You may want to emit an event or update some state here to reflect the new user
+                    // Show success message
+                    // You might want to implement a toast notification here
                 },
                 onError: (errors) => {
                     [...nameFields, ...otherFields].forEach((field) => {

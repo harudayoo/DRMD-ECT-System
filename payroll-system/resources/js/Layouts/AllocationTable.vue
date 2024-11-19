@@ -68,10 +68,23 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+interface TableRow {
+  id: string | number;
+  name: string;
+  beneficiaries: number | string;
+  amount: string;
+}
+
 const props = defineProps({
   showGraph: Boolean,
-  tableHeaders: Array,
-  tableData: Array,
+  tableHeaders: {
+    type: Array as () => string[],
+    default: () => [],
+  },
+  tableData: {
+    type: Array as () => TableRow[],
+    default: () => [],
+  },
   tableTitle: {
     type: String,
     default: "Allocation Table",
@@ -79,18 +92,20 @@ const props = defineProps({
   parentType: {
     type: String,
     required: true,
-    validator: (value) => ["province", "municipality"].includes(value),
+    validator: (value: string) => ["province", "municipality"].includes(value),
   },
 });
 
-const emit = defineEmits(["row-click"]);
+const emit = defineEmits<{
+  (e: "row-click", id: string | number, name: string): void;
+}>();
 
 const tableMaxHeight = computed(() => {
   return props.showGraph ? "265px" : "calc(100vh - 170px)";
 });
 
 const totalAmount = computed(() => {
-  if (!props.tableData) {
+  if (!props.tableData || props.tableData.length === 0) {
     return "₱ 0.00";
   }
   const total = props.tableData.reduce(

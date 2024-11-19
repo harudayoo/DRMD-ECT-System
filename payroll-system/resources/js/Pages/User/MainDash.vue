@@ -120,13 +120,22 @@ import Chart from "chart.js/auto";
 import NavBar from "@/Layouts/NavBar.vue";
 import Sidebar from "@/Layouts/Sidebar.vue";
 
-// Define props to receive data from Laravel
-const props = defineProps({
-  provinces: {
-    type: Array,
-    required: true,
-  },
-});
+// Define Province interface
+interface Province {
+  provinceID: number;
+  provinceName: string;
+  claimed: number;
+  unclaimed: number;
+  disqualified: number;
+  double_entry: number;
+  totalBeneficiaries: number;
+  totalAmountReleased: number;
+}
+
+// Define props with explicit type
+const props = defineProps<{
+  provinces: Province[];
+}>();
 
 // Sidebar functions
 const isSidebarOpen = ref(true);
@@ -146,7 +155,7 @@ const openModal = () => {
 };
 
 // Use the provinces data from props
-const provinces = ref(props.provinces);
+const provinces = ref<Province[]>(props.provinces);
 
 const computedStatistics = computed(() => [
   {
@@ -187,10 +196,6 @@ const tableData = computed(() =>
 );
 
 const totalAmount = computed((): string => {
-  if (!provinces.value) {
-    return "₱ 0.00";
-  }
-
   const total = provinces.value.reduce(
     (sum, province) => sum + Number(province.totalAmountReleased),
     0
@@ -223,7 +228,7 @@ const data = computed(() => ({
   ],
 }));
 
-const chartRef = ref(null);
+const chartRef = ref<HTMLCanvasElement | null>(null);
 
 onMounted(() => {
   if (chartRef.value) {
@@ -243,7 +248,7 @@ onMounted(() => {
   }
 });
 
-const navigateToMunicipality = (provinceID, provinceName) => {
+const navigateToMunicipality = (provinceID: number, provinceName: string) => {
   router.visit(`/municipalities/${provinceID}`, {
     data: { provinceName: provinceName },
   });

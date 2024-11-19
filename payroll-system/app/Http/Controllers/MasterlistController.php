@@ -346,9 +346,9 @@ class MasterlistController extends Controller
 
         $sex = strtolower($sex);
         if (in_array($sex, ['m', 'male'])) {
-            return 'Male';
+            return '1';
         } elseif (in_array($sex, ['f', 'female'])) {
-            return 'Female';
+            return '2';
         }
 
         return null; // Return null for any other value
@@ -424,7 +424,8 @@ class MasterlistController extends Controller
                 $worksheet->setCellValue('C' . $row, strtoupper($beneficiary->firstName));
                 $worksheet->setCellValue('D' . $row, strtoupper($beneficiary->middleName));
                 $worksheet->setCellValue('E' . $row, strtoupper($beneficiary->extensionName));
-                $worksheet->setCellValue('F' . $row, strtoupper($beneficiary->sex));
+
+                $worksheet->setCellValue('F' . $row, $this->sexToText($beneficiary->sex));
                 $worksheet->setCellValue('G' . $row, $beneficiary->dateOfBirth ? $beneficiary->dateOfBirth->format('m-d-Y') : '');
 
                 if (!$beneficiary->barangay) {
@@ -478,5 +479,14 @@ class MasterlistController extends Controller
             ]);
             return response()->json(['error' => 'Failed to export masterlist: ' . $e->getMessage()], 500);
         }
+    }
+
+    private function sexToText($sex)
+    {
+        return match ($sex) {
+            '1' => 'MALE',
+            '2' => 'FEMALE',
+            default => ''
+        };
     }
 }

@@ -54,8 +54,6 @@ class OtpController extends Controller
         }
 
         $user = $this->getAuthenticatedUser();
-        $guard = session('auth_guard', 'web');
-        $user = Auth::guard($guard)->user();
 
         if ($this->verifyOtpLogic($user, $otp)) {
             $user->otp_verified_at = now();
@@ -64,16 +62,12 @@ class OtpController extends Controller
             Session::forget('otp_sent');
             Session::forget('otp_expires_at');
 
-            if ($guard === 'admin') {
-                return redirect()->intended(route('admin.dashboard'));
-            } else {
-                return redirect()->intended(route('user.dashboard'));
-            }
-        } else {
-            return back()->withErrors([
-                'otp' => 'Invalid OTP. Please try again.'
-            ]);
+            return $this->redirectBasedOnRole($user);
         }
+
+        return back()->withErrors([
+            'otp' => 'Invalid OTP. Please try again.'
+        ]);
     }
 
     public function resend()
@@ -136,24 +130,21 @@ class OtpController extends Controller
         throw new \Exception('No authenticated user found');
     }
 
-    private function redirectToDashboard($user)
+    private function redirectBasedOnRole($user)
     {
-        if ($user instanceof User) {
-            if ($user->role_number == 1) {
-                return redirect()->intended(route('user.dashboard'))
-                    ->with('message', 'OTP verified successfully')
-                    ->with('redirectTo', route('user.dashboard'));
-            }
-            if ($user->role_number == 2) {
-                return redirect()->intended(route('admin.dashboard'))
-                    ->with('message', 'OTP verified successfully')
-                    ->with('redirectTo', route('admin.dashboard'));
-            }
-        }
+        Log::info('Redirecting user', ['user_id' => $user->id, 'role_number' => $user->role_number]);
 
-        Log::error('Unable to determine dashboard for user: ' . $user->id);
-        return redirect()->route('login')
-            ->with('error', 'Unable to access dashboard. Please contact support.')
-            ->with('redirectTo', route('login'));
+        switch ($user->role_number) {
+            case 1: // Regular user
+                return redirect()->intended(route('user.dashboard'))
+                    ->with('message', 'OTP verified successfully');
+            case 2: // Admin
+                return redirect()->intended(route('admin.dashboard'))
+                    ->with('message', 'OTP verified successfully');
+            default:
+                Log::error('Invalid role number', ['user_id' => $user->id, 'role_number' => $user->role_number]);
+                return redirect()->route('login')
+                    ->with('error', 'Unable to determine user role. Please contact support.');
+        }
     }
 }

@@ -63,7 +63,7 @@
     </div>
 
     <!-- New RCD Modal -->
-    <NewRCDModal v-if="isNewRCDModalOpen" :cdrs="cdrs" @close="closeNewRCDModal" />
+    <newRCDmodal v-if="isNewRCDModalOpen" :cdrs="cdrs" @close="closeNewRCDModal" />
   </div>
 </template>
 
@@ -72,7 +72,7 @@ import { ref } from "vue";
 import NavBar from "@/Layouts/NavBar.vue";
 import Sidebar from "@/Layouts/Sidebar.vue";
 import rcdView from "@/Components/rcdView.vue";
-import NewRCDModal from "@/Components/NewRCDModal.vue";
+import newRCDmodal from "@/Components/newRCDmodal.vue";
 
 const props = defineProps({
   rcds: {
