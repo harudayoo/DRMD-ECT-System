@@ -81,15 +81,21 @@
                                             class="block text-md font-medium text-gray-700"
                                             >Extension Name</label
                                         >
-                                        <input
-                                            type="text"
-                                            name="extensionName"
+                                        <select
                                             id="extensionName"
                                             v-model="
                                                 editedBeneficiary.extensionName
                                             "
-                                            class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
-                                        />
+                                            class="w-full p-2 border rounded"
+                                        >
+                                            <option value="" disabled>
+                                                Select Name Extension
+                                            </option>
+                                            <option value="Jr.">Jr.</option>
+                                            <option value="Sr.">Sr.</option>
+                                            <option value="II">II</option>
+                                            <option value="III">III</option>
+                                        </select>
                                     </div>
                                     <div class="mb-2">
                                         <label
@@ -118,7 +124,7 @@
                     <button
                         type="button"
                         @click="saveBeneficiary"
-                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-md"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-900 text-base font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-md"
                     >
                         Save
                     </button>

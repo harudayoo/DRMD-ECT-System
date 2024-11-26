@@ -8,7 +8,7 @@
                     </h1>
                     <button
                         @click="goBack"
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl"
+                        class="bg-blue-900 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl"
                     >
                         Back to Dashboard
                     </button>
@@ -75,7 +75,7 @@
                                         >
                                             <button
                                                 @click="openEditUserModal(user)"
-                                                class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded transition duration-300 ease-in-out focus:outline-none"
+                                                class="bg-blue-900 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded transition duration-300 ease-in-out focus:outline-none"
                                             >
                                                 Edit
                                             </button>
@@ -83,7 +83,7 @@
                                                 @click="
                                                     openDeleteConfirmation(user)
                                                 "
-                                                class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-2 rounded transition duration-300 ease-in-out focus:outline-none"
+                                                class="bg-red-800 hover:bg-red-600 text-white font-bold py-1 px-2 rounded transition duration-300 ease-in-out focus:outline-none"
                                             >
                                                 Delete
                                             </button>
@@ -146,13 +146,19 @@
                             <label for="nameExt" class="block mb-1"
                                 >Name Extension</label
                             >
-                            <input
+                            <select
                                 id="nameExt"
                                 v-model="editUserForm.nameExt"
-                                type="text"
-                                placeholder="Name Extension"
                                 class="w-full p-2 border rounded"
-                            />
+                            >
+                                <option value="" disabled>
+                                    Select Name Extension
+                                </option>
+                                <option value="Jr.">Jr.</option>
+                                <option value="Sr.">Sr.</option>
+                                <option value="II">II</option>
+                                <option value="III">III</option>
+                            </select>
                         </div>
                         <div>
                             <label for="email" class="block mb-1">Email</label>
@@ -167,14 +173,14 @@
                         <div class="flex justify-center space-x-4">
                             <button
                                 type="submit"
-                                class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out focus:outline-none"
+                                class="bg-blue-900 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out focus:outline-none"
                             >
                                 Update
                             </button>
                             <button
                                 type="button"
                                 @click="closeEditUserModal"
-                                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out focus:outline-none"
+                                class="bg-red-800 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out focus:outline-none"
                             >
                                 Cancel
                             </button>
@@ -200,7 +206,7 @@
                         <div class="flex justify-center space-x-4">
                             <button
                                 @click="confirmDelete"
-                                class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out focus:outline-none"
+                                class="bg-red-800 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out focus:outline-none"
                             >
                                 Confirm Delete
                             </button>

@@ -1,8 +1,5 @@
 <template>
-    <div
-        class="h-screen flex flex-col overflow-hidden bg-gray-100"
-        :class="{ dark: isDarkMode }"
-    >
+    <div class="h-screen flex flex-col overflow-hidden bg-gray-100">
         <!-- Top navigation bar -->
         <nav
             class="bg-white shadow-sm flex items-center justify-between px-4 py-2 border-b border-stone-300"
@@ -40,43 +37,8 @@
             </div>
             <div class="flex items-center">
                 <button
-                    @click="toggleDarkMode"
-                    class="text-gray-600 dark:text-gray-300 focus:outline-none mx-2 transition-colors duration-200"
-                >
-                    <svg
-                        v-if="!isDarkMode"
-                        class="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                        ></path>
-                    </svg>
-                    <svg
-                        v-else
-                        class="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                        ></path>
-                    </svg>
-                </button>
-                <button
                     @click="toggleCalendar"
-                    class="text-gray-600 focus:outline-none mx-2"
+                    class="relative text-gray-600 focus:outline-none mx-2 p-2 rounded-full hover:text-blue-900 hover:bg-gray-300 transition-all duration-200"
                 >
                     <svg
                         class="w-6 h-6"
@@ -93,9 +55,10 @@
                         ></path>
                     </svg>
                 </button>
+                <!--
                 <button
                     @click="toggleNotifications"
-                    class="text-gray-600 focus:outline-none mx-2"
+                    class="relative text-gray-600 focus:outline-none mx-2 p-2 rounded-full hover:text-blue-900 hover:bg-gray-300 transition-all duration-200"
                 >
                     <svg
                         class="w-6 h-6"
@@ -112,24 +75,31 @@
                         ></path>
                     </svg>
                 </button>
+                -->
                 <button
-                    @click="logout"
-                    class="text-gray-600 focus:outline-none ml-2"
+                    @click="toggleProfileMenu"
+                    class="relative text-gray-600 focus:outline-none mx-2 p-2 rounded-full hover:text-blue-900 hover:bg-gray-300 transition-all duration-200"
                 >
-                    <svg
-                        class="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        ></path>
-                    </svg>
+                    <div class="relative">
+                        <svg
+                            class="w-6 h-6"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            ></path>
+                        </svg>
+                        <ProfileExtension
+                            :show="showProfileMenu"
+                            @close="showProfileMenu = false"
+                        />
+                    </div>
                 </button>
             </div>
         </nav>
@@ -440,7 +410,7 @@
                     </div>
                     <div class="flex items-center justify-center mt-6">
                         <button
-                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            class="bg-blue-900 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                             type="submit"
                             :disabled="form.processing"
                         >
@@ -450,26 +420,98 @@
                 </form>
             </div>
         </div>
+
+        <!-- Success Message Pop-up -->
+        <Transition
+            enter-active-class="transition duration-300 ease-out"
+            enter-from-class="transform scale-95 opacity-0"
+            enter-to-class="transform scale-100 opacity-100"
+            leave-active-class="transition duration-200 ease-in"
+            leave-from-class="transform scale-100 opacity-100"
+            leave-to-class="transform scale-95 opacity-0"
+        >
+            <div
+                v-if="showSuccessMessage"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                @click="closeSuccessMessageOnBackdrop"
+            >
+                <div
+                    class="bg-white p-8 rounded-lg shadow-xl w-96 transform transition-all"
+                    @click.stop
+                >
+                    <div class="text-center">
+                        <div
+                            class="mx-auto flex items-center justify-center h-14 w-14 rounded-full bg-green-100 mb-4"
+                        >
+                            <svg
+                                class="h-8 w-8 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold mb-2 text-gray-900">
+                            Success!
+                        </h2>
+                        <p class="text-gray-600 mb-6">
+                            New user has been created successfully.
+                        </p>
+                        <div class="flex justify-center space-x-4">
+                            <button
+                                @click="closeSuccessMessage"
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200"
+                            >
+                                Close
+                            </button>
+                            <button
+                                @click="createAnotherUser"
+                                class="bg-blue-900 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+                            >
+                                Create Another
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Transition>
+
+        <Calendar :show="showCalendar" @close="showCalendar = false" />
     </div>
 </template>
 
 <script>
-import { ref, reactive } from "vue";
+import { ref, reactive, onBeforeUnmount, onMounted } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import axios from "axios";
+import Calendar from "@/Components/Calendar.vue";
+import ProfileExtension from "@/Components/ProfileExtension.vue";
 
 export default {
     name: "Layout",
+    components: {
+        Calendar: Calendar,
+        ProfileExtension: ProfileExtension,
+    },
     setup() {
-        const isDarkMode = ref(false);
         const isSidebarOpen = ref(true);
         const showCreateUserForm = ref(false);
+        const showSuccessMessage = ref(false);
+        const successMessageTimer = ref(null);
+        const showCalendar = ref(false);
+        const showProfileMenu = ref(false);
 
         const form = useForm({
             firstName: "",
             middleName: "",
             lastName: "",
-            nameExt: "", // Changed from extension to nameExt
+            nameExt: "",
             email: "",
             password: "",
             password_confirmation: "",
@@ -504,7 +546,7 @@ export default {
                 required: true,
             },
             {
-                id: "nameExt", // Changed from extension to nameExt
+                id: "nameExt",
                 label: "Ext. Name",
                 type: "select",
                 placeholder: "Ext.",
@@ -545,11 +587,39 @@ export default {
             },
         ]);
 
-        // Updated logout function with CSRF token
+        // Toggle functions
+        const toggleSidebar = () => {
+            isSidebarOpen.value = !isSidebarOpen.value;
+        };
+
+        const toggleCalendar = () => {
+            showCalendar.value = !showCalendar.value;
+        };
+
+        const toggleProfileMenu = () => {
+            showProfileMenu.value = !showProfileMenu.value;
+        };
+
+        const togglePasswordVisibility = (fieldId) => {
+            const field = otherFields.find((f) => f.id === fieldId);
+            if (field) {
+                field.showPassword = !field.showPassword;
+            }
+        };
+
+        // Navigation and logout
+        const navigateTo = (route) => {
+            if (route === "update") {
+                window.location.href = "/admin/update";
+            } else if (route === "request") {
+                window.location.href = "/admin/request";
+            }
+        };
+
         const logout = async () => {
             try {
                 await axios.post(
-                    "/logout",
+                    "/",
                     {},
                     {
                         headers: {
@@ -562,50 +632,16 @@ export default {
                 window.location.href = "/login";
             } catch (error) {
                 console.error("Logout failed:", error);
-                // Redirect to login if unauthorized
                 if (error.response && error.response.status === 401) {
                     window.location.href = "/login";
                 }
             }
         };
 
-        const toggleDarkMode = () => {
-            isDarkMode.value = !isDarkMode.value;
-            document.documentElement.classList.toggle("dark", isDarkMode.value);
-        };
-
-        const toggleSidebar = () => {
-            isSidebarOpen.value = !isSidebarOpen.value;
-        };
-
-        const toggleCalendar = () => {
-            // Implement calendar toggle functionality
-            console.log("Toggle calendar");
-        };
-
-        const toggleNotifications = () => {
-            // Implement notifications toggle functionality
-            console.log("Toggle notifications");
-        };
-
-        const navigateTo = (route) => {
-            if (route === "update") {
-                window.location.href = "/admin/update";
-            } else if (route === "request") {
-                window.location.href = "/admin/request";
-            }
-        };
-
+        // Form validation and handling
         const validateNameField = (fieldId, event) => {
             const value = event.target.value;
             form[fieldId] = value.replace(/\d/g, "");
-        };
-
-        const togglePasswordVisibility = (fieldId) => {
-            const field = otherFields.find((f) => f.id === fieldId);
-            if (field) {
-                field.showPassword = !field.showPassword;
-            }
         };
 
         const validatePassword = (password) => {
@@ -614,37 +650,95 @@ export default {
             return regex.test(password);
         };
 
+        // Success message handlers
+        const displaySuccessMessage = () => {
+            showSuccessMessage.value = true;
+
+            if (successMessageTimer.value) {
+                clearTimeout(successMessageTimer.value);
+            }
+
+            successMessageTimer.value = setTimeout(() => {
+                closeSuccessMessage();
+            }, 5000);
+        };
+
+        const closeSuccessMessage = () => {
+            showSuccessMessage.value = false;
+            if (successMessageTimer.value) {
+                clearTimeout(successMessageTimer.value);
+                successMessageTimer.value = null;
+            }
+        };
+
+        const closeSuccessMessageOnBackdrop = (event) => {
+            if (event.target === event.currentTarget) {
+                closeSuccessMessage();
+            }
+        };
+
+        const createAnotherUser = () => {
+            closeSuccessMessage();
+            showCreateUserForm.value = true;
+            form.reset();
+            [...nameFields, ...otherFields].forEach((field) => {
+                field.error = "";
+            });
+        };
+
         const submitCreateUserForm = () => {
             let hasError = false;
 
-            // Validate password
+            // Required field validation
+            nameFields.forEach((field) => {
+                if (field.required && !form[field.id]) {
+                    field.error = `${field.label} is required`;
+                    hasError = true;
+                } else {
+                    field.error = "";
+                }
+            });
+
+            // Email validation
+            const emailField = otherFields.find((f) => f.id === "email");
+            if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+                emailField.error = "Please enter a valid email address";
+                hasError = true;
+            } else {
+                emailField.error = "";
+            }
+
+            // Password validation
             if (!validatePassword(form.password)) {
                 otherFields.find((f) => f.id === "password").error =
                     "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.";
                 hasError = true;
+            } else {
+                otherFields.find((f) => f.id === "password").error = "";
             }
 
-            // Check if passwords match
+            // Password confirmation validation
             if (form.password !== form.password_confirmation) {
                 otherFields.find(
                     (f) => f.id === "password_confirmation"
                 ).error = "Passwords do not match.";
                 hasError = true;
+            } else {
+                otherFields.find(
+                    (f) => f.id === "password_confirmation"
+                ).error = "";
             }
 
-            // If there are validation errors, stop the submission
             if (hasError) {
                 return;
             }
 
-            // Submit the form using Inertia
             form.post(route("register"), {
                 preserveScroll: true,
                 onSuccess: () => {
                     form.reset();
                     showCreateUserForm.value = false;
-                    // Show success message
-                    // You might want to implement a toast notification here
+                    displaySuccessMessage();
                 },
                 onError: (errors) => {
                     [...nameFields, ...otherFields].forEach((field) => {
@@ -658,22 +752,36 @@ export default {
             });
         };
 
+        // Cleanup
+        onBeforeUnmount(() => {
+            if (successMessageTimer.value) {
+                clearTimeout(successMessageTimer.value);
+            }
+        });
+
         return {
-            isDarkMode,
+            // State
             isSidebarOpen,
             showCreateUserForm,
+            showSuccessMessage,
             form,
             nameFields,
             otherFields,
-            toggleDarkMode,
+
+            // Methods
             toggleSidebar,
-            logout,
+            showCalendar,
             toggleCalendar,
-            toggleNotifications,
-            navigateTo,
-            validateNameField,
             togglePasswordVisibility,
+            navigateTo,
+            logout,
+            validateNameField,
             submitCreateUserForm,
+            closeSuccessMessage,
+            closeSuccessMessageOnBackdrop,
+            createAnotherUser,
+            showProfileMenu,
+            toggleProfileMenu,
         };
     },
 };

@@ -15,6 +15,9 @@ use Carbon\Carbon;
 
 class MasterlistController extends Controller
 {
+
+    private const SIMILARITY_THRESHOLD = 0.8;
+
     public function index()
     {
         return Inertia::render('User/ViewMasterlists');
@@ -157,12 +160,16 @@ class MasterlistController extends Controller
             $processedRows = 0;
             $batchSize = 100;
 
+            $similarBeneficiaries = [];
+
             foreach (array_chunk($dataRows, $batchSize) as $chunk) {
                 foreach ($chunk as $index => $row) {
-                    $rowNumber = $processedRows + $index + 6; // Start from row 6
+                    $rowNumber = $processedRows + $index + 6;
                     try {
-                        Log::debug("Processing row", ['rowNumber' => $rowNumber, 'data' => $row]);
-                        $this->processRow($masterlist, $row, $rowNumber);
+                        $result = $this->processRow($masterlist, $row, $rowNumber);
+                        if (!empty($result['similarBeneficiaries'])) {
+                            $similarBeneficiaries = array_merge($similarBeneficiaries, $result['similarBeneficiaries']);
+                        }
                     } catch (\Exception $e) {
                         $errors[] = "Row {$rowNumber}: " . $e->getMessage();
                     }
@@ -180,7 +187,11 @@ class MasterlistController extends Controller
 
             DB::commit();
             Log::info('Import completed successfully');
-            return response()->json(['message' => 'Masterlist imported successfully']);
+
+            return response()->json([
+                'message' => 'Masterlist imported successfully',
+                'similarBeneficiaries' => $similarBeneficiaries
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error during import', [
@@ -247,49 +258,66 @@ class MasterlistController extends Controller
         }
 
         $beneficiaryNumber = Beneficiary::generateUniqueBeneficiaryNumber($barangay->barangayID);
-
-        // Normalize sex field
         $sex = $this->normalizeSex($row[5]);
-
-        // Parse and format date of birth
         $formattedDateOfBirth = $this->parseAndFormatDate($row[6]);
-        if (!$formattedDateOfBirth) {
-            throw new \Exception("Row {$actualRowNumber}: Invalid date format for date of birth");
+
+        $similarBeneficiaries = [];
+        $potentialDuplicates = $this->findPotentialDuplicates(
+            $row[2], // firstName
+            $row[1], // lastName
+            $row[3], // middleName
+            $formattedDateOfBirth
+        );
+
+        // If duplicates exist, add to similar beneficiaries array
+        if ($potentialDuplicates->isNotEmpty()) {
+            foreach ($potentialDuplicates as $duplicate) {
+                $similarityScore = $this->calculateSimilarity(
+                    "{$duplicate->lastName} {$duplicate->firstName}",
+                    "{$row[1]} {$row[2]}"
+                );
+
+                $similarBeneficiaries[] = [
+                    'imported' => [
+                        'firstName' => $row[2],
+                        'lastName' => $row[1],
+                        'middleName' => $row[3],
+                        'dateOfBirth' => $formattedDateOfBirth
+                    ],
+                    'existing' => [
+                        'firstName' => $duplicate->firstName,
+                        'lastName' => $duplicate->lastName,
+                        'middleName' => $duplicate->middleName,
+                        'dateOfBirth' => $duplicate->dateOfBirth
+                    ],
+                    'similarityScore' => round($similarityScore * 100, 2),
+                    'action' => 'updated'
+                ];
+            }
         }
 
-        $existingBeneficiary = Beneficiary::where('lastName', $row[1])
-            ->where('firstName', $row[2])
-            ->where('middleName', $row[3])
-            ->where('dateOfBirth', $formattedDateOfBirth)
-            ->first();
+        // Create new beneficiary record
+        $beneficiary = new Beneficiary([
+            'masterlistID' => $masterlist->masterlistID,
+            'barangayID' => $barangay->barangayID,
+            'beneficiaryNumber' => $beneficiaryNumber,
+            'lastName' => $row[1],
+            'firstName' => $row[2],
+            'middleName' => $row[3] ?? null,
+            'extensionName' => $row[4] ?? null,
+            'sex' => $sex,
+            'dateOfBirth' => $formattedDateOfBirth,
+            'status' => 2
+        ]);
 
-        if ($existingBeneficiary) {
-            $existingBeneficiary->update([
-                'status' => 4,
-                'masterlistID' => $masterlist->masterlistID,
-                'barangayID' => $barangay->barangayID,
-                'beneficiaryNumber' => $beneficiaryNumber,
-                'extensionName' => $row[4] ?: null,
-                'sex' => $sex,
-            ]);
-            Log::info("Row {$actualRowNumber}: Existing beneficiary updated", ['beneficiaryId' => $existingBeneficiary->id]);
-        } else {
-            $beneficiary = new Beneficiary([
-                'masterlistID' => $masterlist->masterlistID,
-                'barangayID' => $barangay->barangayID,
-                'beneficiaryNumber' => $beneficiaryNumber,
-                'lastName' => $row[1],
-                'firstName' => $row[2],
-                'middleName' => $row[3] ?: null,
-                'extensionName' => $row[4] ?: null,
-                'sex' => $sex,
-                'dateOfBirth' => $formattedDateOfBirth,
-                'status' => 2,
-            ]);
-            $beneficiary->save();
-            Log::info("Row {$actualRowNumber}: New beneficiary added", ['beneficiaryId' => $beneficiary->id]);
-        }
+        $beneficiary->save();
+
+        return [
+            'similarBeneficiaries' => $similarBeneficiaries,
+            'beneficiary' => $beneficiary
+        ];
     }
+
 
     private function findBestMatchingBarangay($barangayName, $municipalityID)
     {
@@ -330,12 +358,54 @@ class MasterlistController extends Controller
 
     private function calculateSimilarity($str1, $str2)
     {
+        if (empty($str1) || empty($str2)) {
+            return 0;
+        }
+
+        // Normalize strings
+        $str1 = strtolower(trim($str1));
+        $str2 = strtolower(trim($str2));
+
         // Use Levenshtein distance to calculate similarity
         $levenshtein = levenshtein($str1, $str2);
         $maxLength = max(strlen($str1), strlen($str2));
 
         // Convert distance to a similarity score (0 to 1)
         return 1 - ($levenshtein / $maxLength);
+    }
+
+    private function findPotentialDuplicates($firstName, $lastName, $middleName, $dateOfBirth)
+    {
+        // First, look for exact matches
+        $query = Beneficiary::where(function ($q) use ($firstName, $lastName, $middleName, $dateOfBirth) {
+            $q->where('dateOfBirth', $dateOfBirth)
+                ->where(DB::raw('LOWER(lastName)'), strtolower($lastName));
+        });
+
+        $exactMatches = $query->get();
+
+        // If no exact matches, look for similar names
+        if ($exactMatches->isEmpty()) {
+            return Beneficiary::where('dateOfBirth', $dateOfBirth)
+                ->get()
+                ->filter(function ($beneficiary) use ($firstName, $lastName, $middleName) {
+                    $lastNameSimilarity = $this->calculateSimilarity($beneficiary->lastName, $lastName);
+                    $firstNameSimilarity = $this->calculateSimilarity($beneficiary->firstName, $firstName);
+
+                    // Consider middle name if both records have it
+                    $middleNameSimilarity = 1.0;
+                    if (!empty($middleName) && !empty($beneficiary->middleName)) {
+                        $middleNameSimilarity = $this->calculateSimilarity($beneficiary->middleName, $middleName);
+                    }
+
+                    // Calculate weighted average similarity
+                    $overallSimilarity = ($lastNameSimilarity * 0.4) + ($firstNameSimilarity * 0.4) + ($middleNameSimilarity * 0.2);
+
+                    return $overallSimilarity >= self::SIMILARITY_THRESHOLD;
+                });
+        }
+
+        return $exactMatches;
     }
 
     private function normalizeSex($sex)

@@ -54,7 +54,7 @@
                 <div class="flex gap-4 mt-5">
                     <button
                         type="submit"
-                        class="w-1/2 bg-blue-400 text-black font-black content-center py-1 rounded-full hover:bg-blue-900 hover:text-white transition duration-300 ease-in-out focus:outline-none text-lg mx-auto block"
+                        class="w-1/2 bg-blue-700 text-black font-black content-center py-1 rounded-full hover:bg-blue-900 hover:text-white transition duration-300 ease-in-out focus:outline-none text-lg mx-auto block"
                         :disabled="form.processing || !isValidOtp"
                         :class="{
                             'cursor-not-allowed':
@@ -66,7 +66,7 @@
                     <button
                         type="button"
                         @click="cancel"
-                        class="w-1/2 bg-red-400 text-black font-black content-center py-1 rounded-full hover:bg-red-900 hover:text-white transition duration-300 ease-in-out focus:outline-none text-lg mx-auto block"
+                        class="w-1/2 bg-red-700 text-black font-black content-center py-1 rounded-full hover:bg-red-900 hover:text-white transition duration-300 ease-in-out focus:outline-none text-lg mx-auto block"
                     >
                         Cancel
                     </button>
@@ -119,7 +119,7 @@
                     </p>
                     <button
                         @click="closeSuccessModal"
-                        class="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                        class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500"
                     >
                         Thank You
                     </button>

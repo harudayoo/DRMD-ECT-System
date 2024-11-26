@@ -2,7 +2,7 @@
     <div class="relative">
         <!-- Search Bar -->
         <div class="flex justify-end">
-            <div v-if="!selectedPayroll" class="w-[47%] mb-6">
+            <div v-if="!selectedPayroll" class="w-[47%] mb-5 mt-1">
                 <label for="search" class="sr-only">Search Payrolls</label>
                 <div class="relative">
                     <input
@@ -69,12 +69,12 @@
             class="bg-white shadow overflow-hidden sm:rounded-lg"
         >
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-indigo-100">
+                <thead class="bg-white">
                     <tr>
                         <th
                             v-for="header in headers"
                             :key="header"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                            class="px-5 py-4 text-center text-sm font-medium text-black uppercase tracking-wider"
                         >
                             {{ header }}
                         </th>
@@ -97,32 +97,32 @@
                         @click="selectPayroll(payroll)"
                     >
                         <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                         >
                             {{ payroll.payrollNumber }}
                         </td>
                         <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                         >
                             {{ payroll.payrollName }}
                         </td>
                         <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                         >
                             {{ payroll.municipalityName }}
                         </td>
                         <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                         >
                             {{ payroll.barangayName }}
                         </td>
                         <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                         >
                             {{ formatSubTotal(payroll.subTotal) }}
                         </td>
                         <td
-                            class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                            class="px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                         >
                             {{ formatDate(payroll.created_at) }}
                         </td>
@@ -150,15 +150,15 @@
         </div>
 
         <!-- Beneficiaries Section -->
-        <div v-if="selectedPayroll" class="mt-8">
+        <div v-if="selectedPayroll" class="-mt-1">
             <!-- Back Button -->
             <button
                 @click="goBackToPayrolls"
-                class="mb-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                class="mb-2 px-4 py-1.5 bg-blue-900 text-white rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
                 &larr; Back to Payrolls
             </button>
-            <h2 class="text-3xl font-semibold mb-4">
+            <h2 class="text-2xl font-medium mb-4">
                 Beneficiaries for {{ selectedPayroll.payrollName }}
                 <span
                     v-if="selectedPayroll.exportNum > 0"
@@ -181,8 +181,8 @@
                         v-model="beneficiarySearch"
                         @input="debouncedBeneficiarySearch"
                         type="text"
-                        placeholder="Search beneficiaries by number, name"
-                        class="w-full px-4 py-2 border rounded-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="Search Beneficiaries by Number or Name"
+                        class="w-full px-4 py-1.5 border rounded-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                     />
                 </div>
                 <div class="w-full sm:w-1/2 flex items-center">
@@ -191,7 +191,7 @@
                         v-model="beneficiaryAmount"
                         type="text"
                         placeholder="Set Amount"
-                        class="flex-grow px-6 py-2 border rounded-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mr-2"
+                        class="flex-grow px-6 py-1.5 border rounded-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 mr-2"
                         @input="
                             beneficiaryAmount = formatAmount(
                                 $event.target.value
@@ -200,7 +200,7 @@
                     />
                     <button
                         @click="setAmount"
-                        class="px-4 py-2 bg-indigo-900 text-white rounded-full hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300 whitespace-nowrap"
+                        class="px-4 py-1.5 bg-blue-900 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300 whitespace-nowrap"
                         :disabled="amountError !== ''"
                     >
                         Set Amount
@@ -212,14 +212,14 @@
                 <div>
                     <button
                         @click="exportPayroll"
-                        class="px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap"
+                        class="px-4 py-1.5 bg-red-700 text-white rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap"
                     >
                         {{ isExporting ? "Exporting..." : "Export Payroll" }}
                     </button>
                 </div>
                 <button
                     @click="markAllClaimed"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap ml-2"
+                    class="px-4 py-1.5 bg-green-700 text-white rounded-full hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 whitespace-nowrap ml-2"
                 >
                     Mark as All Claimed
                 </button>
@@ -251,13 +251,13 @@
                                 <table
                                     class="min-w-full divide-y divide-gray-200"
                                 >
-                                    <thead class="bg-gray-50 sticky top-0">
+                                    <thead class="bg-white sticky top-0">
                                         <tr>
                                             <th
                                                 v-for="header in beneficiaryHeaders"
                                                 :key="header"
                                                 scope="col"
-                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                class="px-5 py-4 text-center text-sm font-medium text-black uppercase tracking-wider"
                                             >
                                                 {{ header }}
                                             </th>
@@ -271,34 +271,37 @@
                                             :key="beneficiary.beneficiaryID"
                                         >
                                             <td
-                                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                                class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500"
                                             >
                                                 {{
                                                     beneficiary.beneficiaryNumber
                                                 }}
                                             </td>
                                             <td
-                                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                                class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                                             >
                                                 {{ beneficiary.lastName }}
                                             </td>
                                             <td
-                                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                                class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                                             >
                                                 {{ beneficiary.firstName }}
                                             </td>
                                             <td
-                                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                                class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                                             >
                                                 {{ beneficiary.middleName }}
                                             </td>
                                             <td
-                                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                                class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                                             >
-                                                {{ beneficiary.extensionName }}
+                                                {{
+                                                    beneficiary.extensionName ||
+                                                    "N/A"
+                                                }}
                                             </td>
                                             <td
-                                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                                class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                                             >
                                                 {{
                                                     formatCurrency(
@@ -307,7 +310,7 @@
                                                 }}
                                             </td>
                                             <td
-                                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                                class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900"
                                             >
                                                 <select
                                                     v-model="beneficiary.status"
@@ -397,7 +400,7 @@
             class="text-center py-8"
         >
             <p class="text-gray-500 text-lg">
-                No beneficiaries found for this payroll.
+                No Beneficiary Found In This Payroll.
             </p>
         </div>
     </div>
@@ -422,9 +425,9 @@ const selectedPayroll = ref(null);
 const beneficiaries = ref([]);
 const beneficiaryAmount = ref(null);
 const amountError = ref("");
-const beneficiariesPagination = ref(null);
+
 const beneficiarySearch = ref("");
-const beneficiariesPerPage = 10;
+const beneficiariesPerPage = 4;
 const isExporting = ref(false);
 
 const headers = [
@@ -556,14 +559,7 @@ const fetchBeneficiaries = async (payrollId, page = 1, search = "") => {
             }
         );
         beneficiaries.value = response.data.beneficiaries.data;
-        beneficiariesPagination.value = {
-            current_page: response.data.beneficiaries.current_page,
-            last_page: response.data.beneficiaries.last_page,
-            from: response.data.beneficiaries.from,
-            to: response.data.beneficiaries.to,
-            total: response.data.beneficiaries.total,
-            links: response.data.beneficiaries.links,
-        };
+
         selectedPayroll.value = {
             ...response.data.payroll,
             exportNum: response.data.payroll.exportNum,

@@ -413,7 +413,9 @@ const closeFailedModal = () => {
                                     :id="field.id"
                                     v-model="form[field.id]"
                                 >
-                                    <option value="">Ext.</option>
+                                    <option value="" disabled selected>
+                                        Ext.
+                                    </option>
                                     <option value="Jr.">Jr.</option>
                                     <option value="Sr.">Sr.</option>
                                     <option value="II">II</option>

@@ -31,7 +31,7 @@
                             {{ header }}
                         </th>
                         <th
-                            class="px-4 py-3 text-left text-sm font-medium text-black uppercase tracking-wider"
+                            class="px-4 py-3 text-center text-sm font-medium text-black uppercase tracking-wider"
                         >
                             Action
                         </th>
@@ -41,7 +41,7 @@
                     <tr
                         v-for="beneficiary in paginatedBeneficiaries"
                         :key="beneficiary.beneficiaryID"
-                        class="hover:bg-gray-100"
+                        class="hover:bg-gray-100 cursor-pointer"
                     >
                         <td
                             v-for="(key, index) in displayFields"
@@ -55,6 +55,9 @@
                             <template v-else-if="key === 'status'">
                                 {{ getStatusText(beneficiary[key]) }}
                             </template>
+                            <template v-else-if="key === 'extensionName'">
+                                {{ beneficiary[key] || "N/A" }}
+                            </template>
                             <template v-else>
                                 {{ beneficiary[key] }}
                             </template>
@@ -63,7 +66,7 @@
                             class="px-6 py-4 whitespace-nowrap text-sm font-medium"
                         >
                             <button
-                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                                class="bg-blue-900 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
                                 @click="$emit('edit-beneficiary', beneficiary)"
                             >
                                 Edit
@@ -79,7 +82,7 @@
             v-if="!loading && !error && beneficiaries.length === 0"
             class="text-center py-8"
         >
-            <p class="text-gray-500 text-lg">No beneficiaries found.</p>
+            <p class="text-gray-500 text-lg">No Beneficiaries Found.</p>
         </div>
 
         <!-- Pagination -->
@@ -108,20 +111,7 @@
                         :disabled="currentPage === 1"
                         class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <span class="sr-only">Previous</span>
-                        <svg
-                            class="h-5 w-5"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            aria-hidden="true"
-                        >
-                            <path
-                                fill-rule="evenodd"
-                                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                                clip-rule="evenodd"
-                            />
-                        </svg>
+                        << Previous
                     </button>
                     <button
                         v-for="page in visiblePageNumbers"
@@ -143,20 +133,7 @@
                         :disabled="currentPage === totalPages"
                         class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <span class="sr-only">Next</span>
-                        <svg
-                            class="h-5 w-5"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            aria-hidden="true"
-                        >
-                            <path
-                                fill-rule="evenodd"
-                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                                clip-rule="evenodd"
-                            />
-                        </svg>
+                        Next >>
                     </button>
                 </nav>
             </div>
@@ -204,7 +181,7 @@ const getColumnClass = (index: number) => {
         "text-center w-[12%]", // Middle Name
         "text-center w-[10%]", // Extension Name
         "text-center w-[12%]", // Date of Birth
-        "text-center w-[8%]", // Sex
+        "text-center w-[6%]", // Sex
         "text-center w-[12%]", // Status
     ];
     return alignments[index] || "text-left";
@@ -285,12 +262,10 @@ const goToPage = (page: number | string) => {
 };
 
 const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A";
+    // This will handle both ISO strings and regular date strings
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-    });
+    return date.toISOString().split("T")[0];
 };
 
 const getStatusText = (status: number) => {

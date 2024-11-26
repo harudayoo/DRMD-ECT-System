@@ -275,7 +275,7 @@
                     </div>
                     <div class="flex items-center justify-center mt-6">
                         <button
-                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                            class="bg-red-900 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                             type="submit"
                             :disabled="form.processing"
                         >
@@ -315,7 +315,7 @@
                     </p>
                     <button
                         @click="closeSuccessMessage"
-                        class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                        class="bg-green-800 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                     >
                         Close
                     </button>
