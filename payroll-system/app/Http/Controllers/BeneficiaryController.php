@@ -160,16 +160,22 @@ class BeneficiaryController extends Controller
     public function update(Request $request, $beneficiaryID)
     {
         try {
-            $this->validate($request, [
+            $validatedData = $request->validate([
                 'lastName' => 'required|string|max:255',
                 'firstName' => 'required|string|max:255',
                 'middleName' => 'required|string|max:255',
                 'extensionName' => 'nullable|string|max:255',
                 'dateOfBirth' => 'required|date',
+                'sex' => 'required|in:Male,Female',
             ]);
 
             $beneficiary = Beneficiary::findOrFail($beneficiaryID);
-            $beneficiary->update($request->all());
+
+
+        // Transform sex value
+        $validatedData['sex'] = $validatedData['sex'] === 'Male' ? 1 : 2;
+
+            $beneficiary->update($validatedData);
 
             return response()->json($beneficiary);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
