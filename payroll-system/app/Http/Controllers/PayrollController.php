@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Models\Payroll;
 use App\Models\Beneficiary;
@@ -11,6 +12,7 @@ use App\Models\Province;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class PayrollController extends Controller
 {
@@ -41,7 +43,7 @@ class PayrollController extends Controller
 
     public function store(Request $request)
     {
-        \Log::info('Received payroll data:', $request->all());
+        Log::info('Received payroll data:', $request->all());
 
         $validated = $request->validate([
             'payrollName' => 'required|string|max:50',
@@ -68,7 +70,7 @@ class PayrollController extends Controller
                 ->whereNull('payrollNumber')
                 ->update(['payrollNumber' => $payrollNumber]);
 
-            \Log::info('Created payroll:', $payroll->toArray());
+            Log::info('Created payroll:', $payroll->toArray());
         });
 
         return redirect()->route('payroll.index')->with('success', 'Payroll created successfully.');
@@ -121,7 +123,7 @@ class PayrollController extends Controller
                 ->paginate($perPage);
 
             return response()->json([
-                'payroll' => $payroll,
+                'payroll' => $payroll::findOrFail($payrollId),
                 'beneficiaries' => $beneficiaries,
             ]);
         } catch (\Exception $e) {
@@ -186,7 +188,7 @@ class PayrollController extends Controller
 
             return $pdf->download("payroll_{$payroll->payrollNumber}.pdf");
         } catch (\Exception $e) {
-            \Log::error('PDF generation failed: ' . $e->getMessage(), ['payroll_id' => $payrollId]);
+            Log::error('PDF generation failed: ' . $e->getMessage(), ['payroll_id' => $payrollId]);
             return response()->json(['error' => 'PDF generation failed: ' . $e->getMessage()], 500);
         }
     }
@@ -230,7 +232,7 @@ class PayrollController extends Controller
 
             return response()->json(['message' => 'Beneficiaries updated successfully']);
         } catch (\Exception $e) {
-            \Log::error('Error updating beneficiaries: ' . $e->getMessage(), [
+            Log::error('Error updating beneficiaries: ' . $e->getMessage(), [
                 'payrollId' => $payrollId,
                 'request' => $request->all(),
                 'trace' => $e->getTraceAsString()

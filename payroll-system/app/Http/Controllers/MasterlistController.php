@@ -119,33 +119,49 @@ class MasterlistController extends Controller
         }
     }
     public function import(Request $request)
-    {
+{
+    try {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv',
+            'municipalityId' => 'required|exists:municipalities,municipalityID',
+        ]);
+
+        $file = $request->file('file');
+        $municipalityId = $request->input('municipalityId');
+
+        // Load the spreadsheet
+        $spreadsheet = IOFactory::load($file->getPathname());
+        $worksheet = $spreadsheet->getActiveSheet();
+        $rows = $worksheet->toArray();
+
+        // Debug the data structure
+        Log::info('Excel import started', [
+            'filename' => $file->getClientOriginalName(),
+            'total_rows' => count($rows),
+            'sample_row' => $rows[5] ?? null
+        ]);
+
+        // Skip the first 5 rows (headers)
+        $dataRows = array_slice($rows, 5);
+
+        // Add more strict data validation
+        $dataRows = array_filter($dataRows, function ($row) {
+            // Check if the row has the minimum required data
+            return !empty($row[1]) && // Last Name
+                   !empty($row[2]) && // First Name
+                   !empty($row[6]) && // Date of Birth
+                   !empty($row[9]);   // Barangay
+        });
+
+        if (empty($dataRows)) {
+            throw new \Exception('No valid data rows found in the file.');
+        }
+
+        $totalBeneficiaries = count($dataRows);
+
+        DB::beginTransaction();
+
         try {
-            $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls,csv',
-                'municipalityId' => 'required|exists:municipalities,municipalityID',
-            ]);
-
-            $file = $request->file('file');
-            $municipalityId = $request->input('municipalityId');
-            Log::info('Starting import process', ['file' => $file->getClientOriginalName(), 'municipalityId' => $municipalityId]);
-
-            $spreadsheet = IOFactory::load($file->getPathname());
-            $worksheet = $spreadsheet->getActiveSheet();
-            $rows = $worksheet->toArray();
-
-            // Skip the first 5 rows (headers)
-            $dataRows = array_slice($rows, 5);
-
-            // Filter out blank rows
-            $dataRows = array_filter($dataRows, function ($row) {
-                return !empty(array_filter($row));
-            });
-
-            $totalBeneficiaries = count($dataRows);
-
-            DB::beginTransaction();
-
             $masterlistID = $this->generateMasterlistID();
             $masterlist = Masterlist::create([
                 'masterlistID' => $masterlistID,
@@ -154,98 +170,159 @@ class MasterlistController extends Controller
                 'totalBeneficiaries' => $totalBeneficiaries,
             ]);
 
-            Log::info('Masterlist created', ['masterlistId' => $masterlist->masterlistID, 'totalBeneficiaries' => $totalBeneficiaries]);
-
             $errors = [];
             $processedRows = 0;
             $batchSize = 100;
-
             $similarBeneficiaries = [];
 
             foreach (array_chunk($dataRows, $batchSize) as $chunk) {
                 foreach ($chunk as $index => $row) {
-                    $rowNumber = $processedRows + $index + 6;
                     try {
+                        // Add extra validation before processing
+                        if (!$this->isValidRow($row)) {
+                            throw new \Exception('Invalid data format');
+                        }
+
+                        $rowNumber = $processedRows + $index + 6;
                         $result = $this->processRow($masterlist, $row, $rowNumber);
+
                         if (!empty($result['similarBeneficiaries'])) {
                             $similarBeneficiaries = array_merge($similarBeneficiaries, $result['similarBeneficiaries']);
                         }
                     } catch (\Exception $e) {
                         $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                        Log::error("Error processing row {$rowNumber}", [
+                            'row_data' => $row,
+                            'error' => $e->getMessage()
+                        ]);
                     }
                 }
                 $processedRows += count($chunk);
-                DB::commit();
-                DB::beginTransaction();
             }
 
             if (!empty($errors)) {
                 DB::rollBack();
-                Log::error('Import completed with errors', ['errors' => $errors]);
-                return response()->json(['error' => 'Import completed with errors', 'details' => $errors], 422);
+                return response()->json([
+                    'error' => 'Import completed with partial errors',
+                    'details' => $errors,
+                    'processed_rows' => $processedRows,
+                    'total_rows' => $totalBeneficiaries
+                ], 422);
             }
 
             DB::commit();
-            Log::info('Import completed successfully');
-
             return response()->json([
                 'message' => 'Masterlist imported successfully',
+                'total_beneficiaries' => $processedRows,
                 'similarBeneficiaries' => $similarBeneficiaries
             ]);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error during import', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return response()->json(['error' => 'Import failed', 'details' => $e->getMessage()], 500);
+            throw $e;
         }
+
+    } catch (\Exception $e) {
+        Log::error('Error during import', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json([
+            'error' => 'Import failed',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+
+private function normalizeSex($sex)
+{
+    if (empty($sex)) {
+        return null;
+    }
+
+    // Convert to lowercase and trim
+    $sex = strtolower(trim($sex));
+
+    // Check for various representations of male
+    $maleValues = ['1', 'm', 'male'];
+
+    // Check for various representations of female
+    $femaleValues = ['2', 'f', 'female'];
+
+    if (in_array($sex, $maleValues)) {
+        return 1; // Male
+    } elseif (in_array($sex, $femaleValues)) {
+        return 2; // Female
+    }
+
+    return null; // Return null for unrecognized values
+}
+
+    // Add this new method to validate row structure
+    private function isValidRow($row): bool
+    {
+        // Check if row has all required columns
+        if (!is_array($row) || count($row) < 10) {
+            return false;
+        }
+
+        // Validate data types
+        if (!is_string($row[1]) || !is_string($row[2])) { // Last Name and First Name
+            return false;
+        }
+
+        return true;
     }
 
     private function processRow(Masterlist $masterlist, array $row, int $rowNumber)
     {
+        // Additional logging for debugging
+        Log::debug("Full Row Processing", [
+            'rowNumber' => $rowNumber,
+            'full_row' => $row
+        ]);
+
         // Adjust rowNumber to account for header rows
-        $actualRowNumber = $rowNumber + 5;
+        $actualRowNumber = $rowNumber;
 
         // Trim all input values to remove leading/trailing whitespace
         $row = array_map('trim', $row);
 
-        // Log the row data for debugging
-        Log::debug("Processing row data", [
-            'rowNumber' => $rowNumber,
-            'lastName' => $row[1] ?? null,
-            'firstName' => $row[2] ?? null,
-            'middleName' => $row[3] ?? null,
-            'barangay' => $row[9] ?? null,
-        ]);
-
         // Validate only if required fields are not empty
         if (empty($row[1]) || empty($row[2]) || empty($row[6]) || empty($row[9])) {
-            Log::warning("Row {$rowNumber}: Empty required fields", ['row' => $row]);
+            Log::warning("Row {$actualRowNumber}: Empty required fields", ['row' => $row]);
             throw new \Exception("Required fields are empty");
         }
 
+        // Enhanced validator to be more flexible
         $validator = Validator::make([
             'lastName' => $row[1],
             'firstName' => $row[2],
-            'middleName' => $row[3],
-            'ext' => $row[4],
-            'sex' => $row[5],
+            'middleName' => $row[3] ?? null,
+            'ext' => $row[4] ?? null,
+            'sex' => $row[5] ?? null,
             'dateOfBirth' => $row[6],
+            'municipality' => $row[7] ?? null,
+            'province' => $row[8] ?? null,
             'barangay' => $row[9],
         ], [
             'lastName' => 'required|string|max:25',
             'firstName' => 'required|string|max:25',
             'middleName' => 'nullable|string|max:25',
             'ext' => 'nullable|string|max:10',
-            'sex' => 'nullable|string|max:10',
-            'dateOfBirth' => 'required',
+            'sex' => 'nullable|string',
+            'dateOfBirth' => ['required', function ($attribute, $value, $fail) {
+                $parsedDate = $this->parseAndFormatDate($value);
+                if ($parsedDate === null) {
+                    $fail('The date of birth is not a valid date.');
+                }
+            }],
             'barangay' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
             $errors = $validator->errors()->all();
-            Log::warning("Row {$rowNumber} validation failed", ['errors' => $errors]);
+            Log::warning("Row {$actualRowNumber} validation failed", ['errors' => $errors, 'row' => $row]);
             throw new \Exception("Validation failed: " . implode(", ", $errors));
         }
 
@@ -253,19 +330,31 @@ class MasterlistController extends Controller
         $barangay = $this->findBestMatchingBarangay($barangayName, $masterlist->municipalityID);
 
         if (!$barangay) {
-            Log::warning("Row {$rowNumber}: Barangay not found", ['barangay' => $barangayName]);
+            Log::warning("Row {$actualRowNumber}: Barangay not found", [
+                'barangay' => $barangayName,
+                'municipalityID' => $masterlist->municipalityID
+            ]);
             throw new \Exception("Barangay not found: {$barangayName}");
         }
 
         $beneficiaryNumber = Beneficiary::generateUniqueBeneficiaryNumber($barangay->barangayID);
+
+        // More robust sex normalization
         $sex = $this->normalizeSex($row[5]);
+
+        // Improve date parsing
         $formattedDateOfBirth = $this->parseAndFormatDate($row[6]);
+
+        if (!$formattedDateOfBirth) {
+            Log::warning("Row {$actualRowNumber}: Invalid date format", ['date' => $row[6]]);
+            throw new \Exception("Invalid date format: {$row[6]}");
+        }
 
         $similarBeneficiaries = [];
         $potentialDuplicates = $this->findPotentialDuplicates(
-            $row[2], // firstName
-            $row[1], // lastName
-            $row[3], // middleName
+            $row[2],   // firstName
+            $row[1],   // lastName
+            $row[3],   // middleName
             $formattedDateOfBirth
         );
 
@@ -281,7 +370,7 @@ class MasterlistController extends Controller
                     'imported' => [
                         'firstName' => $row[2],
                         'lastName' => $row[1],
-                        'middleName' => $row[3],
+                        'middleName' => $row[3] ?? null,
                         'dateOfBirth' => $formattedDateOfBirth
                     ],
                     'existing' => [
@@ -291,7 +380,7 @@ class MasterlistController extends Controller
                         'dateOfBirth' => $duplicate->dateOfBirth
                     ],
                     'similarityScore' => round($similarityScore * 100, 2),
-                    'action' => 'updated'
+                    'action' => 'potential_duplicate'
                 ];
             }
         }
@@ -305,9 +394,9 @@ class MasterlistController extends Controller
             'firstName' => $row[2],
             'middleName' => $row[3] ?? null,
             'extensionName' => $row[4] ?? null,
-            'sex' => $sex,
+            'sex' => $sex, // This will now be 1, 2, or null
             'dateOfBirth' => $formattedDateOfBirth,
-            'status' => 2
+            'status' => 2 // Default status
         ]);
 
         $beneficiary->save();
@@ -408,36 +497,30 @@ class MasterlistController extends Controller
         return $exactMatches;
     }
 
-    private function normalizeSex($sex)
-    {
-        if (empty($sex)) {
-            return null;
-        }
-
-        $sex = strtolower($sex);
-        if (in_array($sex, ['m', 'male'])) {
-            return '1';
-        } elseif (in_array($sex, ['f', 'female'])) {
-            return '2';
-        }
-
-        return null; // Return null for any other value
-    }
-
     private function parseAndFormatDate($date)
     {
         $formats = [
+            'm-d-Y', // Explicitly handle MM-DD-YYYY
             'n/j/Y',
             'Y-m-d',
-            'm-d-Y',
             'm/d/Y',
+            'd-m-Y',
+            'd/m/Y',
             'F j, Y',
+            'Y-m-d H:i:s',
+            'Y/m/d',
+            'd-M-Y'
         ];
 
         foreach ($formats as $format) {
-            $parsedDate = Carbon::createFromFormat($format, $date, 'UTC');
-            if ($parsedDate !== false) {
-                return $parsedDate->format('Y-m-d');
+            try {
+                $parsedDate = Carbon::createFromFormat($format, $date, 'UTC');
+                if ($parsedDate !== false) {
+                    return $parsedDate->format('Y-m-d');
+                }
+            } catch (\Exception $e) {
+                // Continue to next format if parsing fails
+                continue;
             }
         }
 
