@@ -23,7 +23,7 @@
             <!-- Menu Items -->
             <div class="py-1">
                 <a
-                    href="#"
+                    href="profile"
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 >
                     <svg
@@ -85,7 +85,7 @@ const emit = defineEmits(["close"]);
 const logout = async () => {
     try {
         await axios.post(
-            "/",
+            "/logout",
             {},
             {
                 headers: {
@@ -103,4 +103,5 @@ const logout = async () => {
         }
     }
 };
+
 </script>
