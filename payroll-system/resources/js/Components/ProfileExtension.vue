@@ -22,8 +22,8 @@
 
             <!-- Menu Items -->
             <div class="py-1">
-                <a
-                    href="#"
+                <button
+                    @click="goToProfile"
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                 >
                     <svg
@@ -40,7 +40,7 @@
                         />
                     </svg>
                     My Profile
-                </a>
+                </button>
             </div>
 
             <!-- Logout Section -->
