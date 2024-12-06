@@ -43,7 +43,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     // Profile routes
-    Route::prefix('profile')->group(function () {
+    Route::prefix('admin/profile')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');

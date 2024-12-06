@@ -85,7 +85,7 @@ const emit = defineEmits(["close"]);
 const logout = async () => {
     try {
         await axios.post(
-            "/",
+            "/logout",
             {},
             {
                 headers: {
