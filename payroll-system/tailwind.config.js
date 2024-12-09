@@ -42,7 +42,7 @@ export default {
             'baby-powder': '#f3f7f3',
             'caput-mortum': '#562c2c',
             'ash-gray': '#c2d6c2',
-            '': '#',
+            'imperial-primer': '#222f3e',
             '': '#',
             '': '#',
             '': '#',
