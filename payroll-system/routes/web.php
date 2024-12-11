@@ -6,6 +6,7 @@ use App\Http\Controllers\MunicipalityController;
 use App\Http\Controllers\BarangayController;
 use App\Http\Controllers\BeneficiaryController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\AdminProfileController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\MasterlistController;
 use App\Http\Controllers\PayrollController;
@@ -43,7 +44,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     // Profile routes
-    Route::prefix('/profile')->group(function () {
+    Route::prefix('userprofile')->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -51,9 +52,9 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
 
     // Admin Profile routes
     Route::prefix('admin/profile')->group(function () {
-        Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        Route::get('/', [AdminProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/', [AdminProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/', [AdminProfileController::class, 'destroy'])->name('profile.destroy');
     });
 
     Route::get('/provinces', [ProvinceController::class, 'index'])->name('provinces.index');

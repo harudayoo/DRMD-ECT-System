@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import DeleteUserForm from './Partials/DeleteUserForm.vue';
-import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
-import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
+import DeleteUserForm from './Partials2/DeleteUserForm2.vue';
+import UpdatePasswordForm from './Partials2/UpdatePasswordForm2.vue';
+import UpdateProfileInformationForm from './Partials2/UpdateProfileInformationForm2.vue';
 import { Head } from '@inertiajs/vue3';
 
 defineProps<{
@@ -11,16 +11,16 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Admin Profile" />
+    <Head title="User Profile" />
 
     <div class="bg-stone-100">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 flex items-center justify-between py-5">
             <h1 class="font-medium text-3xl text-gray-800 leading-tight">Account Details</h1>
             <a 
-                href="/admin/dashboard"
+                href="/main"
                 class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
             >
-                Back to Dashboard
+                Back to Main
             </a>
         </div>    
             
