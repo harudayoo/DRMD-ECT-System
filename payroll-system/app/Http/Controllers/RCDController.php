@@ -89,13 +89,7 @@ class RCDController extends Controller
     public function getBeneficiaries(RCD $rcd)
     {
         try {
-            // Debug initial RCD
-            Log::info('Fetching beneficiaries for RCD:', [
-                'rcdID' => $rcd->rcdID,
-                'cdrID' => $rcd->cdrID,
-                'rcdName' => $rcd->rcdName
-            ]);
-
+            // Validate RCD and its associated CDR
             if (!$rcd->cdrID) {
                 return response()->json([
                     'message' => 'This RCD has no associated CDR',
@@ -103,43 +97,21 @@ class RCDController extends Controller
                 ], 404);
             }
 
-            // First, get the CDR
-            $cdr = CDR::where('cdrID', $rcd->cdrID)->first();
+            // Eager load the related models to reduce database queries
+            $cdr = CDR::with('payroll')
+                ->where('cdrID', $rcd->cdrID)
+                ->first();
 
-            // Debug CDR
-            Log::info('CDR found:', [
-                'cdrID' => $cdr?->cdrID,
-                'payrollID' => $cdr?->payrollID,
-                'cdrName' => $cdr?->cdrName
-            ]);
-
-            if (!$cdr) {
-                return response()->json([
-                    'message' => 'CDR not found',
-                    'rcdName' => $rcd->rcdName
-                ], 404);
-            }
-
-            // Get the Payroll
-            $payroll = Payroll::where('payrollID', $cdr->payrollID)->first();
-
-            // Debug Payroll
-            Log::info('Payroll found:', [
-                'payrollID' => $payroll?->payrollID,
-                'payrollNumber' => $payroll?->payrollNumber,
-                'payrollName' => $payroll?->payrollName
-            ]);
-
-            if (!$payroll) {
+            if (!$cdr || !$cdr->payroll) {
                 return response()->json([
                     'message' => 'No payroll found for this CDR',
                     'cdrName' => $cdr->cdrName ?? 'Unknown'
                 ], 404);
             }
 
-            // Get beneficiaries
-            $beneficiaries = Beneficiary::where('payrollNumber', $payroll->payrollNumber)
-                ->get([
+            // Fetch only the beneficiaries for this specific payroll
+            $beneficiaries = Beneficiary::where('payrollNumber', $cdr->payroll->payrollNumber)
+                ->select([
                     'beneficiaryNumber',
                     'lastName',
                     'firstName',
@@ -148,20 +120,14 @@ class RCDController extends Controller
                     'amount',
                     'status',
                     'payrollNumber'
-                ]);
-
-            // Debug Beneficiaries
-            Log::info('Beneficiaries query:', [
-                'payrollNumber' => $payroll->payrollNumber,
-                'count' => $beneficiaries->count(),
-                'sql' => Beneficiary::where('payrollNumber', $payroll->payrollNumber)->toSql()
-            ]);
+                ])
+                ->get();
 
             if ($beneficiaries->isEmpty()) {
                 return response()->json([
                     'message' => 'No beneficiaries found for this payroll',
-                    'payrollNumber' => $payroll->payrollNumber,
-                    'payrollName' => $payroll->payrollName
+                    'payrollNumber' => $cdr->payroll->payrollNumber,
+                    'payrollName' => $cdr->payroll->payrollName
                 ], 404);
             }
 
@@ -171,14 +137,14 @@ class RCDController extends Controller
                     'rcdName' => $rcd->rcdName,
                     'orsNumber' => $rcd->orsNumber,
                     'responCode' => $rcd->responCode,
-                    'cdrName' => $cdr->cdrName ?? 'Unknown',
-                    'dvPNumber' => $cdr->dvPNumber ?? 'Unknown',
-                    'payrollNumber' => $payroll->payrollNumber ?? 'Unknown',
-                    'payrollName' => $payroll->payrollName ?? 'Unknown',
+                    'cdrName' => $cdr->cdrName,
+                    'dvPNumber' => $cdr->dvPNumber,
+                    'payrollNumber' => $cdr->payroll->payrollNumber,
+                    'payrollName' => $cdr->payroll->payrollName,
                     'totalAmount' => $beneficiaries->sum('amount'),
                     'totalBeneficiaries' => $beneficiaries->count(),
-                    'cashAdvanceReceived' => $cdr->cashAdvanceReceived ?? 0,
-                    'subTotal' => $payroll->subTotal ?? 0
+                    'cashAdvanceReceived' => $cdr->cashAdvanceReceived,
+                    'subTotal' => $cdr->payroll->subTotal
                 ]
             ]);
 
@@ -325,7 +291,11 @@ class RCDController extends Controller
 
     private function prepareExportData($rcd)
     {
-        $beneficiaries = $rcd->cdr->payroll->beneficiaries()
+        // Get the specific payroll number from the CDR
+        $payrollNumber = $rcd->cdr->payroll->payrollNumber;
+
+        // Fetch only beneficiaries associated with this specific payroll number
+        $beneficiaries = Beneficiary::where('payrollNumber', $payrollNumber)
             ->with(['barangay.municipality'])
             ->orderBy('beneficiaryNumber')
             ->get();
@@ -347,10 +317,17 @@ class RCDController extends Controller
                     $firstBeneficiary->lastName,
                     $firstBeneficiary->firstName
                 ),
-                'uacsCode' => $rcd->cdr->uacsObjectCode, // Updated to access UACS code directly from CDR
+                'uacsCode' => $rcd->cdr->uacsObjectCode,
                 'paymentNature' => $rcd->cdr->paymentNature->natureOfPayment,
                 'amount' => $group->sum('amount'),
-                'beneficiaries' => $group
+                'beneficiaries' => $group->map(function($beneficiary) {
+                    return [
+                        'lastName' => $beneficiary->lastName,
+                        'firstName' => $beneficiary->firstName,
+                        'middleName' => $beneficiary->middleName,
+                        'amount' => $beneficiary->amount
+                    ];
+                })->toArray()
             ];
         });
 

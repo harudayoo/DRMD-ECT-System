@@ -162,7 +162,7 @@
             v-model="beneficiarySearch"
             @input="debouncedBeneficiarySearch"
             type="text"
-            placeholder="Search Beneficiaries by Number or Name"
+            placeholder="Search Validated Beneficiaries by Number or Name"
             class="w-full px-4 py-1.5 border rounded-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
@@ -207,6 +207,142 @@
         <div
           class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"
         ></div>
+      </div>
+
+      <!-- Unvalidated Beneficiary Search Section -->
+      <div v-if="selectedPayroll" class="mb-6">
+        <div class="flex items-center space-x-4">
+          <input
+            v-model="unvalidatedSearch"
+            @input="debouncedUnvalidatedSearch"
+            type="text"
+            placeholder="Search Unvalidated Beneficiaries in Same Barangay"
+            class="flex-grow px-4 py-2 border rounded-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        <!-- Unvalidated Beneficiaries Table -->
+        <div
+          v-if="unvalidatedBeneficiaries.length > 0"
+          class="mt-4 bg-white shadow overflow-hidden sm:rounded-lg"
+        >
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Name
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr
+                v-for="beneficiary in unvalidatedBeneficiaries"
+                :key="beneficiary.beneficiaryID"
+              >
+                <td class="px-6 py-4 whitespace-nowrap">
+                  {{ beneficiary.firstName }} {{ beneficiary.middleName }}
+                  {{ beneficiary.lastName }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <button
+                    @click="openValidationModal(beneficiary)"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Validate
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else-if="unvalidatedSearch" class="mt-4 text-gray-500">
+          No unvalidated beneficiaries found.
+        </p>
+      </div>
+
+      <!-- Beneficiary Validation Modal -->
+      <div
+        v-if="selectedBeneficiary"
+        class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center"
+      >
+        <div class="bg-white p-6 rounded-lg shadow-xl w-96">
+          <h2 class="text-xl font-bold mb-4">Validate Beneficiary</h2>
+
+          <div class="mb-4">
+            <label class="block text-gray-700 text-sm font-bold mb-2"
+              >Personal Information</label
+            >
+            <input
+              v-model="beneficiaryDetails.lastName"
+              type="text"
+              placeholder="Last Name"
+              class="w-full px-3 py-2 border rounded-md mb-2"
+            />
+            <input
+              v-model="beneficiaryDetails.firstName"
+              type="text"
+              placeholder="First Name"
+              class="w-full px-3 py-2 border rounded-md mb-2"
+            />
+            <input
+              v-model="beneficiaryDetails.middleName"
+              type="text"
+              placeholder="Middle Name"
+              class="w-full px-3 py-2 border rounded-md mb-2"
+            />
+            <input
+              v-model="beneficiaryDetails.extensionName"
+              type="text"
+              placeholder="Extension Name (Optional)"
+              class="w-full px-3 py-2 border rounded-md mb-2"
+            />
+
+            <div class="mb-2">
+              <label class="block text-gray-700 text-sm font-bold mb-1">Sex</label>
+              <select
+                v-model="beneficiaryDetails.sex"
+                class="w-full px-3 py-2 border rounded-md"
+              >
+                <option value="">Select Sex</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <div class="mb-2">
+              <label class="block text-gray-700 text-sm font-bold mb-1"
+                >Date of Birth</label
+              >
+              <input
+                v-model="beneficiaryDetails.dateOfBirth"
+                type="date"
+                class="w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+          </div>
+
+          <div class="flex justify-between">
+            <button
+              @click="validateBeneficiary"
+              class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            >
+              Pass
+            </button>
+            <button
+              @click="closeValidationModal"
+              class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Beneficiaries Table -->
@@ -278,6 +414,7 @@
                           <option value="2">Unclaimed</option>
                           <option value="3">Disqualified</option>
                           <option value="4">Double Entry</option>
+                          <option value="5">Validated</option>
                         </select>
                       </td>
                     </tr>
@@ -378,12 +515,68 @@ const beneficiaryHeaders = [
   "Status",
 ];
 
+const unvalidatedSearch = ref("");
+const unvalidatedBeneficiaries = ref([]);
+const selectedBeneficiary = ref(null);
+const beneficiaryDetails = ref({
+  lastName: "",
+  firstName: "",
+  middleName: "",
+  extensionName: "",
+  sex: "",
+  dateOfBirth: "",
+});
+
 const form = useForm({
   search: "",
 });
 
 const setError = (message) => {
   error.value = message;
+};
+
+const debouncedUnvalidatedSearch = debounce(async () => {
+  if (!selectedPayroll.value || !unvalidatedSearch.value) return;
+
+  try {
+    const response = await axios.get(
+      `/payroll/${selectedPayroll.value.payrollID}/search-unvalidated`,
+      {
+        params: {
+          search: unvalidatedSearch.value,
+          per_page: 10,
+        },
+      }
+    );
+
+    unvalidatedBeneficiaries.value = response.data.beneficiaries.data;
+  } catch (err) {
+    setError("Error searching unvalidated beneficiaries: " + err.message);
+  }
+}, 300);
+
+const openValidationModal = (beneficiary) => {
+  selectedBeneficiary.value = beneficiary;
+  beneficiaryDetails.value = {
+    lastName: beneficiary.lastName,
+    firstName: beneficiary.firstName,
+    middleName: beneficiary.middleName,
+    extensionName: beneficiary.extensionName || "",
+    sex: beneficiary.sex || "",
+    dateOfBirth: beneficiary.dateOfBirth || "",
+  };
+};
+
+const closeValidationModal = () => {
+  selectedBeneficiary.value = null;
+  beneficiaryDetails.value = {
+    lastName: "",
+    firstName: "",
+    middleName: "",
+    extensionName: "",
+    sex: "",
+    dateOfBirth: "",
+  };
 };
 
 const debouncedSearch = debounce(() => {
@@ -464,6 +657,44 @@ onMounted(() => {
   search.value = form.search;
 });
 
+const validateBeneficiary = async () => {
+  if (!selectedPayroll.value || !selectedBeneficiary.value) return;
+
+  try {
+    await axios.post(
+      `/payroll/${selectedPayroll.value.payrollID}/validate-beneficiary/${selectedBeneficiary.value.beneficiaryID}`,
+      {
+        lastName: beneficiaryDetails.value.lastName,
+        firstName: beneficiaryDetails.value.firstName,
+        middleName: beneficiaryDetails.value.middleName,
+        extensionName: beneficiaryDetails.value.extensionName,
+        sex: beneficiaryDetails.value.sex,
+        dateOfBirth: beneficiaryDetails.value.dateOfBirth,
+      }
+    );
+
+    // Refresh the unvalidated beneficiaries list
+    await debouncedUnvalidatedSearch();
+
+    // Close the modal
+    closeValidationModal();
+
+    // Optional: Refresh beneficiaries list
+    await fetchBeneficiaries(selectedPayroll.value.payrollID);
+  } catch (err) {
+    setError("Error validating beneficiary: " + err.message);
+  }
+};
+
+// Watch for changes in selected payroll to reset search
+watch(
+  () => selectedPayroll.value,
+  () => {
+    unvalidatedSearch.value = "";
+    unvalidatedBeneficiaries.value = [];
+  }
+);
+
 //Payroll Beneficiary List
 const selectPayroll = async (payroll) => {
   selectedPayroll.value = payroll;
@@ -475,7 +706,13 @@ const fetchBeneficiaries = async (payrollId, page = 1, search = "") => {
   isBeneficiariesLoading.value = true;
   try {
     const response = await axios.get(`/payroll/${payrollId}/beneficiaries`, {
-      params: { page, per_page: beneficiariesPerPage, search },
+      params: {
+        page,
+        per_page: beneficiariesPerPage,
+        search,
+        sort: "beneficiaryNumber", // Add this line to ensure consistent sorting
+        direction: "asc", // Add this line to specify sort direction
+      },
     });
     beneficiaries.value = response.data.beneficiaries.data;
     beneficiariesPagination.value = {
@@ -588,26 +825,40 @@ const setAmount = async () => {
 
   try {
     isBeneficiariesLoading.value = true;
-    await axios.post(`/payroll/${selectedPayroll.value.payrollID}/beneficiaries`, {
+    const payload = {
       amount: parsedAmount,
       beneficiaries: beneficiaries.value.map((b) => ({
         beneficiaryID: b.beneficiaryID,
         status: b.status,
       })),
-    });
+    };
+
+    console.log("Payload being sent:", payload); // Log the exact payload
+
+    await axios.post(
+      `/payroll/${selectedPayroll.value.payrollID}/beneficiaries`,
+      payload
+    );
+
     // Update local beneficiary amounts
     beneficiaries.value = beneficiaries.value.map((b) => ({
       ...b,
       amount: parsedAmount,
     }));
+
     await fetchBeneficiaries(selectedPayroll.value.payrollID);
     await refreshPayrollData(); // Refresh payroll data to get updated subtotal
   } catch (err) {
+    console.error("Full error object:", err);
+    console.error("Response data:", err.response?.data);
+
     setError(
       "An error occurred while updating beneficiary amounts: " +
-        (err.response?.data?.error || err.message)
+        (err.response?.data?.error ||
+          (err.response?.data?.errors
+            ? JSON.stringify(err.response.data.errors)
+            : err.message))
     );
-    console.error(err);
   } finally {
     isBeneficiariesLoading.value = false;
   }

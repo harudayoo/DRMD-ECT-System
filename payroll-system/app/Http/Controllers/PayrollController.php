@@ -12,6 +12,7 @@ use App\Models\Province;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Validator;
 
 
 class PayrollController extends Controller
@@ -42,39 +43,35 @@ class PayrollController extends Controller
     }
 
     public function store(Request $request)
-    {
-        Log::info('Received payroll data:', $request->all());
+{
+    Log::info('Received payroll data:', $request->all());
 
-        $validated = $request->validate([
-            'payrollName' => 'required|string|max:50',
-            'barangayID' => 'required|exists:barangays,barangayID',
+    $validated = $request->validate([
+        'payrollName' => 'required|string|max:50',
+        'barangayID' => 'required|exists:barangays,barangayID',
+    ]);
+
+    do {
+        $payrollNumber = $this->generatePayrollNumber();
+    } while (Payroll::where('payrollNumber', $payrollNumber)->exists());
+
+    $barangay = Barangay::findOrFail($validated['barangayID']);
+    $subTotal = $barangay->totalAmountReleased;
+
+    DB::transaction(function () use ($payrollNumber, $validated, $subTotal, $barangay) {
+        $payroll = Payroll::create([
+            'payrollNumber' => $payrollNumber,
+            'payrollName' => $validated['payrollName'],
+            'barangayID' => $validated['barangayID'],
+            'subTotal' => $subTotal,
         ]);
 
-        do {
-            $payrollNumber = $this->generatePayrollNumber();
-        } while (Payroll::where('payrollNumber', $payrollNumber)->exists());
 
-        $barangay = Barangay::findOrFail($validated['barangayID']);
-        $subTotal = $barangay->totalAmountReleased;
+        Log::info('Created payroll:', $payroll->toArray());
+    });
 
-        DB::transaction(function () use ($payrollNumber, $validated, $subTotal, $barangay) {
-            $payroll = Payroll::create([
-                'payrollNumber' => $payrollNumber,
-                'payrollName' => $validated['payrollName'],
-                'barangayID' => $validated['barangayID'],
-                'subTotal' => $subTotal,
-            ]);
-
-            // Update beneficiaries with the new payrollNumber
-            Beneficiary::where('barangayID', $barangay->barangayID)
-                ->whereNull('payrollNumber')
-                ->update(['payrollNumber' => $payrollNumber]);
-
-            Log::info('Created payroll:', $payroll->toArray());
-        });
-
-        return redirect()->route('payroll.index')->with('success', 'Payroll created successfully.');
-    }
+    return redirect()->route('payroll.index')->with('success', 'Payroll created successfully.');
+}
 
     private function generatePayrollNumber()
     {
@@ -106,30 +103,94 @@ class PayrollController extends Controller
         return response()->json(['barangays' => $barangays]);
     }
 
-    public function getBeneficiaries(Request $request, $payrollId)
-    {
-        try {
-            $payroll = Payroll::findOrFail($payrollId);
-            $search = $request->input('search', '');
-            $perPage = $request->input('per_page', 10);
+    public function searchUnvalidatedBeneficiaries(Request $request, $payrollId)
+{
+    try {
+        $payroll = Payroll::findOrFail($payrollId);
+        $search = $request->input('search', '');
+        $perPage = $request->input('per_page', 10);
 
-            $beneficiaries = Beneficiary::where('payrollNumber', $payroll->payrollNumber)
-                ->where(function ($query) use ($search) {
-                    $query->where('beneficiaryNumber', 'like', "%{$search}%")
-                        ->orWhere('lastName', 'like', "%{$search}%")
-                        ->orWhere('firstName', 'like', "%{$search}%")
-                        ->orWhere('middleName', 'like', "%{$search}%");
-                })
-                ->paginate($perPage);
+        $beneficiaries = Beneficiary::where('barangayID', $payroll->barangayID)
+            ->whereNull('payrollNumber')
+            ->where(function ($query) use ($search) {
+                $query->where('lastName', 'like', "%{$search}%")
+                    ->orWhere('firstName', 'like', "%{$search}%")
+                    ->orWhere('middleName', 'like', "%{$search}%");
+            })
+            ->paginate($perPage);
 
-            return response()->json([
-                'payroll' => $payroll::findOrFail($payrollId),
-                'beneficiaries' => $beneficiaries,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'An error occurred while fetching beneficiaries: ' . $e->getMessage()], 500);
-        }
+        return response()->json([
+            'payroll' => $payroll,
+            'beneficiaries' => $beneficiaries,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'An error occurred while searching beneficiaries: ' . $e->getMessage()], 500);
     }
+}
+
+public function validateBeneficiary(Request $request, $payrollId, $beneficiaryId)
+{
+    try {
+        $payroll = Payroll::findOrFail($payrollId);
+        $beneficiary = Beneficiary::findOrFail($beneficiaryId);
+
+        // Validate that the beneficiary belongs to the same barangay
+        if ($beneficiary->barangayID !== $payroll->barangayID) {
+            return response()->json(['error' => 'Beneficiary does not belong to the same barangay'], 400);
+        }
+
+        // Generate a unique beneficiary number
+        $maxBeneficiaryNumber = Beneficiary::where('payrollNumber', $payroll->payrollNumber)
+            ->max('beneficiaryNumber');
+
+        DB::transaction(function () use ($payroll, $beneficiary, $maxBeneficiaryNumber) {
+            $beneficiary->update([
+                'payrollNumber' => $payroll->payrollNumber,
+                'status' => 5, // Validated status
+                'beneficiaryNumber' => $maxBeneficiaryNumber ? $maxBeneficiaryNumber + 1 : 1
+            ]);
+
+            // Optional: Update the payroll subtotal
+            $beneficiary->amount = $beneficiary->amount ?? 0;
+            $payroll->increment('subTotal', $beneficiary->amount);
+        });
+
+        return response()->json([
+            'message' => 'Beneficiary validated successfully',
+            'beneficiary' => $beneficiary
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'An error occurred while validating beneficiary: ' . $e->getMessage()], 500);
+    }
+}
+
+
+public function getBeneficiaries(Request $request, $payrollId)
+{
+    try {
+        $payroll = Payroll::findOrFail($payrollId);
+        $search = $request->input('search', '');
+        $perPage = $request->input('per_page', 10);
+
+        $beneficiaries = Beneficiary::where('barangayID', $payroll->barangayID)
+            ->where('status', 5)
+            ->where(function ($query) use ($search) {
+                $query->where('beneficiaryNumber', 'like', "%{$search}%")
+                    ->orWhere('lastName', 'like', "%{$search}%")
+                    ->orWhere('firstName', 'like', "%{$search}%")
+                    ->orWhere('middleName', 'like', "%{$search}%");
+            })
+            ->orderBy('beneficiaryNumber', 'asc')  // Add this line for sorting
+            ->paginate($perPage);
+
+        return response()->json([
+            'payroll' => $payroll,
+            'beneficiaries' => $beneficiaries,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'An error occurred while fetching beneficiaries: ' . $e->getMessage()], 500);
+    }
+}
 
     public function markAllClaimed($payrollId)
     {
@@ -150,77 +211,57 @@ class PayrollController extends Controller
         }
     }
 
-    public function export($payrollId)
-    {
-        try {
-            $payroll = Payroll::with([
-                'barangay.municipality.province',
-                'beneficiaries'
-            ])->findOrFail($payrollId);
-
-            $claimedCount = $payroll->beneficiaries->where('status', 1)->count();
-            $unclaimedCount = $payroll->beneficiaries->where('status', 2)->count();
-
-            if ($unclaimedCount === 0) {
-                return response()->json(['error' => 'There are no beneficiaries to export.'], 400);
-            }
-
-            if ($claimedCount > 0) {
-                return response()->json([
-                    'message' => "{$claimedCount} Beneficiaries claimed, {$unclaimedCount} to export."
-                ], 200);
-            }
-
-            $pdf = $this->generatePdf($payroll);
-
-            // Increment exportNum
-            $payroll->increment('exportNum');
-
-            // Recalculate and update subtotal
-            $subtotal = $payroll->beneficiaries()
-                ->where('status', 2) // Only include unclaimed beneficiaries
-                ->sum('amount');
-
-            // Ensure subtotal doesn't exceed 99999.99 (max value for decimal(8,2))
-            $payroll->subTotal = number_format(min($subtotal, 999999.99), 2, '.', '');
-            $payroll->updated_at = now();
-            $payroll->save();
-
-            return $pdf->download("payroll_{$payroll->payrollNumber}.pdf");
-        } catch (\Exception $e) {
-            Log::error('PDF generation failed: ' . $e->getMessage(), ['payroll_id' => $payrollId]);
-            return response()->json(['error' => 'PDF generation failed: ' . $e->getMessage()], 500);
-        }
-    }
-
     public function updateBeneficiaries(Request $request, $payrollId)
     {
-        $validated = $request->validate([
+        // Update validation rules to accept status 5
+        $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|min:0|max:99999.99',
-            'beneficiaries' => 'required|array',
-            'beneficiaries.*.beneficiaryID' => 'required|exists:beneficiaries,beneficiaryID',
-            'beneficiaries.*.status' => 'required|integer|min:1|max:4',
+            'beneficiaries' => 'array',
+            'beneficiaries.*.beneficiaryID' => 'sometimes|exists:beneficiaries,beneficiaryID',
+            'beneficiaries.*.status' => 'sometimes|integer|min:1|max:5', // Updated max to 5
         ]);
 
+        if ($validator->fails()) {
+            Log::error('Validation failed', [
+                'errors' => $validator->errors(),
+                'input' => $request->all()
+            ]);
+
+            return response()->json([
+                'errors' => $validator->errors(),
+                'input' => $request->all()
+            ], 422);
+        }
+
         try {
+            $validated = $validator->validated();
             $payroll = Payroll::findOrFail($payrollId);
 
             DB::transaction(function () use ($payroll, $validated) {
                 $amount = number_format($validated['amount'], 2, '.', '');
 
-                // Update amount for all beneficiaries in the barangay
+                // Update amount ONLY for beneficiaries with status 5
                 Beneficiary::where('barangayID', $payroll->barangayID)
+                    ->where('status', 5)
                     ->update(['amount' => $amount]);
 
-                // Update status for specific beneficiaries
-                foreach ($validated['beneficiaries'] as $beneficiary) {
-                    Beneficiary::where('beneficiaryID', $beneficiary['beneficiaryID'])
-                        ->update(['status' => $beneficiary['status']]);
+                // If specific beneficiary statuses are provided, validate they're status 5 before updating
+                if (!empty($validated['beneficiaries'])) {
+                    foreach ($validated['beneficiaries'] as $beneficiary) {
+                        if (($beneficiary['status'] ?? null) === 5) {
+                            Beneficiary::where('beneficiaryID', $beneficiary['beneficiaryID'])
+                                ->where('barangayID', $payroll->barangayID)
+                                ->where('status', 5) // Only update if status is 5
+                                ->update([
+                                    'amount' => $amount
+                                ]);
+                        }
+                    }
                 }
 
-                // Recalculate total amount for unclaimed beneficiaries
+                // Recalculate total amount for validated (status 5) beneficiaries
                 $totalAmount = Beneficiary::where('barangayID', $payroll->barangayID)
-                    ->where('status', 2) // Only include unclaimed beneficiaries
+                    ->where('status', 5)
                     ->sum('amount');
 
                 // Ensure subTotal doesn't exceed 99999.99
@@ -232,20 +273,103 @@ class PayrollController extends Controller
 
             return response()->json(['message' => 'Beneficiaries updated successfully']);
         } catch (\Exception $e) {
-            Log::error('Error updating beneficiaries: ' . $e->getMessage(), [
+            Log::error('Error updating beneficiaries', [
                 'payrollId' => $payrollId,
                 'request' => $request->all(),
+                'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return response()->json(['error' => 'An error occurred while updating beneficiaries: ' . $e->getMessage()], 500);
+
+            return response()->json([
+                'error' => 'An error occurred while updating beneficiaries: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    public function export($payrollId)
+    {
+        try {
+            $payroll = Payroll::with([
+                'barangay.municipality.province',
+                'beneficiaries' => function($query) {
+                    $query->where('status', 5)
+                        ->orderBy('beneficiaryNumber', 'asc');
+                }
+            ])->findOrFail($payrollId);
+
+            // Check if there are any status 5 beneficiaries
+            if ($payroll->beneficiaries->isEmpty()) {
+                return response()->json([
+                    'error' => 'There are no validated beneficiaries (status 5) to export.',
+                    'status' => 'empty'
+                ], 400);
+            }
+
+            $pdf = $this->generatePdf($payroll);
+
+            DB::transaction(function () use ($payroll) {
+                // Always allow export by removing any status checks
+
+                // Increment exportNum
+                $payroll->increment('exportNum');
+
+                // Recalculate and update subtotal for status 5 beneficiaries only
+                $subtotal = $payroll->beneficiaries()
+                    ->where('status', 5)
+                    ->sum('amount');
+
+                // Ensure subtotal doesn't exceed 99999.99
+                $payroll->subTotal = number_format(min($subtotal, 999999.99), 2, '.', '');
+                $payroll->updated_at = now();
+                $payroll->save();
+
+                // Log the export for tracking
+                Log::info('Payroll exported', [
+                    'payroll_id' => $payroll->id,
+                    'payroll_number' => $payroll->payrollNumber,
+                    'export_number' => $payroll->exportNum,
+                    'beneficiary_count' => $payroll->beneficiaries->count(),
+                    'total_amount' => $subtotal,
+                    'exported_at' => now()->toDateTimeString()
+                ]);
+            });
+
+            // Include export number in filename for tracking multiple exports
+            $timestamp = now()->format('Ymd_His');
+            $filename = sprintf(
+                "payroll_%s_export%d_%s.pdf",
+                $payroll->payrollNumber,
+                $payroll->exportNum,
+                $timestamp
+            );
+
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            Log::error('PDF generation failed: ' . $e->getMessage(), [
+                'payroll_id' => $payrollId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'PDF generation failed: ' . $e->getMessage(),
+                'status' => 'error'
+            ], 500);
         }
     }
 
     private function generatePdf(Payroll $payroll)
     {
+        // Group beneficiaries into chunks of 10 for pagination
+        $beneficiariesChunks = $payroll->beneficiaries->chunk(10);
+
         $pdf = PDF::loadView('pdfs.payroll', [
             'payroll' => $payroll,
-            'beneficiaries' => $payroll->beneficiaries->chunk(10),
+            'beneficiaries' => $beneficiariesChunks,
+            'totalPages' => $beneficiariesChunks->count(),
+            'totalBeneficiaries' => $payroll->beneficiaries->count(),
+            'totalAmount' => $payroll->beneficiaries->sum('amount'),
+            'exportDateTime' => now()->format('F j, Y g:i A')
         ]);
 
         $pdf->setPaper('legal', 'landscape');

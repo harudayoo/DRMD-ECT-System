@@ -54,7 +54,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
         Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    }); 
+    });
 
     Route::get('/provinces', [ProvinceController::class, 'index'])->name('provinces.index');
     Route::get('/municipalities/{provinceID}', [MunicipalityController::class, 'index'])->name('municipalities.index');
@@ -95,6 +95,8 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::post('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'updateBeneficiaries'])->name('payroll.updateBeneficiaries');
     Route::get('/payroll/{payrollId}/export', [PayrollController::class, 'export'])->name('payroll.export');
     Route::post('/payroll/{payrollId}/mark-all-claimed', [PayrollController::class, 'markAllClaimed'])->name('payroll.markAllClaimed');
+    Route::get('/payroll/{payrollId}/search-unvalidated', [PayrollController::class, 'searchUnvalidatedBeneficiaries'])->name('payroll.searchUnvalidated');
+Route::post('/payroll/{payrollId}/validate-beneficiary/{beneficiaryId}', [PayrollController::class, 'validateBeneficiary'])->name('payroll.validateBeneficiary');
 
     // API Payroll Routes
     Route::prefix('api')->group(function () {

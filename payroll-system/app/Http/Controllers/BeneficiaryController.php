@@ -64,7 +64,6 @@ class BeneficiaryController extends Controller
 
             // Set the status to 2 upon adding
             $validatedData['status'] = 2;
-            $validatedData['beneficiaryNumber'] = Beneficiary::generateUniqueBeneficiaryNumber($validatedData['barangayID']);
 
             $beneficiary = Beneficiary::create($validatedData);
 
@@ -97,7 +96,6 @@ class BeneficiaryController extends Controller
             $validatedData['sex'] = $validatedData['sex'] === 'Male' ? 1 : 2;
 
             $validatedData['status'] = 4; // Set status to 4 for potential duplicate
-            $validatedData['beneficiaryNumber'] = Beneficiary::generateUniqueBeneficiaryNumber($validatedData['barangayID']);
 
             $beneficiary = Beneficiary::create($validatedData);
 

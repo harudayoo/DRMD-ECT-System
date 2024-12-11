@@ -57,18 +57,6 @@ class Beneficiary extends Model
         return $this->belongsTo(Masterlist::class, 'masterlistID', 'masterlistID');
     }
 
-    public static function generateUniqueBeneficiaryNumber($barangayId)
-    {
-        do {
-            $number = mt_rand(0001, 999999); // Generate a random 6-digit number
-            $exists = self::where('barangayID', $barangayId)
-                ->where('beneficiaryNumber', $number)
-                ->exists();
-        } while ($exists);
-
-        return $number;
-    }
-
     public function payroll()
     {
         return $this->belongsTo(Payroll::class, 'payrollNumber', 'payrollNumber');
