@@ -104,29 +104,37 @@ class PayrollController extends Controller
     }
 
     public function searchUnvalidatedBeneficiaries(Request $request, $payrollId)
-{
-    try {
-        $payroll = Payroll::findOrFail($payrollId);
-        $search = $request->input('search', '');
-        $perPage = $request->input('per_page', 10);
+    {
+        try {
+            $payroll = Payroll::findOrFail($payrollId);
+            $search = $request->input('search', '');
+            $perPage = $request->input('per_page', 10);
 
-        $beneficiaries = Beneficiary::where('barangayID', $payroll->barangayID)
-            ->whereNull('payrollNumber')
-            ->where(function ($query) use ($search) {
-                $query->where('lastName', 'like', "%{$search}%")
-                    ->orWhere('firstName', 'like', "%{$search}%")
-                    ->orWhere('middleName', 'like', "%{$search}%");
-            })
-            ->paginate($perPage);
+            $beneficiaries = Beneficiary::where('barangayID', $payroll->barangayID)
+                ->whereNull('payrollNumber')
+                ->where(function ($query) use ($search) {
+                    $query->where('lastName', 'like', "%{$search}%")
+                        ->orWhere('firstName', 'like', "%{$search}%")
+                        ->orWhere('middleName', 'like', "%{$search}%");
+                })
+                ->select([
+                    'beneficiaryID',
+                    'firstName',
+                    'middleName',
+                    'lastName',
+                    'sex',
+                    'dateOfBirth'
+                ])
+                ->paginate($perPage);
 
-        return response()->json([
-            'payroll' => $payroll,
-            'beneficiaries' => $beneficiaries,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'An error occurred while searching beneficiaries: ' . $e->getMessage()], 500);
+            return response()->json([
+                'payroll' => $payroll,
+                'beneficiaries' => $beneficiaries,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while searching beneficiaries: ' . $e->getMessage()], 500);
+        }
     }
-}
 
 public function validateBeneficiary(Request $request, $payrollId, $beneficiaryId)
 {

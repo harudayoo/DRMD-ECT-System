@@ -237,6 +237,16 @@
                 <th
                   class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
+                  Sex
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Date of Birth
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Actions
                 </th>
               </tr>
@@ -249,6 +259,12 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   {{ beneficiary.firstName }} {{ beneficiary.middleName }}
                   {{ beneficiary.lastName }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  {{ beneficiary.sex }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  {{ formatBirthDate(beneficiary.dateOfBirth) }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <button
@@ -466,7 +482,9 @@
       v-if="!isBeneficiariesLoading && selectedPayroll && beneficiaries.length === 0"
       class="text-center py-8"
     >
-      <p class="text-gray-500 text-lg">No Beneficiary Found In This Payroll.</p>
+      <p class="text-gray-500 text-lg">
+        This Payroll has no validated beneficiaries yet.
+      </p>
     </div>
   </div>
 </template>
@@ -640,9 +658,9 @@ const formatDateTime = (dateTime) => {
   return moment(dateTime).format("MMMM D, YYYY [at] h:mm A");
 };
 
-const filteredLinks = computed(() => {
-  return props.payrolls.links.filter((link) => link.url !== null);
-});
+const formatBirthDate = (dateOfBirth) => {
+  return dateOfBirth ? moment(dateOfBirth).format("MMMM D, YYYY") : "N/A";
+};
 
 const dismissError = () => {
   error.value = null;
