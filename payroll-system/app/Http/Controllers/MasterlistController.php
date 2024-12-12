@@ -16,7 +16,13 @@ use Carbon\Carbon;
 class MasterlistController extends Controller
 {
 
-    private const SIMILARITY_THRESHOLD = 0.8;
+    private const SIMILARITY_THRESHOLD = 0.75;
+
+    private const STATUS_CLAIMED = 1;
+private const STATUS_UNCLAIMED = 2;
+private const STATUS_DISQUALIFIED = 3;
+private const STATUS_DOUBLE_ENTRY = 4;
+private const STATUS_VALIDATED = 5;
 
     public function index()
     {
@@ -119,120 +125,122 @@ class MasterlistController extends Controller
         }
     }
     public function import(Request $request)
-{
-    try {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv',
-            'municipalityId' => 'required|exists:municipalities,municipalityID',
-        ]);
-
-        $file = $request->file('file');
-        $municipalityId = $request->input('municipalityId');
-
-        // Load the spreadsheet
-        $spreadsheet = IOFactory::load($file->getPathname());
-        $worksheet = $spreadsheet->getActiveSheet();
-        $rows = $worksheet->toArray();
-
-        // Debug the data structure
-        Log::info('Excel import started', [
-            'filename' => $file->getClientOriginalName(),
-            'total_rows' => count($rows),
-            'sample_row' => $rows[5] ?? null
-        ]);
-
-        // Skip the first 5 rows (headers)
-        $dataRows = array_slice($rows, 5);
-
-        // Add more strict data validation
-        $dataRows = array_filter($dataRows, function ($row) {
-            // Check if the row has the minimum required data
-            return !empty($row[1]) && // Last Name
-                   !empty($row[2]) && // First Name
-                   !empty($row[6]) && // Date of Birth
-                   !empty($row[9]);   // Barangay
-        });
-
-        if (empty($dataRows)) {
-            throw new \Exception('No valid data rows found in the file.');
-        }
-
-        $totalBeneficiaries = count($dataRows);
-
-        DB::beginTransaction();
-
+    {
         try {
-            $masterlistID = $this->generateMasterlistID();
-            $masterlist = Masterlist::create([
-                'masterlistID' => $masterlistID,
-                'municipalityID' => $municipalityId,
-                'masterlistName' => $file->getClientOriginalName(),
-                'totalBeneficiaries' => $totalBeneficiaries,
+            $request->validate([
+                'file' => 'required|file|mimes:xlsx,xls,csv',
+                'municipalityId' => 'required|exists:municipalities,municipalityID',
             ]);
 
-            $errors = [];
-            $processedRows = 0;
-            $batchSize = 100;
-            $similarBeneficiaries = [];
+            $file = $request->file('file');
+            $municipalityId = $request->input('municipalityId');
 
-            foreach (array_chunk($dataRows, $batchSize) as $chunk) {
-                foreach ($chunk as $index => $row) {
-                    try {
-                        // Add extra validation before processing
-                        if (!$this->isValidRow($row)) {
-                            throw new \Exception('Invalid data format');
+            $spreadsheet = IOFactory::load($file->getPathname());
+            $worksheet = $spreadsheet->getActiveSheet();
+            $rows = $worksheet->toArray();
+
+            Log::info('Excel import started', [
+                'filename' => $file->getClientOriginalName(),
+                'total_rows' => count($rows),
+                'sample_row' => $rows[5] ?? null
+            ]);
+
+            // Skip the first 5 rows (headers)
+            $dataRows = array_slice($rows, 5);
+
+            // Add data validation
+            $dataRows = array_filter($dataRows, function ($row) {
+                return !empty($row[1]) && !empty($row[2]) && !empty($row[6]) && !empty($row[9]);
+            });
+
+            if (empty($dataRows)) {
+                throw new \Exception('No valid data rows found in the file.');
+            }
+
+            $totalBeneficiaries = count($dataRows);
+            $importSummary = [
+                'total_processed' => 0,
+                'duplicates_found' => 0,
+                'successful_imports' => 0,
+                'errors' => []
+            ];
+
+            DB::beginTransaction();
+
+            try {
+                $masterlistID = $this->generateMasterlistID();
+                $masterlist = Masterlist::create([
+                    'masterlistID' => $masterlistID,
+                    'municipalityID' => $municipalityId,
+                    'masterlistName' => $file->getClientOriginalName(),
+                    'totalBeneficiaries' => $totalBeneficiaries,
+                ]);
+
+                $processedRows = 0;
+                $batchSize = 100;
+                $similarBeneficiaries = [];
+
+                foreach (array_chunk($dataRows, $batchSize) as $chunk) {
+                    foreach ($chunk as $index => $row) {
+                        try {
+                            if (!$this->isValidRow($row)) {
+                                throw new \Exception('Invalid data format');
+                            }
+
+                            $rowNumber = $processedRows + $index + 6;
+                            $result = $this->processRow($masterlist, $row, $rowNumber);
+
+                            $importSummary['total_processed']++;
+
+                            if (!empty($result['similarBeneficiaries'])) {
+                                $importSummary['duplicates_found'] += count($result['similarBeneficiaries']);
+                                $similarBeneficiaries = array_merge($similarBeneficiaries, $result['similarBeneficiaries']);
+                            } else {
+                                $importSummary['successful_imports']++;
+                            }
+                        } catch (\Exception $e) {
+                            $importSummary['errors'][] = "Row {$rowNumber}: " . $e->getMessage();
+                            Log::error("Error processing row {$rowNumber}", [
+                                'row_data' => $row,
+                                'error' => $e->getMessage()
+                            ]);
                         }
-
-                        $rowNumber = $processedRows + $index + 6;
-                        $result = $this->processRow($masterlist, $row, $rowNumber);
-
-                        if (!empty($result['similarBeneficiaries'])) {
-                            $similarBeneficiaries = array_merge($similarBeneficiaries, $result['similarBeneficiaries']);
-                        }
-                    } catch (\Exception $e) {
-                        $errors[] = "Row {$rowNumber}: " . $e->getMessage();
-                        Log::error("Error processing row {$rowNumber}", [
-                            'row_data' => $row,
-                            'error' => $e->getMessage()
-                        ]);
                     }
+                    $processedRows += count($chunk);
                 }
-                $processedRows += count($chunk);
-            }
 
-            if (!empty($errors)) {
-                DB::rollBack();
+                if (!empty($importSummary['errors'])) {
+                    DB::rollBack();
+                    return response()->json([
+                        'error' => 'Import completed with errors',
+                        'summary' => $importSummary,
+                        'similar_beneficiaries' => $similarBeneficiaries
+                    ], 422);
+                }
+
+                DB::commit();
                 return response()->json([
-                    'error' => 'Import completed with partial errors',
-                    'details' => $errors,
-                    'processed_rows' => $processedRows,
-                    'total_rows' => $totalBeneficiaries
-                ], 422);
-            }
+                    'message' => 'Masterlist imported successfully',
+                    'summary' => $importSummary,
+                    'similar_beneficiaries' => $similarBeneficiaries
+                ]);
 
-            DB::commit();
-            return response()->json([
-                'message' => 'Masterlist imported successfully',
-                'total_beneficiaries' => $processedRows,
-                'similarBeneficiaries' => $similarBeneficiaries
-            ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
 
         } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+            Log::error('Error during import', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'Import failed',
+                'details' => $e->getMessage()
+            ], 500);
         }
-
-    } catch (\Exception $e) {
-        Log::error('Error during import', [
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        return response()->json([
-            'error' => 'Import failed',
-            'details' => $e->getMessage()
-        ], 500);
     }
-}
 
 private function normalizeSex($sex)
 {
@@ -358,9 +366,20 @@ private function normalizeSex($sex)
             $formattedDateOfBirth
         );
 
-        // If duplicates exist, add to similar beneficiaries array
+        // Set initial status based on duplicates
+        $initialStatus = $potentialDuplicates->isNotEmpty() ?
+            self::STATUS_DOUBLE_ENTRY :
+            self::STATUS_UNCLAIMED;
+
+        // Process duplicates if found
         if ($potentialDuplicates->isNotEmpty()) {
             foreach ($potentialDuplicates as $duplicate) {
+                // Only update existing beneficiary status if not claimed or validated
+                if (!in_array($duplicate->status, [self::STATUS_CLAIMED, self::STATUS_VALIDATED])) {
+                    $duplicate->status = self::STATUS_DOUBLE_ENTRY;
+                    $duplicate->save();
+                }
+
                 $similarityScore = $this->calculateSimilarity(
                     "{$duplicate->lastName} {$duplicate->firstName}",
                     "{$row[1]} {$row[2]}"
@@ -371,16 +390,18 @@ private function normalizeSex($sex)
                         'firstName' => $row[2],
                         'lastName' => $row[1],
                         'middleName' => $row[3] ?? null,
-                        'dateOfBirth' => $formattedDateOfBirth
+                        'dateOfBirth' => $formattedDateOfBirth,
+                        'status' => self::STATUS_DOUBLE_ENTRY
                     ],
                     'existing' => [
                         'firstName' => $duplicate->firstName,
                         'lastName' => $duplicate->lastName,
                         'middleName' => $duplicate->middleName,
-                        'dateOfBirth' => $duplicate->dateOfBirth
+                        'dateOfBirth' => $duplicate->dateOfBirth,
+                        'status' => $duplicate->status,
+                        'statusChanged' => !in_array($duplicate->status, [self::STATUS_CLAIMED, self::STATUS_VALIDATED])
                     ],
-                    'similarityScore' => round($similarityScore * 100, 2),
-                    'action' => 'potential_duplicate'
+                    'similarityScore' => round($similarityScore * 100, 2)
                 ];
             }
         }
@@ -394,9 +415,9 @@ private function normalizeSex($sex)
             'firstName' => $row[2],
             'middleName' => $row[3] ?? null,
             'extensionName' => $row[4] ?? null,
-            'sex' => $sex, // This will now be 1, 2, or null
+            'sex' => $sex,
             'dateOfBirth' => $formattedDateOfBirth,
-            'status' => 2 // Default status
+            'status' => $initialStatus
         ]);
 
         $beneficiary->save();

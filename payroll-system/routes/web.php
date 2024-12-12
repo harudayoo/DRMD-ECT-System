@@ -56,7 +56,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     // Admin Profile routes
     Route::prefix('admin/profile')->group(function () {
         Route::get('/', [AdminProfileController::class, 'edit'])->name('adprofile.edit');
-        Route::patch('/', [AdminProfileController::class, 'update'])->name('adrofile.update');
+        Route::patch('/', [AdminProfileController::class, 'update'])->name('adprofile.update');
         Route::delete('/', [AdminProfileController::class, 'destroy'])->name('adprofile.destroy');
     }); 
 
@@ -99,6 +99,8 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     Route::post('/payroll/{payrollId}/beneficiaries', [PayrollController::class, 'updateBeneficiaries'])->name('payroll.updateBeneficiaries');
     Route::get('/payroll/{payrollId}/export', [PayrollController::class, 'export'])->name('payroll.export');
     Route::post('/payroll/{payrollId}/mark-all-claimed', [PayrollController::class, 'markAllClaimed'])->name('payroll.markAllClaimed');
+    Route::get('/payroll/{payrollId}/search-unvalidated', [PayrollController::class, 'searchUnvalidatedBeneficiaries'])->name('payroll.searchUnvalidated');
+Route::post('/payroll/{payrollId}/validate-beneficiary/{beneficiaryId}', [PayrollController::class, 'validateBeneficiary'])->name('payroll.validateBeneficiary');
 
     // API Payroll Routes
     Route::prefix('api')->group(function () {

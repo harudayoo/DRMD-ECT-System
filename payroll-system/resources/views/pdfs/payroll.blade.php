@@ -122,20 +122,5 @@
             <div class="page-break"></div>
         @endif
     @endforeach
-
-      <!-- Add a page break before the new table -->
-      <div class="page-break"></div>
-
-      <!-- New page for beneficiary number table -->
-      <table class="beneficiary-table">
-          @foreach($payroll->beneficiaries->chunk(2) as $pair)
-              <tr>
-                  @foreach($pair as $beneficiary)
-                      <td><strong>DEPARTMENT OF SOCIAL WELFARE AND DEVELOPMENT</strong><br>Stub Number:<br><strong>{{ $beneficiary->beneficiaryNumber }}</strong><br>Company Copy</td>
-                      <td><strong>DEPARTMENT OF SOCIAL WELFARE AND DEVELOPMENT</strong><br>Stub Number:<br><strong>{{ $beneficiary->beneficiaryNumber }}</strong><br>Beneficiary Number</td>
-                  @endforeach
-              </tr>
-          @endforeach
-      </table>
 </body>
 </html>
