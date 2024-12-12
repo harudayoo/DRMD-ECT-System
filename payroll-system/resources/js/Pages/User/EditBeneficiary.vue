@@ -1,12 +1,14 @@
 <template>
   <div class="h-screen flex flex-col overflow-hidden bg-gray-100">
     <!-- Top navigation bar -->
-    <NavBar @toggle-sidebar="toggleSidebar" @click="toggleDarkMode" />
+    <NavBar 
+    :show="isSidebarVisible"
+    @toggle-sidebar="toggleSidebar" @click="toggleDarkMode" />
 
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar -->
       <transition name="slide">
-        <Sidebar v-if="isSidebarOpen" :is-open="isSidebarOpen" @open-modal="openModal" />
+        <Sidebar v-if="isSidebarVisible" :is-open="isSidebarVisible" @open-modal="openModal" />
       </transition>
 
       <!-- Main content -->
@@ -86,9 +88,9 @@ interface Beneficiary {
 }
 
 // Sidebar functions
-const isSidebarOpen = ref(true);
+const isSidebarVisible = ref(true);
 const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value;
+  isSidebarVisible.value = !isSidebarVisible.value;
 };
 
 const isDarkMode = ref(false);

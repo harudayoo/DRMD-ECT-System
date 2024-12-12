@@ -28,7 +28,7 @@ const form = useForm({
             </p>
         </header>
 
-        <form @submit.prevent="form.patch(route('profile.update'))" class="mt-6 space-y-6">
+        <form @submit.prevent="form.patch(route('adprofile.update'))" class="mt-6 space-y-6">
             <div>
                 <InputLabel for="name" value="Name" class="block mb-2 text-base font-bold text-imperial-primer"  />
 

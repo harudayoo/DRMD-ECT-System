@@ -4,12 +4,14 @@
     :class="{ dark: isDarkMode }"
   >
     <!-- Top navigation bar -->
-    <NavBar @toggle-sidebar="toggleSidebar" />
+    <NavBar 
+    :show="isSidebarVisible"
+    @toggle-sidebar="toggleSidebar" />
 
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar -->
       <transition name="slide">
-        <Sidebar v-if="isSidebarOpen" :is-open="isSidebarOpen" />
+        <Sidebar v-if="isSidebarVisible" :is-open="isSidebarVisible" />
       </transition>
 
       <!-- Main content -->
@@ -106,7 +108,7 @@ const navigateToBarangay = (
 };
 
 const isDarkMode = ref(false);
-const isSidebarOpen = ref(true);
+const isSidebarVisible = ref(true);
 const showGraph = ref(true);
 
 const computedStatusAnalytics = computed(() => ({
@@ -132,7 +134,7 @@ const tableMaxHeight = computed(() => {
 });
 
 const toggleSidebar = () => {
-  isSidebarOpen.value = !isSidebarOpen.value;
+  isSidebarVisible.value = !isSidebarVisible.value;
 };
 
 const toggleGraph = () => {

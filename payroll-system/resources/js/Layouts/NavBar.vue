@@ -155,7 +155,7 @@
 import Calendar from "@/Components/Calendar.vue";
 import { ref } from "vue";
 import { defineProps, defineEmits } from "vue";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 
 
@@ -202,11 +202,10 @@ const logout = async () => {
     } catch (error) {
         console.error("Logout failed:", error);
 
-        // Ensure error.response exists before trying to access status
-        if (error instanceof Error && error.response && error.response.status === 401) {
-    window.location.href = "/login";
-}
-
+        // Use AxiosError type guard to access response
+        if (axios.isAxiosError(error) && error.response && error.response.status === 401) {
+            window.location.href = "/login";
+        }
     }
 };
 

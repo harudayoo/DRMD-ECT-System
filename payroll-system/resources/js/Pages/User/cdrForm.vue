@@ -1,12 +1,15 @@
 <template>
     <div class="min-h-screen flex flex-col bg-gray-100">
         <!-- Top navigation bar -->
-        <NavBar @toggle-sidebar="toggleSidebar" />
+        <NavBar 
+        :show="isSidebarVisible"
+        @toggle-sidebar="toggleSidebar" 
+        />
 
         <div class="flex flex-1 overflow-hidden">
             <!-- Sidebar -->
             <transition name="slide">
-                <Sidebar v-if="isSidebarOpen" :is-open="isSidebarOpen" />
+                <Sidebar v-if="isSidebarVisible" :is-open="isSidebarVisible" />
             </transition>
 
             <!-- Main content -->
@@ -88,12 +91,12 @@ const props = defineProps<{
     initialPayrolls: Payroll[];
 }>();
 
-const isSidebarOpen = ref(true);
+const isSidebarVisible = ref(true);
 const isNewCDRModalOpen = ref(false);
 const isLoading = ref(false);
 
 const toggleSidebar = () => {
-    isSidebarOpen.value = !isSidebarOpen.value;
+    isSidebarVisible.value = !isSidebarVisible.value;
 };
 
 const openNewCDRModal = () => {

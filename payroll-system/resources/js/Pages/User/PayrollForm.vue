@@ -1,14 +1,16 @@
 <template>
     <div class="min-h-screen flex flex-col bg-gray-100">
         <!-- Top navigation bar -->
-        <NavBar @toggle-sidebar="toggleSidebar" />
+        <NavBar 
+        :show="isSidebarVisible"
+        @toggle-sidebar="toggleSidebar" />
 
         <div class="flex flex-1 overflow-hidden">
             <!-- Sidebar -->
             <transition name="slide">
                 <Sidebar
-                    v-if="isSidebarOpen"
-                    :is-open="isSidebarOpen"
+                    v-if="isSidebarVisible"
+                    :is-open="isSidebarVisible"
                     @open-modal="handleOpenModal"
                 />
             </transition>
@@ -157,7 +159,7 @@ defineProps<{
     payrolls: Object;
 }>();
 
-const isSidebarOpen = ref(true);
+const isSidebarVisible = ref(true);
 const isNewPayrollModalOpen = ref(false);
 const isSuccessModalOpen = ref(false);
 const provinces = ref<Province[]>([]);
@@ -165,7 +167,7 @@ const municipalities = ref<Municipality[]>([]);
 const masterlists = ref<Masterlist[]>([]);
 
 const toggleSidebar = () => {
-    isSidebarOpen.value = !isSidebarOpen.value;
+    isSidebarVisible.value = !isSidebarVisible.value;
 };
 
 const handleOpenModal = () => {
