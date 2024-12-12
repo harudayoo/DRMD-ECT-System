@@ -19,10 +19,10 @@ class MasterlistController extends Controller
     private const SIMILARITY_THRESHOLD = 0.75;
 
     private const STATUS_CLAIMED = 1;
-private const STATUS_UNCLAIMED = 2;
-private const STATUS_DISQUALIFIED = 3;
-private const STATUS_DOUBLE_ENTRY = 4;
-private const STATUS_VALIDATED = 5;
+    private const STATUS_UNCLAIMED = 2;
+    private const STATUS_DISQUALIFIED = 3;
+    private const STATUS_DOUBLE_ENTRY = 4;
+    private const STATUS_VALIDATED = 5;
 
     public function index()
     {
@@ -70,26 +70,64 @@ private const STATUS_VALIDATED = 5;
     public function store(Request $request)
     {
         try {
-            $validatedData = $request->validate([
-                'municipalityID' => 'required|exists:municipalities,municipalityID',
+            $validator = Validator::make($request->all(), [
+                'municipalityID' => 'required|integer|exists:municipalities,municipalityID',
                 'masterlistName' => 'required|string|max:255',
+            ], [
+                'municipalityID.required' => 'The municipality ID field is required.',
+                'municipalityID.exists' => 'The selected municipality does not exist.',
+                'masterlistName.required' => 'The masterlist name field is required.',
             ]);
 
-            $masterlistID = $this->generateMasterlistID();
+            if ($validator->fails()) {
+                return response()->json([
+                    'error' => 'Validation failed',
+                    'messages' => $validator->errors()
+                ], 422);
+            }
 
-            $masterlist = Masterlist::create([
-                'masterlistID' => $masterlistID,
-                'municipalityID' => $validatedData['municipalityID'],
-                'masterlistName' => $validatedData['masterlistName'],
-                'totalBeneficiaries' => 0,
-            ]);
+            $validatedData = $validator->validated();
 
-            return response()->json(['message' => 'Masterlist created successfully', 'masterlist' => $masterlist], 201);
+            DB::beginTransaction();
+            try {
+                $masterlistID = $this->generateMasterlistID();
+
+                $masterlist = Masterlist::create([
+                    'masterlistID' => $masterlistID,
+                    'municipalityID' => $validatedData['municipalityID'],
+                    'masterlistName' => $validatedData['masterlistName'],
+                    'totalBeneficiaries' => 0,
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Masterlist created successfully',
+                    'masterlist' => $masterlist
+                ], 201);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Database error while creating masterlist: ' . $e->getMessage(), [
+                    'data' => $validatedData,
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw new \Exception('Failed to create masterlist in database');
+            }
+
         } catch (\Exception $e) {
-            Log::error('Error creating masterlist: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to create masterlist', 'details' => $e->getMessage()], 500);
+            Log::error('Error creating masterlist: ' . $e->getMessage(), [
+                'request_data' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to create masterlist',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
+
 
     public function getExistingBeneficiaries(Request $request)
     {
@@ -242,31 +280,30 @@ private const STATUS_VALIDATED = 5;
         }
     }
 
-private function normalizeSex($sex)
-{
-    if (empty($sex)) {
-        return null;
+    private function normalizeSex($sex)
+    {
+        if (empty($sex)) {
+            return null;
+        }
+
+        // Convert to lowercase and trim
+        $sex = strtolower(trim($sex));
+
+        // Check for various representations of male
+        $maleValues = ['1', 'm', 'male'];
+
+        // Check for various representations of female
+        $femaleValues = ['2', 'f', 'female'];
+
+        if (in_array($sex, $maleValues)) {
+            return 1; // Male
+        } elseif (in_array($sex, $femaleValues)) {
+            return 2; // Female
+        }
+
+        return null; // Return null for unrecognized values
     }
 
-    // Convert to lowercase and trim
-    $sex = strtolower(trim($sex));
-
-    // Check for various representations of male
-    $maleValues = ['1', 'm', 'male'];
-
-    // Check for various representations of female
-    $femaleValues = ['2', 'f', 'female'];
-
-    if (in_array($sex, $maleValues)) {
-        return 1; // Male
-    } elseif (in_array($sex, $femaleValues)) {
-        return 2; // Female
-    }
-
-    return null; // Return null for unrecognized values
-}
-
-    // Add this new method to validate row structure
     private function isValidRow($row): bool
     {
         // Check if row has all required columns
@@ -319,12 +356,15 @@ private function normalizeSex($sex)
             'middleName' => 'nullable|string|max:25',
             'ext' => 'nullable|string|max:10',
             'sex' => 'nullable|string',
-            'dateOfBirth' => ['required', function ($attribute, $value, $fail) {
-                $parsedDate = $this->parseAndFormatDate($value);
-                if ($parsedDate === null) {
-                    $fail('The date of birth is not a valid date.');
+            'dateOfBirth' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    $parsedDate = $this->parseAndFormatDate($value);
+                    if ($parsedDate === null) {
+                        $fail('The date of birth is not a valid date.');
+                    }
                 }
-            }],
+            ],
             'barangay' => 'required|string|max:255',
         ]);
 
@@ -344,8 +384,6 @@ private function normalizeSex($sex)
             ]);
             throw new \Exception("Barangay not found: {$barangayName}");
         }
-
-        $beneficiaryNumber = Beneficiary::generateUniqueBeneficiaryNumber($barangay->barangayID);
 
         // More robust sex normalization
         $sex = $this->normalizeSex($row[5]);
@@ -410,12 +448,12 @@ private function normalizeSex($sex)
         $beneficiary = new Beneficiary([
             'masterlistID' => $masterlist->masterlistID,
             'barangayID' => $barangay->barangayID,
-            'beneficiaryNumber' => $beneficiaryNumber,
             'lastName' => $row[1],
             'firstName' => $row[2],
             'middleName' => $row[3] ?? null,
             'extensionName' => $row[4] ?? null,
             'sex' => $sex,
+            'beneficiaryNumber' => null,
             'dateOfBirth' => $formattedDateOfBirth,
             'status' => $initialStatus
         ]);
