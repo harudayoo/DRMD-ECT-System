@@ -1,13 +1,15 @@
 <template>
     <div class="h-screen flex flex-col overflow-hidden bg-gray-100">
         <!-- Top navigation bar -->
-        <NavBar @toggle-sidebar="toggleSidebar" />
+        <NavBar 
+        :show="isSidebarVisible"
+        @toggle-sidebar="toggleSidebar" />
         <div class="flex flex-1 overflow-hidden">
             <!-- Sidebar -->
             <transition name="slide">
                 <Sidebar
-                    v-if="isSidebarOpen"
-                    :is-open="isSidebarOpen"
+                    v-if="isSidebarVisible"
+                    :is-open="isSidebarVisible"
                     @open-modal="openModal"
                 />
             </transition>
@@ -55,9 +57,9 @@ interface Masterlist {
 const showBeneficiaries = ref(false);
 
 // Sidebar functions
-const isSidebarOpen = ref(true);
+const isSidebarVisible = ref(true);
 const toggleSidebar = () => {
-    isSidebarOpen.value = !isSidebarOpen.value;
+    isSidebarVisible.value = !isSidebarVisible.value;
 };
 
 const openModal = () => {

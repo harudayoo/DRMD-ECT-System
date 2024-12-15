@@ -2,6 +2,7 @@
     <div class="h-screen flex flex-col overflow-hidden bg-gray-100">
         <!-- Top navigation bar -->
         <NavBar
+        :show="isSidebarVisible"
             @toggle-sidebar="toggleSidebar"
             @toggle-dark-mode="toggleDarkMode"
         />
@@ -10,8 +11,8 @@
             <!-- Sidebar -->
             <transition name="slide">
                 <Sidebar
-                    v-if="isSidebarOpen"
-                    :is-open="isSidebarOpen"
+                    v-if="isSidebarVisible"
+                    :is-open="isSidebarVisible"
                     @open-modal="openModal"
                 />
             </transition>
@@ -181,10 +182,10 @@ const props = defineProps<{
 }>();
 
 // Sidebar functions
-const isSidebarOpen = ref(true);
+const isSidebarVisible = ref(true);
 
 const toggleSidebar = () => {
-    isSidebarOpen.value = !isSidebarOpen.value;
+    isSidebarVisible.value = !isSidebarVisible.value;
 };
 
 const isDarkMode = ref(false);

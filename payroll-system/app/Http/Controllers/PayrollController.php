@@ -40,38 +40,39 @@ class PayrollController extends Controller
         return Inertia::render('User/PayrollForm', [
             'payrolls' => $payrolls
         ]);
+
     }
 
     public function store(Request $request)
-{
-    Log::info('Received payroll data:', $request->all());
+    {
+        Log::info('Received payroll data:', $request->all());
 
-    $validated = $request->validate([
-        'payrollName' => 'required|string|max:50',
-        'barangayID' => 'required|exists:barangays,barangayID',
-    ]);
-
-    do {
-        $payrollNumber = $this->generatePayrollNumber();
-    } while (Payroll::where('payrollNumber', $payrollNumber)->exists());
-
-    $barangay = Barangay::findOrFail($validated['barangayID']);
-    $subTotal = $barangay->totalAmountReleased;
-
-    DB::transaction(function () use ($payrollNumber, $validated, $subTotal, $barangay) {
-        $payroll = Payroll::create([
-            'payrollNumber' => $payrollNumber,
-            'payrollName' => $validated['payrollName'],
-            'barangayID' => $validated['barangayID'],
-            'subTotal' => $subTotal,
+        $validated = $request->validate([
+            'payrollName' => 'required|string|max:50',
+            'barangayID' => 'required|exists:barangays,barangayID',
         ]);
 
+        do {
+            $payrollNumber = $this->generatePayrollNumber();
+        } while (Payroll::where('payrollNumber', $payrollNumber)->exists());
 
-        Log::info('Created payroll:', $payroll->toArray());
-    });
+        $barangay = Barangay::findOrFail($validated['barangayID']);
+        $subTotal = $barangay->totalAmountReleased;
 
-    return redirect()->route('payroll.index')->with('success', 'Payroll created successfully.');
-}
+        DB::transaction(function () use ($payrollNumber, $validated, $subTotal, $barangay) {
+            $payroll = Payroll::create([
+                'payrollNumber' => $payrollNumber,
+                'payrollName' => $validated['payrollName'],
+                'barangayID' => $validated['barangayID'],
+                'subTotal' => $subTotal,
+            ]);
+
+
+            Log::info('Created payroll:', $payroll->toArray());
+        });
+
+        return redirect()->route('payroll.index')->with('success', 'Payroll created successfully.');
+    }
 
     private function generatePayrollNumber()
     {
@@ -136,69 +137,69 @@ class PayrollController extends Controller
         }
     }
 
-public function validateBeneficiary(Request $request, $payrollId, $beneficiaryId)
-{
-    try {
-        $payroll = Payroll::findOrFail($payrollId);
-        $beneficiary = Beneficiary::findOrFail($beneficiaryId);
+    public function validateBeneficiary(Request $request, $payrollId, $beneficiaryId)
+    {
+        try {
+            $payroll = Payroll::findOrFail($payrollId);
+            $beneficiary = Beneficiary::findOrFail($beneficiaryId);
 
-        // Validate that the beneficiary belongs to the same barangay
-        if ($beneficiary->barangayID !== $payroll->barangayID) {
-            return response()->json(['error' => 'Beneficiary does not belong to the same barangay'], 400);
-        }
+            // Validate that the beneficiary belongs to the same barangay
+            if ($beneficiary->barangayID !== $payroll->barangayID) {
+                return response()->json(['error' => 'Beneficiary does not belong to the same barangay'], 400);
+            }
 
-        // Generate a unique beneficiary number
-        $maxBeneficiaryNumber = Beneficiary::where('payrollNumber', $payroll->payrollNumber)
-            ->max('beneficiaryNumber');
+            // Generate a unique beneficiary number
+            $maxBeneficiaryNumber = Beneficiary::where('payrollNumber', $payroll->payrollNumber)
+                ->max('beneficiaryNumber');
 
-        DB::transaction(function () use ($payroll, $beneficiary, $maxBeneficiaryNumber) {
-            $beneficiary->update([
-                'payrollNumber' => $payroll->payrollNumber,
-                'status' => 5, // Validated status
-                'beneficiaryNumber' => $maxBeneficiaryNumber ? $maxBeneficiaryNumber + 1 : 1
+            DB::transaction(function () use ($payroll, $beneficiary, $maxBeneficiaryNumber) {
+                $beneficiary->update([
+                    'payrollNumber' => $payroll->payrollNumber,
+                    'status' => 5, // Validated status
+                    'beneficiaryNumber' => $maxBeneficiaryNumber ? $maxBeneficiaryNumber + 1 : 1
+                ]);
+
+                // Optional: Update the payroll subtotal
+                $beneficiary->amount = $beneficiary->amount ?? 0;
+                $payroll->increment('subTotal', $beneficiary->amount);
+            });
+
+            return response()->json([
+                'message' => 'Beneficiary validated successfully',
+                'beneficiary' => $beneficiary
             ]);
-
-            // Optional: Update the payroll subtotal
-            $beneficiary->amount = $beneficiary->amount ?? 0;
-            $payroll->increment('subTotal', $beneficiary->amount);
-        });
-
-        return response()->json([
-            'message' => 'Beneficiary validated successfully',
-            'beneficiary' => $beneficiary
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'An error occurred while validating beneficiary: ' . $e->getMessage()], 500);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while validating beneficiary: ' . $e->getMessage()], 500);
+        }
     }
-}
 
 
-public function getBeneficiaries(Request $request, $payrollId)
-{
-    try {
-        $payroll = Payroll::findOrFail($payrollId);
-        $search = $request->input('search', '');
-        $perPage = $request->input('per_page', 10);
+    public function getBeneficiaries(Request $request, $payrollId)
+    {
+        try {
+            $payroll = Payroll::findOrFail($payrollId);
+            $search = $request->input('search', '');
+            $perPage = $request->input('per_page', 10);
 
-        $beneficiaries = Beneficiary::where('barangayID', $payroll->barangayID)
-            ->where('status', 5)
-            ->where(function ($query) use ($search) {
-                $query->where('beneficiaryNumber', 'like', "%{$search}%")
-                    ->orWhere('lastName', 'like', "%{$search}%")
-                    ->orWhere('firstName', 'like', "%{$search}%")
-                    ->orWhere('middleName', 'like', "%{$search}%");
-            })
-            ->orderBy('beneficiaryNumber', 'asc')  // Add this line for sorting
-            ->paginate($perPage);
+            $beneficiaries = Beneficiary::where('barangayID', $payroll->barangayID)
+                ->where('status', 5)
+                ->where(function ($query) use ($search) {
+                    $query->where('beneficiaryNumber', 'like', "%{$search}%")
+                        ->orWhere('lastName', 'like', "%{$search}%")
+                        ->orWhere('firstName', 'like', "%{$search}%")
+                        ->orWhere('middleName', 'like', "%{$search}%");
+                })
+                ->orderBy('beneficiaryNumber', 'asc')  // Add this line for sorting
+                ->paginate($perPage);
 
-        return response()->json([
-            'payroll' => $payroll,
-            'beneficiaries' => $beneficiaries,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'An error occurred while fetching beneficiaries: ' . $e->getMessage()], 500);
+            return response()->json([
+                'payroll' => $payroll,
+                'beneficiaries' => $beneficiaries,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while fetching beneficiaries: ' . $e->getMessage()], 500);
+        }
     }
-}
 
     public function markAllClaimed($payrollId)
     {
@@ -221,12 +222,12 @@ public function getBeneficiaries(Request $request, $payrollId)
 
     public function updateBeneficiaries(Request $request, $payrollId)
     {
-        // Update validation rules to accept status 5
+        // Modify validation rules to make amount optional when changing status
         $validator = Validator::make($request->all(), [
-            'amount' => 'required|numeric|min:0|max:99999.99',
-            'beneficiaries' => 'array',
+            'amount' => 'nullable|numeric|min:0|max:99999.99',
+            'beneficiaries' => 'required|array',
             'beneficiaries.*.beneficiaryID' => 'sometimes|exists:beneficiaries,beneficiaryID',
-            'beneficiaries.*.status' => 'sometimes|integer|min:1|max:5', // Updated max to 5
+            'beneficiaries.*.status' => 'required|integer|min:1|max:5', // Ensure status is provided
         ]);
 
         if ($validator->fails()) {
@@ -246,23 +247,28 @@ public function getBeneficiaries(Request $request, $payrollId)
             $payroll = Payroll::findOrFail($payrollId);
 
             DB::transaction(function () use ($payroll, $validated) {
-                $amount = number_format($validated['amount'], 2, '.', '');
-
-                // Update amount ONLY for beneficiaries with status 5
-                Beneficiary::where('barangayID', $payroll->barangayID)
-                    ->where('status', 5)
-                    ->update(['amount' => $amount]);
-
-                // If specific beneficiary statuses are provided, validate they're status 5 before updating
+                // Process each beneficiary
                 if (!empty($validated['beneficiaries'])) {
-                    foreach ($validated['beneficiaries'] as $beneficiary) {
-                        if (($beneficiary['status'] ?? null) === 5) {
-                            Beneficiary::where('beneficiaryID', $beneficiary['beneficiaryID'])
-                                ->where('barangayID', $payroll->barangayID)
-                                ->where('status', 5) // Only update if status is 5
-                                ->update([
-                                    'amount' => $amount
-                                ]);
+                    foreach ($validated['beneficiaries'] as $beneficiaryData) {
+                        // Find the beneficiary
+                        $beneficiary = Beneficiary::where('beneficiaryID', $beneficiaryData['beneficiaryID'])
+                            ->where('barangayID', $payroll->barangayID)
+                            ->where('status', 5) // Only allow changes for validated beneficiaries
+                            ->first();
+
+                        if ($beneficiary) {
+                            // Prepare update data
+                            $updateData = [
+                                'status' => $beneficiaryData['status']
+                            ];
+
+                            // Only update amount if it's provided and not null
+                            if (isset($validated['amount']) && $validated['amount'] !== null) {
+                                $updateData['amount'] = number_format($validated['amount'], 2, '.', '');
+                            }
+
+                            // Update the beneficiary
+                            $beneficiary->update($updateData);
                         }
                     }
                 }
@@ -300,7 +306,7 @@ public function getBeneficiaries(Request $request, $payrollId)
         try {
             $payroll = Payroll::with([
                 'barangay.municipality.province',
-                'beneficiaries' => function($query) {
+                'beneficiaries' => function ($query) {
                     $query->where('status', 5)
                         ->orderBy('beneficiaryNumber', 'asc');
                 }

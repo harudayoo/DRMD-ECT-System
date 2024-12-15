@@ -27,9 +27,12 @@ use App\Http\Controllers\SearchController;
 
 // Guest routes
 Route::middleware('guest')->group(function () {
-    Route::get('/', [AuthenticatedSessionController::class, 'create'])->name('login');
-    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+    Route::controller(AuthenticatedSessionController::class)->group(function () {
+        Route::get('/', 'create')->name('guest.login'); // Changed name
+        Route::post('/login', 'store');
+    });
 });
+
 
 Route::middleware(['auth:web,admin'])->group(function () {
     Route::get('/otp', [OtpController::class, 'show'])->name('otp.show');
@@ -52,10 +55,10 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
 
     // Admin Profile routes
     Route::prefix('admin/profile')->group(function () {
-        Route::get('/', [AdminProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/', [AdminProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/', [AdminProfileController::class, 'destroy'])->name('profile.destroy');
-    });
+        Route::get('/', [AdminProfileController::class, 'edit'])->name('adprofile.edit');
+        Route::patch('/', [AdminProfileController::class, 'update'])->name('adprofile.update');
+        Route::delete('/', [AdminProfileController::class, 'destroy'])->name('adprofile.destroy');
+    }); 
 
     Route::get('/provinces', [ProvinceController::class, 'index'])->name('provinces.index');
     Route::get('/municipalities/{provinceID}', [MunicipalityController::class, 'index'])->name('municipalities.index');
@@ -216,7 +219,7 @@ Route::post('/register', [RegisteredUserController::class, 'store'])
 //Register Request Route
 Route::post('/register-request', [RegisteredUserController::class, 'storeRequest'])
     ->middleware('auth:admin')
-    ->name('register');
+    ->name('register.request');
 
 // Include authentication routes
 require __DIR__ . '/auth.php';
