@@ -385,8 +385,6 @@ class MasterlistController extends Controller
             throw new \Exception("Barangay not found: {$barangayName}");
         }
 
-        $beneficiaryNumber = Beneficiary::generateUniqueBeneficiaryNumber($barangay->barangayID);
-
         // More robust sex normalization
         $sex = $this->normalizeSex($row[5]);
 
@@ -676,7 +674,7 @@ class MasterlistController extends Controller
             $worksheet->getColumnDimension('I')->setWidth(20);
             $worksheet->getColumnDimension('J')->setWidth(20);
 
-            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
             $tempFile = tempnam(sys_get_temp_dir(), 'export_');
             $writer->save($tempFile);
 
