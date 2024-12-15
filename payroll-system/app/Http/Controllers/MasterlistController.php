@@ -345,7 +345,6 @@ private function normalizeSex($sex)
             throw new \Exception("Barangay not found: {$barangayName}");
         }
 
-        $beneficiaryNumber = Beneficiary::generateUniqueBeneficiaryNumber($barangay->barangayID);
 
         // More robust sex normalization
         $sex = $this->normalizeSex($row[5]);
@@ -410,7 +409,6 @@ private function normalizeSex($sex)
         $beneficiary = new Beneficiary([
             'masterlistID' => $masterlist->masterlistID,
             'barangayID' => $barangay->barangayID,
-            'beneficiaryNumber' => $beneficiaryNumber,
             'lastName' => $row[1],
             'firstName' => $row[2],
             'middleName' => $row[3] ?? null,
@@ -636,7 +634,7 @@ private function normalizeSex($sex)
             $worksheet->getColumnDimension('I')->setWidth(20);
             $worksheet->getColumnDimension('J')->setWidth(20);
 
-            $writer = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter($spreadsheet, 'Xlsx');
+            $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
             $tempFile = tempnam(sys_get_temp_dir(), 'export_');
             $writer->save($tempFile);
 
