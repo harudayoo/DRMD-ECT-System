@@ -153,6 +153,7 @@ class CDRController extends Controller
             2 => 'Unclaimed',
             3 => 'Disqualified',
             4 => 'Double Entry',
+            5 => 'Validated',
             default => 'Unknown'
         };
     }

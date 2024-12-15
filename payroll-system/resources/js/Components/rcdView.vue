@@ -752,6 +752,7 @@ const statusMap = {
     2: "Unclaimed",
     3: "Disqualified",
     4: "Double Entry",
+    5: "Validated",
 };
 
 const getStatusText = (statusCode) => {
@@ -768,6 +769,8 @@ const getStatusClass = (statusCode) => {
             return "text-red-600";
         case 4:
             return "text-purple-600";
+        case 5:
+            return "text-orange-600";
         default:
             return "text-gray-600";
     }

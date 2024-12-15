@@ -521,6 +521,8 @@
                                         'bg-yellow-100 text-yellow-800':
                                             beneficiary.status ===
                                             'Double-Entry',
+                                        'bg-orange-100 text-orange-800':
+                                            beneficiary.status === 'Validated',
                                     }"
                                 >
                                     {{ beneficiary.status }}
