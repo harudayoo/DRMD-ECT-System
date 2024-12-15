@@ -1,14 +1,20 @@
 <template>
   <div class="h-screen flex flex-col overflow-hidden bg-gray-100">
     <!-- Top navigation bar -->
-    <NavBar 
-    :show="isSidebarVisible"
-    @toggle-sidebar="toggleSidebar" @click="toggleDarkMode" />
+    <NavBar
+      :show="isSidebarVisible"
+      @toggle-sidebar="toggleSidebar"
+      @click="toggleDarkMode"
+    />
 
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar -->
       <transition name="slide">
-        <Sidebar v-if="isSidebarVisible" :is-open="isSidebarVisible" @open-modal="openModal" />
+        <Sidebar
+          v-if="isSidebarVisible"
+          :is-open="isSidebarVisible"
+          @open-modal="openModal"
+        />
       </transition>
 
       <!-- Main content -->
@@ -77,13 +83,13 @@ import EditBeneficiaryModal from "@/Components/EditBeneficiaryModal.vue";
 
 // Define an interface for the Beneficiary type
 interface Beneficiary {
-  beneficiaryID: number;
   lastName: string;
   firstName: string;
   middleName?: string;
   beneficiaryNumber: string;
   sex: number;
   dateOfBirth?: string | Date;
+  beneficiaryID: string;
   // Add other properties as needed
 }
 

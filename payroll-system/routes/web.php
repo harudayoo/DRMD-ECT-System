@@ -58,7 +58,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
         Route::get('/', [AdminProfileController::class, 'edit'])->name('adprofile.edit');
         Route::patch('/', [AdminProfileController::class, 'update'])->name('adprofile.update');
         Route::delete('/', [AdminProfileController::class, 'destroy'])->name('adprofile.destroy');
-    }); 
+    });
 
     Route::get('/provinces', [ProvinceController::class, 'index'])->name('provinces.index');
     Route::get('/municipalities/{provinceID}', [MunicipalityController::class, 'index'])->name('municipalities.index');
@@ -85,7 +85,7 @@ Route::middleware(['auth:web,admin', 'verified'])->group(function () {
     // Masterlist Routes
     Route::get('/view-masterlists', [MasterlistController::class, 'index'])->name('masterlists.view');
     Route::get('/api/masterlists', [MasterlistController::class, 'getMasterlists'])->name('api.masterlists.index');
-    Route::post('/api/masterlists/store', [MasterlistController::class, 'store'])->name('masterlists.store');
+    Route::post('/masterlists/store', [MasterlistController::class, 'store'])->name('masterlists.store');
     Route::put('/api/masterlists/{masterlistID}', [MasterlistController::class, 'update'])->name('masterlists.update');
     Route::post('/api/masterlists/import', [MasterlistController::class, 'import'])->name('masterlists.import');
     Route::post('/masterlist/preview', [MasterlistController::class, 'preview'])->name('masterlist.preview');

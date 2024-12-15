@@ -69,65 +69,57 @@ class MasterlistController extends Controller
 
     public function store(Request $request)
     {
+        Log::info('Masterlist Store Method Called', [
+            'all_input' => $request->all(),
+            'json_input' => $request->json()->all(),
+            'headers' => $request->headers->all()
+        ]);
+
         try {
-            $validator = Validator::make($request->all(), [
-                'municipalityID' => 'required|integer|exists:municipalities,municipalityID',
-                'masterlistName' => 'required|string|max:255',
-            ], [
-                'municipalityID.required' => 'The municipality ID field is required.',
-                'municipalityID.exists' => 'The selected municipality does not exist.',
-                'masterlistName.required' => 'The masterlist name field is required.',
+            $validatedData = $request->validate([
+                'provinceID' => 'required|exists:provinces,provinceID',
+                'municipalityID' => 'required|exists:municipalities,municipalityID',
+                'masterlistName' => 'required|string|max:50',
             ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'error' => 'Validation failed',
-                    'messages' => $validator->errors()
-                ], 422);
-            }
+            Log::info('Validated Data', $validatedData);
 
-            $validatedData = $validator->validated();
+            $masterlist = Masterlist::create([
+                'municipalityID' => $validatedData['municipalityID'],
+                'masterlistName' => $validatedData['masterlistName'],
+                'totalBeneficiaries' => 0,
+                'totalAmountReleased' => 0.00
+            ]);
 
-            DB::beginTransaction();
-            try {
-                $masterlistID = $this->generateMasterlistID();
+            Log::info('Masterlist Created', ['masterlist' => $masterlist]);
 
-                $masterlist = Masterlist::create([
-                    'masterlistID' => $masterlistID,
-                    'municipalityID' => $validatedData['municipalityID'],
-                    'masterlistName' => $validatedData['masterlistName'],
-                    'totalBeneficiaries' => 0,
-                ]);
+            return response()->json([
+                'message' => 'Masterlist created successfully',
+                'masterlist' => $masterlist
+            ], 201);
 
-                DB::commit();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation Error', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
 
-                return response()->json([
-                    'message' => 'Masterlist created successfully',
-                    'masterlist' => $masterlist
-                ], 201);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                Log::error('Database error while creating masterlist: ' . $e->getMessage(), [
-                    'data' => $validatedData,
-                    'trace' => $e->getTraceAsString()
-                ]);
-                throw new \Exception('Failed to create masterlist in database');
-            }
-
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creating masterlist: ' . $e->getMessage(), [
-                'request_data' => $request->all(),
+            Log::error('Unexpected Error', [
+                'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
-                'error' => 'Failed to create masterlist',
-                'message' => $e->getMessage()
+                'message' => 'An unexpected error occurred',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
-
 
     public function getExistingBeneficiaries(Request $request)
     {

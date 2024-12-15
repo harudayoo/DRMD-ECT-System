@@ -35,76 +35,82 @@ class BeneficiaryController extends Controller
     }
 
     public function store(Request $request)
-    {
-        try {
-            $validatedData = $request->validate([
-                'lastName' => 'required|string|max:255',
-                'firstName' => 'required|string|max:255',
-                'middleName' => 'required|string|max:255',
-                'extensionName' => 'nullable|string|max:255',
-                'barangayID' => 'required|exists:barangays,barangayID',
-                'municipalityID' => 'required|exists:municipalities,municipalityID',
-                'provinceID' => 'required|exists:provinces,provinceID',
-                'masterlistID' => 'required|exists:masterlists,masterlistID',
-                'dateOfBirth' => 'required|date',
-                'sex' => 'required|in:Male,Female',
-            ]);
+{
+    try {
+        $validatedData = $request->validate([
+            'lastName' => 'required|string|max:255',
+            'firstName' => 'required|string|max:255',
+            'middleName' => 'required|string|max:255',
+            'extensionName' => 'nullable|string|max:255',
+            'barangayID' => 'required|exists:barangays,barangayID',
+            'municipalityID' => 'required|exists:municipalities,municipalityID',
+            'provinceID' => 'required|exists:provinces,provinceID',
+            'masterlistID' => 'required|exists:masterlists,masterlistID',
+            'dateOfBirth' => 'required|date',
+            'sex' => 'required|in:Male,Female',
+        ]);
 
-            $similarBeneficiaries = $this->findSimilarBeneficiaries($validatedData);
+        $similarBeneficiaries = $this->findSimilarBeneficiaries($validatedData);
 
-            if (!empty($similarBeneficiaries)) {
-                return response()->json([
-                    'message' => 'Similar beneficiaries found',
-                    'similarBeneficiaries' => $similarBeneficiaries
-                ], 200);
-            }
-
-            // Transform sex value from string to integer
-            $validatedData['sex'] = $validatedData['sex'] === 'Male' ? 1 : 2;
-
-            // Set the status to 2 upon adding
-            $validatedData['status'] = 2;
-
-            $beneficiary = Beneficiary::create($validatedData);
-
-            return response()->json(['message' => 'Beneficiary added successfully', 'beneficiary' => $beneficiary], 201);
-        } catch (\Exception $e) {
-            Log::error('Error adding beneficiary: ' . $e->getMessage());
-            return response()->json(['message' => 'An error occurred while adding the beneficiary', 'error' => $e->getMessage()], 500);
+        if (!empty($similarBeneficiaries)) {
+            return response()->json([
+                'message' => 'Similar beneficiaries found',
+                'similarBeneficiaries' => $similarBeneficiaries
+            ], 200);
         }
+
+        // Transform sex value from string to integer
+        $validatedData['sex'] = $validatedData['sex'] === 'Male' ? 1 : 2;
+
+        // Set the status to 2 upon adding
+        $validatedData['status'] = 2;
+        
+        // Set beneficiaryNumber to null
+        $validatedData['beneficiaryNumber'] = null;
+
+        $beneficiary = Beneficiary::create($validatedData);
+
+        return response()->json(['message' => 'Beneficiary added successfully', 'beneficiary' => $beneficiary], 201);
+    } catch (\Exception $e) {
+        Log::error('Error adding beneficiary: ' . $e->getMessage());
+        return response()->json(['message' => 'An error occurred while adding the beneficiary', 'error' => $e->getMessage()], 500);
     }
+}
 
-    public function confirmAdd(Request $request)
-    {
-        try {
-            $validatedData = $request->validate([
-                'lastName' => 'required|string|max:255',
-                'firstName' => 'required|string|max:255',
-                'middleName' => 'required|string|max:255',
-                'extensionName' => 'nullable|string|max:255',
-                'barangayID' => 'required|exists:barangays,barangayID',
-                'municipalityID' => 'required|exists:municipalities,municipalityID',
-                'provinceID' => 'required|exists:provinces,provinceID',
-                'masterlistID' => 'required|exists:masterlists,masterlistID',
-                'dateOfBirth' => 'required|date',
-                'address' => 'required|string|max:255',
-                'contactNumber' => 'required|string|max:11',
-                'sex' => 'required|in:Male,Female',
-            ]);
+public function confirmAdd(Request $request)
+{
+    try {
+        $validatedData = $request->validate([
+            'lastName' => 'required|string|max:255',
+            'firstName' => 'required|string|max:255',
+            'middleName' => 'required|string|max:255',
+            'extensionName' => 'nullable|string|max:255',
+            'barangayID' => 'required|exists:barangays,barangayID',
+            'municipalityID' => 'required|exists:municipalities,municipalityID',
+            'provinceID' => 'required|exists:provinces,provinceID',
+            'masterlistID' => 'required|exists:masterlists,masterlistID',
+            'dateOfBirth' => 'required|date',
+            'address' => 'required|string|max:255',
+            'contactNumber' => 'required|string|max:11',
+            'sex' => 'required|in:Male,Female',
+        ]);
 
-            // Transform sex value from string to integer
-            $validatedData['sex'] = $validatedData['sex'] === 'Male' ? 1 : 2;
+        // Transform sex value from string to integer
+        $validatedData['sex'] = $validatedData['sex'] === 'Male' ? 1 : 2;
 
-            $validatedData['status'] = 4; // Set status to 4 for potential duplicate
+        $validatedData['status'] = 4; // Set status to 4 for potential duplicate
+        
+        // Set beneficiaryNumber to null
+        $validatedData['beneficiaryNumber'] = null;
 
-            $beneficiary = Beneficiary::create($validatedData);
+        $beneficiary = Beneficiary::create($validatedData);
 
-            return response()->json(['message' => 'Beneficiary added successfully as potential duplicate', 'beneficiary' => $beneficiary], 201);
-        } catch (\Exception $e) {
-            Log::error('Error adding beneficiary: ' . $e->getMessage());
-            return response()->json(['message' => 'An error occurred while adding the beneficiary'], 500);
-        }
+        return response()->json(['message' => 'Beneficiary added successfully as potential duplicate', 'beneficiary' => $beneficiary], 201);
+    } catch (\Exception $e) {
+        Log::error('Error adding beneficiary: ' . $e->getMessage());
+        return response()->json(['message' => 'An error occurred while adding the beneficiary'], 500);
     }
+}
 
     public function findSimilarBeneficiaries($data)
     {
