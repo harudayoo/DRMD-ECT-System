@@ -53,7 +53,7 @@
                     stroke-width="3"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="absolute left-[67%] top-2.5 text-gray-400"
+                    class="absolute left-[64%] top-2.5 text-gray-400"
                 >
                     <circle cx="11" cy="11" r="8"></circle>
                     <path d="m21 21-4.3-4.3"></path>
@@ -71,7 +71,7 @@
                             ? 'Search by Beneficiary Num, Name, or Status'
                             : 'Search by ID, Municipality, or Name'
                     "
-                    class="bg-white ml-[66%] text-gray-700 rounded-full py-2 pl-9 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[34.5%] h-9 transition-all duration-300 ease-in-out"
+                    class="bg-white ml-[63%] text-gray-700 rounded-full py-2 pl-9 focus:outline-none focus:ring-2 focus:ring-blue-500 w-[37.5%] h-9 transition-all duration-300 ease-in-out"
                 />
             </div>
             <div class="">
@@ -460,7 +460,7 @@ const searchMasterlists = () => {
 };
 
 // Pagination logic
-const itemsPerPage = 6;
+const itemsPerPage = 7;
 const currentPage = ref(1);
 
 const totalPages = computed(() => Math.ceil(totalItems.value / itemsPerPage));

@@ -143,7 +143,7 @@
                         v-if="cdrInfo"
                         class="px-4 py-5 sm:px-6 flex justify-between items-center"
                     >
-                        <div>
+                        <div class="-ml-6 -mt-28">
                             <h3
                                 class="text-lg leading-6 font-medium text-gray-900"
                             >
@@ -159,7 +159,7 @@
 
                     <div
                         v-if="payrollInfo"
-                        class="px-4 py-5 sm:px-6 flex justify-between items-center"
+                        class="px-4 py-5 sm:px-6 -ml-6 -mt-12 flex justify-between items-center"
                     >
                         <div>
                             <h3
@@ -182,7 +182,7 @@
                     </div>
                 </div>
                 <div
-                    class="grid grid-cols-1 md:grid-cols-2 gap-4 w-3/4 p-2 m-2"
+                    class="grid grid-cols-1 -mb-2 md:grid-cols-2 gap-4 w-3/4 p-2 m-2"
                 >
                     <DropdownWithAdd
                         label="ORS/BURS Number"
@@ -293,7 +293,7 @@
             <!-- Beneficiaries Pagination -->
             <div
                 v-if="totalPages > 1"
-                class="mt-6 flex justify-between items-center px-4 py-3 border-t border-gray-200 sm:px-6"
+                class="flex justify-between items-center px-4 py-3 border-t border-gray-200 sm:px-6"
             >
                 <div>
                     <p class="text-sm text-gray-700">
@@ -312,7 +312,16 @@
                     <nav
                         class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
                         aria-label="Pagination"
-                    >
+                    >   
+                        <!-- Previous Button -->
+                        <button
+                            @click="currentPage > 1 && (currentPage--)"
+                            :disabled="currentPage === 1"
+                            class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                           << Previous
+                        </button>
+
                         <button
                             v-for="page in paginationRange"
                             :key="page"
@@ -326,6 +335,14 @@
                             }"
                         >
                             {{ page }}
+                        </button>
+                         <!-- Next Button -->
+                        <button
+                            @click="currentPage < totalPages && (currentPage++)"
+                            :disabled="currentPage === totalPages"
+                            class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next >>
                         </button>
                     </nav>
                 </div>
@@ -438,7 +455,7 @@ const selectedRCD = ref(null);
 const beneficiaries = ref([]);
 const isLoadingBeneficiaries = ref(false);
 const currentPage = ref(1);
-const itemsPerPage = 6;
+const itemsPerPage = 4;
 const showModal = ref(false);
 const modalType = ref("");
 

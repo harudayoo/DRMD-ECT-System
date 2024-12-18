@@ -531,9 +531,12 @@
                         </tr>
                     </tbody>
                 </table>
-
-                <!-- Beneficiaries Pagination -->
-                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            </div>
+            <div v-else class="text-center py-12 text-gray-500">
+                No beneficiaries found for this CDR.
+            </div>
+            <!-- Beneficiaries Pagination -->
+            <div class="px-6 py-4">
                     <div class="flex items-center justify-between">
                         <button
                             @click="
@@ -568,10 +571,6 @@
                         </button>
                     </div>
                 </div>
-            </div>
-            <div v-else class="text-center py-12 text-gray-500">
-                No beneficiaries found for this CDR.
-            </div>
         </div>
 
         <!-- Main Loading State -->
@@ -950,7 +949,7 @@ const beneficiariesPagination = ref({
     from: 0,
     to: 0,
     total: 0,
-    per_page: 12,
+    per_page: 5,
 });
 
 // Setup axios interceptors for CSRF

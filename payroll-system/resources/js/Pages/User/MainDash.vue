@@ -113,7 +113,7 @@
                                                     }}</span>
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
-                                                        class="h-5 w-5 mr-32 text-gray-400 flex-shrink-0"
+                                                        class="h-5 w-5 mr-24 text-gray-400 flex-shrink-0"
                                                         viewBox="0 0 20 20"
                                                         fill="currentColor"
                                                     >

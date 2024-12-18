@@ -25,9 +25,9 @@
                         :municipality-name="municipalityName"
                     />
 
-                    <PayrollStream
+                    <PayrollStream2
                         :show-graph="showGraph"
-                        :municipalities="barangays"
+                        :barangays="barangayData"
                     />
 
                     <!-- Status Analytics and Allocation Table -->
@@ -43,6 +43,7 @@
                             :table-max-height="tableMaxHeight"
                             @row-click="navigateToBarangayMasterlist"
                             parent-type="municipality"
+                            table-title="Barangays"
                         />
                     </div>
                 </div>
@@ -59,7 +60,7 @@ import Sidebar from "@/Layouts/Sidebar.vue";
 import StatusAnalytics from "@/Layouts/StatusAnalytics.vue";
 import AllocationTable from "@/Layouts/AllocationTable.vue";
 import UpperDash from "@/Layouts/UpperDash.vue";
-import PayrollStream from "@/Layouts/PayrollStream.vue";
+import PayrollStream2 from "@/Layouts/PayrollStream2.vue";
 
 const props = defineProps({
     barangays: {

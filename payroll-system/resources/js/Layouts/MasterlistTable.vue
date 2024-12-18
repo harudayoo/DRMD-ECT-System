@@ -27,7 +27,7 @@
               :class="getColumnClass(index)"
               class="py-4 whitespace-nowrap text-sm text-gray-900"
             >
-              {{ key === "status" ? getStatusText(beneficiary[key]) : beneficiary[key] }}
+            {{ key === "dateOfBirth" ? formatDate(beneficiary[key]) : key === "status" ? getStatusText(beneficiary[key]) : beneficiary[key] }}
             </td>
           </tr>
         </tbody>
@@ -150,6 +150,11 @@ const getStatusText = (status: number) => {
     4: "Duplicate",
   };
   return statusMap[status as keyof typeof statusMap] || "Unknown";
+};
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
 // Pagination logic
